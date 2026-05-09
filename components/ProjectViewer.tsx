@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import { Box, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import type { Project } from "@/lib/carton";
+import { renderProjectFaces } from "@/lib/client/artwork";
+import type { FaceKey, Project } from "@/lib/carton";
 
 const CartonStage = dynamic(() => import("@/components/CartonStage").then((mod) => mod.CartonStage), {
   ssr: false,
@@ -13,6 +14,7 @@ const CartonStage = dynamic(() => import("@/components/CartonStage").then((mod) 
 
 export function ProjectViewer({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null>(null);
+  const [faces, setFaces] = useState<Partial<Record<FaceKey, string>>>({});
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,8 +30,10 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
         }
 
         const nextProject = (await response.json()) as Project;
+        const nextFaces = await renderProjectFaces(nextProject);
         if (isMounted) {
           setProject(nextProject);
+          setFaces(nextFaces);
         }
       } catch (loadError) {
         if (isMounted) {
@@ -72,7 +76,7 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
         ) : error ? (
           <div className="empty-state error-state">{error}</div>
         ) : project ? (
-          <CartonStage className="shared-stage" dimensions={project.dimensions} faces={project.faces} />
+          <CartonStage className="shared-stage" dimensions={project.dimensions} faces={faces} />
         ) : null}
       </section>
     </main>

@@ -10,15 +10,45 @@ const background = { r: 246, g: 241, b: 230 };
 await mkdir(outputDir, { recursive: true });
 
 const api = await request.newContext({ baseURL });
+const faceKeys = ["front", "back", "left", "right", "top", "bottom"];
+const faceColors = {
+  front: [217, 79, 48],
+  back: [47, 125, 107],
+  left: [224, 184, 79],
+  right: [60, 86, 150],
+  top: [255, 253, 247],
+  bottom: [31, 42, 36]
+};
 const projectResponse = await api.post("/api/projects", {
   data: {
-    faces: {
-      front: createPngDataUrl([217, 79, 48]),
-      back: createPngDataUrl([47, 125, 107]),
-      left: createPngDataUrl([224, 184, 79]),
-      right: createPngDataUrl([60, 86, 150]),
-      top: createPngDataUrl([255, 253, 247]),
-      bottom: createPngDataUrl([31, 42, 36])
+    name: "Visual verification carton",
+    dimensions: { width: 232, depth: 232, height: 70 },
+    workspace: {
+      sources: faceKeys.map((face) => ({
+        dataUrl: createPngDataUrl(faceColors[face]),
+        fileName: `${face}.png`,
+        id: `visual-${face}`,
+        mimeType: "image/png",
+        sourceType: "image"
+      })),
+      selectedSourceId: "visual-front",
+      faceAssets: Object.fromEntries(
+        faceKeys.map((face) => [
+          face,
+          {
+            crop: {
+              coordinates: null,
+              transforms: {
+                flip: { horizontal: false, vertical: false },
+                rotate: 0
+              }
+            },
+            fileName: `${face}.png`,
+            sourceId: `visual-${face}`,
+            sourceType: "image"
+          }
+        ])
+      )
     }
   }
 });

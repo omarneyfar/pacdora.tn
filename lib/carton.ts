@@ -42,7 +42,6 @@ export type ProjectFaceAsset = {
   fileName: string;
   sourceType: ArtworkSourceType;
   crop: ProjectCropSettings;
-  url: string;
 };
 
 export type ProjectWorkspace = {

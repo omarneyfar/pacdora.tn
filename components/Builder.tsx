@@ -41,6 +41,7 @@ import {
   cropArtworkToFace,
   importArtworkFile,
   normalizeCropSettings,
+  renderProjectFaces,
   type CropSettings
 } from "@/lib/client/artwork";
 import {
@@ -86,6 +87,41 @@ type CropModalState = {
 
 type ParameterSectionKey = "dimensions" | "dieline" | "library";
 
+type SourcePayload = {
+  id: string;
+  dataUrl: string;
+  fileName: string;
+  mimeType?: string;
+  sourceType: "image" | "pdf";
+};
+
+type FacePayload = {
+  sourceId: string;
+  fileName: string;
+  sourceType: "image" | "pdf";
+  crop: CropSettings;
+};
+
+type ProjectSavePayload = {
+  name: string;
+  dimensions: CartonDimensions;
+  workspace: {
+    sources: SourcePayload[];
+    selectedSourceId: string;
+    faceAssets: Partial<Record<FaceKey, FacePayload>>;
+  };
+};
+
+type ProjectPatchPayload = {
+  name?: string;
+  dimensions?: CartonDimensions;
+  workspace?: {
+    sources?: SourcePayload[];
+    selectedSourceId?: string | null;
+    faceAssets?: Partial<Record<FaceKey, FacePayload | null>>;
+  };
+};
+
 export function Builder({ projectId: initialProjectId }: { projectId?: string } = {}) {
   const [projectId, setProjectId] = useState(initialProjectId ?? "");
   const [projectName, setProjectName] = useState("Untitled carton");
@@ -110,7 +146,10 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
   });
   const facesRef = useRef(faces);
   const sourcesRef = useRef(sources);
+  const lastSavedProjectRef = useRef<Project | null>(null);
+  const lastSavedPayloadRef = useRef<ProjectSavePayload | null>(null);
   const skippedInitialDimensionSync = useRef(false);
+  const skipNextDimensionSync = useRef(false);
 
   useEffect(() => {
     facesRef.current = faces;
@@ -140,7 +179,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
 
         const project = (await response.json()) as Project;
         if (isMounted) {
-          hydrateProject(project);
+          await hydrateProject(project);
           setSaveStatus("Saved");
         }
       } catch (loadError) {
@@ -164,6 +203,11 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
   useEffect(() => {
     if (!skippedInitialDimensionSync.current) {
       skippedInitialDimensionSync.current = true;
+      return;
+    }
+
+    if (skipNextDimensionSync.current) {
+      skipNextDimensionSync.current = false;
       return;
     }
 
@@ -346,12 +390,18 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     setError("");
 
     try {
+      const payload = projectId ? createProjectPatchPayload() : createFullProjectPayload();
+      if (projectId && isEmptyPatchPayload(payload)) {
+        setSaveStatus("Saved");
+        return lastSavedProjectRef.current;
+      }
+
       const response = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
         method: projectId ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(createProjectPayload())
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -360,7 +410,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
       }
 
       const project = (await response.json()) as Project;
-      hydrateProject(project);
+      await hydrateProject(project);
       setSaveStatus("Saved");
 
       if (!projectId) {
@@ -396,11 +446,10 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     }
   }
 
-  function createProjectPayload() {
+  function createFullProjectPayload(): ProjectSavePayload {
     return {
       name: projectName,
       dimensions,
-      faces: Object.fromEntries(FACE_KEYS.flatMap((face) => (faces[face] ? [[face, faces[face]?.dataUrl]] : []))),
       workspace: {
         sources: sources.map((source) => ({
           id: source.id,
@@ -413,7 +462,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
         faceAssets: Object.fromEntries(
           FACE_KEYS.flatMap((face) => {
             const asset = faces[face];
-            if (!asset) {
+            if (!asset || !asset.sourceId) {
               return [];
             }
 
@@ -422,7 +471,6 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
                 face,
                 {
                   sourceId: asset.sourceId,
-                  dataUrl: asset.dataUrl,
                   fileName: asset.fileName,
                   sourceType: asset.sourceType,
                   crop: asset.crop
@@ -435,7 +483,61 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     };
   }
 
-  function hydrateProject(project: Project) {
+  function createProjectPatchPayload(): ProjectPatchPayload {
+    const current = createFullProjectPayload();
+    const saved = lastSavedPayloadRef.current;
+
+    if (!saved) {
+      return current;
+    }
+
+    const patch: ProjectPatchPayload = {};
+
+    if (current.name !== saved.name) {
+      patch.name = current.name;
+    }
+
+    if (!sameJson(current.dimensions, saved.dimensions)) {
+      patch.dimensions = current.dimensions;
+    }
+
+    const workspacePatch: NonNullable<ProjectPatchPayload["workspace"]> = {};
+    const changedSources = current.workspace.sources.filter((source) => {
+      const savedSource = saved.workspace.sources.find((candidate) => candidate.id === source.id);
+      return !savedSource || !sameJson(source, savedSource);
+    });
+
+    if (changedSources.length > 0) {
+      workspacePatch.sources = changedSources;
+    }
+
+    if (current.workspace.selectedSourceId !== saved.workspace.selectedSourceId) {
+      workspacePatch.selectedSourceId = current.workspace.selectedSourceId || null;
+    }
+
+    const changedFaceAssets: Partial<Record<FaceKey, FacePayload | null>> = {};
+    for (const face of FACE_KEYS) {
+      const currentAsset = current.workspace.faceAssets[face];
+      const savedAsset = saved.workspace.faceAssets[face];
+
+      if (!sameJson(currentAsset ?? null, savedAsset ?? null)) {
+        changedFaceAssets[face] = currentAsset ?? null;
+      }
+    }
+
+    if (Object.keys(changedFaceAssets).length > 0) {
+      workspacePatch.faceAssets = changedFaceAssets;
+    }
+
+    if (Object.keys(workspacePatch).length > 0) {
+      patch.workspace = workspacePatch;
+    }
+
+    return patch;
+  }
+
+  async function hydrateProject(project: Project) {
+    skipNextDimensionSync.current = true;
     const workspaceSources: ArtworkSource[] =
       project.workspace?.sources.map((source) => ({
         id: source.id,
@@ -444,13 +546,15 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
         mimeType: source.mimeType,
         sourceType: source.sourceType
       })) ?? [];
+    const renderedFaces = await renderProjectFaces(project);
+    const hasEditableWorkspace = Boolean(project.workspace?.sources.length);
     const nextFaces = FACE_KEYS.reduce<FaceAssets>((next, face) => {
       const asset = project.workspace?.faceAssets[face];
 
       if (asset) {
         next[face] = {
           sourceId: asset.sourceId,
-          dataUrl: asset.url,
+          dataUrl: renderedFaces[face] ?? "",
           fileName: asset.fileName,
           sourceType: asset.sourceType,
           crop: normalizeCropSettings(asset.crop)
@@ -458,7 +562,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
         return next;
       }
 
-      if (project.faces[face]) {
+      if (!hasEditableWorkspace && project.faces[face]) {
         next[face] = {
           sourceId: "",
           dataUrl: project.faces[face],
@@ -478,6 +582,8 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     setSelectedSourceId(project.workspace?.selectedSourceId ?? workspaceSources[0]?.id ?? "");
     setFaces(nextFaces);
     setShareUrl("");
+    lastSavedProjectRef.current = project;
+    lastSavedPayloadRef.current = createSavedPayloadFromProject(project);
   }
 
   async function copyToClipboard(value = shareUrl) {
@@ -578,7 +684,14 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
             trailing={String(sources.length)}
             onToggle={() => toggleSection("library")}
           >
-            <ArtworkLibrary selectedSourceId={selectedSourceId} sources={sources} onSelect={setSelectedSourceId} />
+            <ArtworkLibrary
+              selectedSourceId={selectedSourceId}
+              sources={sources}
+              onSelect={(sourceId) => {
+                markProjectChanged();
+                setSelectedSourceId(sourceId);
+              }}
+            />
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -1118,6 +1231,55 @@ function fitCoordinatesToAspect(
     top,
     width: Math.max(1, width)
   };
+}
+
+function createSavedPayloadFromProject(project: Project): ProjectSavePayload {
+  const sources: SourcePayload[] =
+    project.workspace?.sources.map((source) => ({
+      id: source.id,
+      dataUrl: source.url,
+      fileName: source.fileName,
+      mimeType: source.mimeType,
+      sourceType: source.sourceType
+    })) ?? [];
+
+  return {
+    name: project.name,
+    dimensions: normalizeDimensions(project.dimensions),
+    workspace: {
+      sources,
+      selectedSourceId: project.workspace?.selectedSourceId ?? sources[0]?.id ?? "",
+      faceAssets: Object.fromEntries(
+        FACE_KEYS.flatMap((face) => {
+          const asset = project.workspace?.faceAssets[face];
+
+          if (!asset) {
+            return [];
+          }
+
+          return [
+            [
+              face,
+              {
+                sourceId: asset.sourceId,
+                fileName: asset.fileName,
+                sourceType: asset.sourceType,
+                crop: normalizeCropSettings(asset.crop)
+              }
+            ]
+          ];
+        })
+      )
+    }
+  };
+}
+
+function isEmptyPatchPayload(payload: ProjectPatchPayload): boolean {
+  return Object.keys(payload).length === 0;
+}
+
+function sameJson(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function createArtworkId(): string {

@@ -2,7 +2,7 @@
 
 import { prepareSource, updateCanvas, type Coordinates, type Transforms } from "advanced-cropper";
 
-import { getFaceSpecs, type CartonDimensions, type FaceKey } from "@/lib/carton";
+import { FACE_KEYS, getFaceSpecs, type CartonDimensions, type FaceKey, type Project } from "@/lib/carton";
 
 const MAX_LONG_EDGE = 1400;
 
@@ -46,6 +46,30 @@ export async function cropArtworkToFace(
 ): Promise<string> {
   const image = await loadImage(sourceUrl);
   return cropToFace(image, face, dimensions, normalizeCropSettings(settings));
+}
+
+export async function renderProjectFaces(project: Project): Promise<Partial<Record<FaceKey, string>>> {
+  if (!project.workspace?.sources.length) {
+    return project.faces;
+  }
+
+  const sourceById = new Map(project.workspace.sources.map((source) => [source.id, source]));
+  const renderedFaces: Partial<Record<FaceKey, string>> = {};
+
+  await Promise.all(
+    FACE_KEYS.map(async (face) => {
+      const assignment = project.workspace?.faceAssets[face];
+      const source = assignment ? sourceById.get(assignment.sourceId) : undefined;
+
+      if (!assignment || !source) {
+        return;
+      }
+
+      renderedFaces[face] = await cropArtworkToFace(source.url, face, project.dimensions, assignment.crop);
+    })
+  );
+
+  return renderedFaces;
 }
 
 export function normalizeCropSettings(settings: Partial<CropSettings> | undefined | null): CropSettings {

@@ -18,3 +18,5 @@ alter table public.projects enable row level security;
 insert into storage.buckets (id, name, public)
 values ('project-faces', 'project-faces', false)
 on conflict (id) do nothing;
+
+notify pgrst, 'reload schema';
