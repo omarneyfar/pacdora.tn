@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { readProject, updateProject, type ProjectInput } from "@/lib/server/projects";
+import { deleteProject, readProject, updateProject, type ProjectInput } from "@/lib/server/projects";
 
 export const runtime = "nodejs";
 
@@ -9,14 +9,21 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const { id } = await context.params;
-  const project = await readProject(id);
+  try {
+    const { id } = await context.params;
+    const project = await readProject(id);
 
-  if (!project) {
-    return NextResponse.json({ error: "Project not found." }, { status: 404 });
+    if (!project) {
+      return NextResponse.json({ error: "Project not found." }, { status: 404 });
+    }
+
+    return NextResponse.json(project);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not load the project." },
+      { status: 400 }
+    );
   }
-
-  return NextResponse.json(project);
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -33,6 +40,24 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not update the project." },
+      { status: 400 }
+    );
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const deleted = await deleteProject(id);
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Project not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not delete the project." },
       { status: 400 }
     );
   }

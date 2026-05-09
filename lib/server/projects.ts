@@ -37,6 +37,11 @@ export type ProjectInput = {
   workspace?: ProjectWorkspaceInput;
 };
 
+export type ProjectListOptions = {
+  limit?: number;
+  query?: string;
+};
+
 export type ProjectImage = {
   buffer: Buffer;
   contentType: string;
@@ -96,12 +101,37 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
   return updateFileProject(id, input);
 }
 
+export async function listProjects(options: ProjectListOptions = {}): Promise<Project[]> {
+  if (isSupabaseConfigured()) {
+    return listSupabaseProjects(options);
+  }
+
+  return listFileProjects(options);
+}
+
 export async function readProject(id: string): Promise<Project | null> {
   if (isSupabaseConfigured()) {
     return readSupabaseProject(id);
   }
 
   return readFileProject(id);
+}
+
+export async function duplicateProject(id: string): Promise<Project | null> {
+  const project = await readProject(id);
+  if (!project) {
+    return null;
+  }
+
+  return createProject(await createDuplicateProjectInput(project));
+}
+
+export async function deleteProject(id: string): Promise<boolean> {
+  if (isSupabaseConfigured()) {
+    return deleteSupabaseProject(id);
+  }
+
+  return deleteFileProject(id);
 }
 
 export async function readFaceImage(id: string, face: string): Promise<Buffer | null> {
@@ -136,6 +166,46 @@ async function updateFileProject(id: string, input: ProjectInput): Promise<Proje
   }
 
   return writeFileProjectSnapshot(id, input, existing);
+}
+
+async function listFileProjects(options: ProjectListOptions): Promise<Project[]> {
+  const projects = new Map(Object.entries((await readLocalDb()).projects));
+
+  try {
+    const entries = await fs.readdir(STORAGE_ROOT, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || projects.has(entry.name) || !isValidProjectId(entry.name)) {
+        continue;
+      }
+
+      const project = await readFileProject(entry.name);
+      if (project) {
+        projects.set(project.id, project);
+      }
+    }
+  } catch (error) {
+    if (!isNodeError(error) || error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  return filterProjectList(Array.from(projects.values()), options);
+}
+
+async function deleteFileProject(id: string): Promise<boolean> {
+  if (!isValidProjectId(id)) {
+    return false;
+  }
+
+  const existing = await readFileProject(id);
+  if (!existing) {
+    return false;
+  }
+
+  await fs.rm(getProjectDir(id), { recursive: true, force: true });
+  await deleteProjectFromLocalDb(id);
+  return true;
 }
 
 async function writeFileProjectSnapshot(id: string, input: ProjectInput, existing?: Project): Promise<Project> {
@@ -262,6 +332,67 @@ async function updateSupabaseProject(id: string, input: ProjectInput): Promise<P
   }
 
   return writeSupabaseProjectSnapshot(id, input, existing);
+}
+
+async function listSupabaseProjects(options: ProjectListOptions): Promise<Project[]> {
+  const supabase = getSupabaseClient();
+  const limit = normalizeListLimit(options.limit);
+  const query = normalizeSearchQuery(options.query);
+  let request = supabase
+    .from(SUPABASE_TABLE)
+    .select("id, name, dimensions, faces, workspace, created_at, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  if (query) {
+    request = request.ilike("name", `%${query}%`);
+  }
+
+  const { data, error } = await request.returns<ProjectRow[]>();
+
+  if (error) {
+    if (isMissingSupabaseTableOrColumnError(error)) {
+      throw new Error(
+        `Supabase projects table is missing required columns. Run supabase/schema.sql in your Supabase SQL editor. Original error: ${error.message}`
+      );
+    }
+
+    throw new Error(`Could not list projects from Supabase: ${error.message}`);
+  }
+
+  return (data ?? []).flatMap((row) => {
+    const project = projectFromRow(row);
+    return project ? [project] : [];
+  });
+}
+
+async function deleteSupabaseProject(id: string): Promise<boolean> {
+  if (!isValidProjectId(id)) {
+    return false;
+  }
+
+  const supabase = getSupabaseClient();
+  const existing = await readSupabaseProject(id);
+  if (!existing) {
+    return false;
+  }
+
+  const storagePaths = await listSupabaseStoragePaths(supabase, id);
+  if (storagePaths.length > 0) {
+    const { error } = await supabase.storage.from(SUPABASE_BUCKET).remove(storagePaths);
+
+    if (error) {
+      throw new Error(`Could not delete project artwork from Supabase Storage: ${error.message}`);
+    }
+  }
+
+  const { error } = await supabase.from(SUPABASE_TABLE).delete().eq("id", id);
+
+  if (error) {
+    throw new Error(`Could not delete project metadata from Supabase: ${error.message}`);
+  }
+
+  return true;
 }
 
 async function writeSupabaseProjectSnapshot(id: string, input: ProjectInput, existing?: Project): Promise<Project> {
@@ -417,6 +548,76 @@ async function readSupabaseAssetImage(id: string, assetId: string): Promise<Proj
   };
 }
 
+async function createDuplicateProjectInput(project: Project): Promise<ProjectInput> {
+  const sources = await Promise.all(
+    (project.workspace?.sources ?? []).map(async (source) => {
+      const image = await readProjectAssetImage(project.id, source.id);
+      if (!image) {
+        throw new Error(`Could not copy source artwork "${source.fileName}".`);
+      }
+
+      return {
+        id: source.id,
+        dataUrl: imageToDataUrl(image),
+        fileName: source.fileName,
+        mimeType: image.contentType,
+        sourceType: source.sourceType
+      };
+    })
+  );
+  const faceAssets = FACE_KEYS.reduce<Partial<Record<FaceKey, ProjectFaceAssetInput>>>((next, face) => {
+    const asset = project.workspace?.faceAssets[face];
+
+    if (asset) {
+      next[face] = {
+        sourceId: asset.sourceId,
+        fileName: asset.fileName,
+        sourceType: asset.sourceType,
+        crop: cloneCropSettings(asset.crop)
+      };
+    }
+
+    return next;
+  }, {});
+  const faces = await createDuplicateFaceInput(project);
+
+  return {
+    name: `${project.name} copy`,
+    dimensions: project.dimensions,
+    ...(Object.keys(faces).length > 0 ? { faces } : {}),
+    ...(sources.length > 0
+      ? {
+          workspace: {
+            sources,
+            selectedSourceId: project.workspace?.selectedSourceId,
+            faceAssets
+          }
+        }
+      : {})
+  };
+}
+
+async function createDuplicateFaceInput(project: Project): Promise<Partial<Record<FaceKey, string>>> {
+  const faces: Partial<Record<FaceKey, string>> = {};
+
+  await Promise.all(
+    FACE_KEYS.map(async (face) => {
+      if (!project.faces[face]) {
+        return;
+      }
+
+      const buffer = await readFaceImage(project.id, face);
+      if (!buffer) {
+        throw new Error(`Could not copy ${face} artwork.`);
+      }
+
+      faces[face] = `data:image/png;base64,${buffer.toString("base64")}`;
+    })
+  );
+
+  return faces;
+}
+
 async function writeFaceImages(
   id: string,
   inputFaces: Partial<Record<FaceKey, string | null>>,
@@ -545,6 +746,20 @@ function decodeProjectAsset(dataUrl: string): ProjectImage {
   };
 }
 
+function imageToDataUrl(image: ProjectImage): string {
+  return `data:${normalizeImageMimeType(image.contentType)};base64,${image.buffer.toString("base64")}`;
+}
+
+function cloneCropSettings(crop: ProjectCropSettings): ProjectCropSettings {
+  return {
+    coordinates: crop.coordinates ? { ...crop.coordinates } : null,
+    transforms: {
+      flip: { ...crop.transforms.flip },
+      rotate: crop.transforms.rotate
+    }
+  };
+}
+
 async function createUniqueId(): Promise<string> {
   const db = await readLocalDb();
 
@@ -581,6 +796,37 @@ async function createUniqueSupabaseId(supabase: SupabaseClient): Promise<string>
   }
 
   throw new Error("Could not create a unique project ID.");
+}
+
+async function listSupabaseStoragePaths(supabase: SupabaseClient, prefix: string): Promise<string[]> {
+  const paths: string[] = [];
+  await collectSupabaseStoragePaths(supabase, prefix, paths);
+  return paths;
+}
+
+async function collectSupabaseStoragePaths(supabase: SupabaseClient, prefix: string, paths: string[]): Promise<void> {
+  const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).list(prefix, { limit: 1000 });
+
+  if (error) {
+    if (isMissingSupabaseObjectError(error)) {
+      return;
+    }
+
+    throw new Error(`Could not list project artwork in Supabase Storage: ${error.message}`);
+  }
+
+  await Promise.all(
+    (data ?? []).map(async (item) => {
+      const fullPath = `${prefix}/${item.name}`;
+
+      if (isSupabaseStorageFolder(item)) {
+        await collectSupabaseStoragePaths(supabase, fullPath, paths);
+        return;
+      }
+
+      paths.push(fullPath);
+    })
+  );
 }
 
 function projectFromRow(row: ProjectRow): Project | null {
@@ -814,6 +1060,17 @@ async function saveProjectToLocalDb(project: Project): Promise<void> {
   await writeOperation;
 }
 
+async function deleteProjectFromLocalDb(id: string): Promise<void> {
+  const writeOperation = localDbWriteQueue.catch(() => undefined).then(async () => {
+    const db = await readLocalDb();
+    delete db.projects[id];
+    await writeLocalDb(db);
+  });
+
+  localDbWriteQueue = writeOperation.catch(() => undefined);
+  await writeOperation;
+}
+
 async function writeLocalDb(db: LocalProjectsDb): Promise<void> {
   await fs.mkdir(path.dirname(LOCAL_DB_FILE), { recursive: true });
   const tempFile = `${LOCAL_DB_FILE}.${process.pid}.${Date.now()}.tmp`;
@@ -872,6 +1129,20 @@ function normalizeProjectName(value: unknown, fallback = DEFAULT_PROJECT_NAME): 
   const candidate = typeof value === "string" ? value.trim() : "";
   const name = candidate || fallback;
   return name.slice(0, 80);
+}
+
+function normalizeListLimit(value: unknown): number {
+  const numericValue = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 50;
+  }
+
+  return Math.min(100, Math.max(1, Math.round(numericValue)));
+}
+
+function normalizeSearchQuery(value: unknown): string {
+  return typeof value === "string" ? value.trim().slice(0, 80) : "";
 }
 
 function normalizeFileName(value: unknown, fallback: string): string {
@@ -948,6 +1219,20 @@ function isMissingSupabaseTableOrColumnError(error: unknown): boolean {
 function isMissingSupabaseObjectError(error: unknown): boolean {
   const candidate = error as { statusCode?: number | string; message?: string };
   return String(candidate.statusCode) === "404" || candidate.message?.toLowerCase().includes("not found") === true;
+}
+
+function isSupabaseStorageFolder(item: { id?: string | null; metadata?: unknown }): boolean {
+  return item.id === null || (!item.id && !item.metadata);
+}
+
+function filterProjectList(projects: Project[], options: ProjectListOptions): Project[] {
+  const query = normalizeSearchQuery(options.query).toLowerCase();
+  const limit = normalizeListLimit(options.limit);
+
+  return projects
+    .filter((project) => !query || project.name.toLowerCase().includes(query) || project.id.toLowerCase().includes(query))
+    .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))
+    .slice(0, limit);
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

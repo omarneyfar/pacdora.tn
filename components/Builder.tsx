@@ -15,6 +15,7 @@ import {
   FileText,
   FlipHorizontal2,
   FlipVertical2,
+  FolderOpen,
   Image as ImageIcon,
   Link,
   LoaderCircle,
@@ -624,6 +625,10 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
           <div className="dimension-pill">
             {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
           </div>
+          <a className="secondary-button header-projects-button" href="/projects">
+            <FolderOpen aria-hidden size={18} />
+            Projects
+          </a>
           {saveStatus ? <span className="save-status">{saveStatus}</span> : null}
           <button className="secondary-button header-save-button" disabled={!canSave} type="button" onClick={saveProject}>
             {isProjectSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Save aria-hidden size={18} />}

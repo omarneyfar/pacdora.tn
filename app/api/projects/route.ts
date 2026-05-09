@@ -1,8 +1,25 @@
 import { NextResponse } from "next/server";
 
-import { createProject, type ProjectInput } from "@/lib/server/projects";
+import { createProject, listProjects, type ProjectInput } from "@/lib/server/projects";
 
 export const runtime = "nodejs";
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const projects = await listProjects({
+      limit: Number(url.searchParams.get("limit") ?? 50),
+      query: url.searchParams.get("q") ?? ""
+    });
+
+    return NextResponse.json({ projects });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not load projects." },
+      { status: 400 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
