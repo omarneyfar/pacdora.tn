@@ -4,3 +4,4 @@ storage/
 .verification/
 *.log
 .env*
+!.env.example
