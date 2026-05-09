@@ -1,4 +1,9 @@
+export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as const;
+
 export type FaceKey = (typeof FACE_KEYS)[number];
+
+
+
 
 export type CartonDimensions = {
   width: number;
