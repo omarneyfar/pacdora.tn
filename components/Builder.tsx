@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import dynamic from "next/dynamic";
+import { ImageRestriction, type Coordinates, type CropperState } from "advanced-cropper";
 import {
   Box,
   Check,
@@ -12,28 +13,33 @@ import {
   Crop,
   ExternalLink,
   FileText,
+  FlipHorizontal2,
+  FlipVertical2,
   Image as ImageIcon,
   Link,
   LoaderCircle,
   Paintbrush,
   RotateCcw,
+  RotateCw,
   Trash2,
-  Upload
+  Upload,
+  ZoomIn,
+  ZoomOut
 } from "lucide-react";
+import { Cropper, type CropperRef } from "react-advanced-cropper";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-  type WheelEvent as ReactWheelEvent
+  type ReactNode
 } from "react";
 
 import {
   DEFAULT_CROP_SETTINGS,
   cropArtworkToFace,
   importArtworkFile,
+  normalizeCropSettings,
   type CropSettings
 } from "@/lib/client/artwork";
 import {
@@ -238,12 +244,13 @@ export function Builder() {
       return;
     }
 
+    const nextCrop = normalizeCropSettings(crop);
     setBusyFace(face);
     setError("");
     setShareUrl("");
 
     try {
-      const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, crop);
+      const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, nextCrop);
       setFaces((current) => ({
         ...current,
         [face]: {
@@ -251,7 +258,7 @@ export function Builder() {
           dataUrl,
           fileName: source.fileName,
           sourceType: source.sourceType,
-          crop
+          crop: nextCrop
         }
       }));
     } catch (applyError) {
@@ -383,6 +390,17 @@ export function Builder() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            className="library-section"
+            eyebrow="Artwork library"
+            isOpen={openSections.library}
+            title="Uploaded images"
+            trailing={String(sources.length)}
+            onToggle={() => toggleSection("library")}
+          >
+            <ArtworkLibrary selectedSourceId={selectedSourceId} sources={sources} onSelect={setSelectedSourceId} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
             className="dieline-section"
             eyebrow="Flat dieline"
             isOpen={openSections.dieline}
@@ -415,17 +433,6 @@ export function Builder() {
             </p>
           </CollapsibleSection>
 
-          <CollapsibleSection
-            className="library-section"
-            eyebrow="Artwork library"
-            isOpen={openSections.library}
-            title="Reuse uploaded images"
-            trailing={String(sources.length)}
-            onToggle={() => toggleSection("library")}
-          >
-            <ArtworkLibrary selectedSourceId={selectedSourceId} sources={sources} onSelect={setSelectedSourceId} />
-          </CollapsibleSection>
-
           {error ? <div className="sidebar-error error-banner">{error}</div> : null}
         </aside>
 
@@ -443,6 +450,7 @@ export function Builder() {
 
       {cropModal ? (
         <CropModal
+          key={`${cropModal.face}-${cropModal.sourceId}`}
           dimensions={dimensions}
           face={cropModal.face}
           initialSettings={cropModal.settings}
@@ -689,95 +697,53 @@ function CropModal({
   onApply: (settings: CropSettings) => void;
   onCancel: () => void;
 }) {
-  const [settings, setSettings] = useState<CropSettings>(initialSettings);
-  const [preview, setPreview] = useState("");
-  const dragStart = useRef<{
-    height: number;
-    offsetX: number;
-    offsetY: number;
-    pointerId: number;
-    width: number;
-    x: number;
-    y: number;
-  } | null>(null);
+  const cropperRef = useRef<CropperRef>(null);
+  const initialCrop = useMemo(() => normalizeCropSettings(initialSettings), [initialSettings]);
+  const [settings, setSettings] = useState<CropSettings>(initialCrop);
   const spec = getFaceSpecs(dimensions)[face];
+  const targetAspect = spec.artworkWidth / spec.artworkHeight;
+  const defaultCoordinates = useMemo(
+    () => createDefaultCropCoordinates(initialCrop.coordinates, targetAspect),
+    [initialCrop.coordinates, targetAspect]
+  );
+  const transformState = settings.transforms;
 
-  useEffect(() => {
-    let cancelled = false;
+  function syncCropperSettings(cropper = cropperRef.current) {
+    if (cropper) {
+      setSettings(readCropperSettings(cropper));
+    }
+  }
 
-    if (!source) {
+  function updateCropper(action: (cropper: CropperRef) => void) {
+    const cropper = cropperRef.current;
+
+    if (!cropper) {
       return;
     }
 
-    cropArtworkToFace(source.dataUrl, face, dimensions, settings)
-      .then((dataUrl) => {
-        if (!cancelled) {
-          setPreview(dataUrl);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setPreview("");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [dimensions, face, settings, source]);
-
-  function updateSetting(key: keyof CropSettings, value: string) {
-    setSettings((current) => ({
-      ...current,
-      [key]: clampCropValue(key, Number(value))
-    }));
+    action(cropper);
+    window.requestAnimationFrame(() => syncCropperSettings(cropper));
   }
 
-  function handleCropPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    dragStart.current = {
-      height: bounds.height,
-      offsetX: settings.offsetX,
-      offsetY: settings.offsetY,
-      pointerId: event.pointerId,
-      width: bounds.width,
-      x: event.clientX,
-      y: event.clientY
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
+  function resetCrop() {
+    updateCropper((cropper) => cropper.reset());
   }
 
-  function handleCropPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
-    const start = dragStart.current;
-
-    if (!start) {
-      return;
-    }
-
-    const nextOffsetX = start.offsetX - ((event.clientX - start.x) / start.width) * 200;
-    const nextOffsetY = start.offsetY - ((event.clientY - start.y) / start.height) * 200;
-
-    setSettings((current) => ({
-      ...current,
-      offsetX: clampCropValue("offsetX", nextOffsetX),
-      offsetY: clampCropValue("offsetY", nextOffsetY)
-    }));
+  function rotateCrop() {
+    updateCropper((cropper) => cropper.rotateImage(90));
   }
 
-  function handleCropPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    if (dragStart.current?.pointerId === event.pointerId) {
-      dragStart.current = null;
-    }
+  function toggleFlip(axis: "horizontal" | "vertical") {
+    updateCropper((cropper) => cropper.flipImage(axis === "horizontal", axis === "vertical"));
   }
 
-  function handleCropWheel(event: ReactWheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const nextZoom = settings.zoom + (event.deltaY > 0 ? -0.08 : 0.08);
+  function zoomCrop(factor: number) {
+    updateCropper((cropper) => cropper.zoomImage(factor));
+  }
 
-    setSettings((current) => ({
-      ...current,
-      zoom: clampCropValue("zoom", nextZoom)
-    }));
+  function applyCurrentCrop() {
+    const cropper = cropperRef.current;
+    onApply(cropper ? readCropperSettings(cropper) : settings);
   }
 
   if (!source) {
@@ -792,75 +758,97 @@ function CropModal({
             <span className="eyebrow">{spec.label} crop</span>
             <h2>{source.fileName}</h2>
           </div>
-          <button className="icon-button" title="Reset crop" type="button" onClick={() => setSettings(DEFAULT_CROP_SETTINGS)}>
-            <RotateCcw aria-hidden size={18} />
+          <div className="crop-header-actions">
+            <button className="icon-button" title="Reset crop" type="button" onClick={resetCrop}>
+              <RotateCcw aria-hidden size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="crop-tools" aria-label="Crop tools">
+          <button className="crop-tool-button" title="Rotate 90 degrees" type="button" onClick={rotateCrop}>
+            <RotateCw aria-hidden size={17} />
+            Rotate
+          </button>
+          <button
+            className={`crop-tool-button ${transformState.flip.horizontal ? "is-active" : ""}`}
+            title="Reflect horizontally"
+            type="button"
+            onClick={() => toggleFlip("horizontal")}
+          >
+            <FlipHorizontal2 aria-hidden size={17} />
+            Reflect X
+          </button>
+          <button
+            className={`crop-tool-button ${transformState.flip.vertical ? "is-active" : ""}`}
+            title="Reflect vertically"
+            type="button"
+            onClick={() => toggleFlip("vertical")}
+          >
+            <FlipVertical2 aria-hidden size={17} />
+            Reflect Y
+          </button>
+          <button className="crop-tool-button" title="Zoom out" type="button" onClick={() => zoomCrop(0.88)}>
+            <ZoomOut aria-hidden size={17} />
+            Zoom out
+          </button>
+          <button className="crop-tool-button" title="Zoom in" type="button" onClick={() => zoomCrop(1.12)}>
+            <ZoomIn aria-hidden size={17} />
+            Zoom in
           </button>
         </div>
 
-        <div
+        <Cropper
+          ref={cropperRef}
           className="crop-preview"
-          style={{ aspectRatio: `${spec.artworkWidth} / ${spec.artworkHeight}` }}
-          onPointerCancel={handleCropPointerUp}
-          onPointerDown={handleCropPointerDown}
-          onPointerMove={handleCropPointerMove}
-          onPointerUp={handleCropPointerUp}
-          onWheel={handleCropWheel}
-        >
-          {preview ? <img alt="" src={preview} /> : null}
-          <span className="crop-grid" aria-hidden />
-          <span className="crop-corner top-left" aria-hidden />
-          <span className="crop-corner top-right" aria-hidden />
-          <span className="crop-corner bottom-left" aria-hidden />
-          <span className="crop-corner bottom-right" aria-hidden />
-          <span className="crop-instruction">Drag to position</span>
-          {!preview ? (
-            <span className="crop-loading">
-              <LoaderCircle aria-hidden className="spin" size={18} />
-            </span>
-          ) : null}
-        </div>
+          defaultCoordinates={defaultCoordinates}
+          defaultTransforms={initialCrop.transforms}
+          imageRestriction={ImageRestriction.none}
+          minHeight={24}
+          minWidth={24}
+          src={source.dataUrl}
+          stencilProps={{
+            aspectRatio: targetAspect,
+            className: "crop-stencil",
+            draggableAreaClassName: "crop-stencil-drag",
+            grid: true,
+            gridClassName: "crop-stencil-grid",
+            handlerClassNames: {
+              default: "crop-stencil-handler"
+            },
+            lineClassNames: {
+              default: "crop-stencil-line"
+            },
+            lines: {
+              east: false,
+              north: false,
+              south: false,
+              west: false
+            },
+            movable: true,
+            overlayClassName: "crop-stencil-overlay",
+            previewClassName: "crop-stencil-preview",
+            resizable: true
+          }}
+          transitions
+          onChange={syncCropperSettings}
+          onReady={syncCropperSettings}
+        />
 
-        <div className="crop-controls">
-          <label>
-            <span>Zoom</span>
-            <input
-              max="3"
-              min="1"
-              step="0.05"
-              type="range"
-              value={settings.zoom}
-              onChange={(event) => updateSetting("zoom", event.currentTarget.value)}
-            />
-          </label>
-          <label>
-            <span>Horizontal</span>
-            <input
-              max="100"
-              min="-100"
-              step="1"
-              type="range"
-              value={settings.offsetX}
-              onChange={(event) => updateSetting("offsetX", event.currentTarget.value)}
-            />
-          </label>
-          <label>
-            <span>Vertical</span>
-            <input
-              max="100"
-              min="-100"
-              step="1"
-              type="range"
-              value={settings.offsetY}
-              onChange={(event) => updateSetting("offsetY", event.currentTarget.value)}
-            />
-          </label>
+        <div className="crop-status">
+          <span>
+            Output {spec.artworkWidth} x {spec.artworkHeight} mm
+          </span>
+          <span>
+            Crop {Math.round(settings.coordinates?.width ?? 0)} x {Math.round(settings.coordinates?.height ?? 0)} px
+          </span>
         </div>
 
         <div className="crop-footer">
           <button className="secondary-button" type="button" onClick={onCancel}>
             Cancel
           </button>
-          <button className="primary-button" type="button" onClick={() => onApply(settings)}>
+          <button className="primary-button" type="button" onClick={applyCurrentCrop}>
             Apply crop
           </button>
         </div>
@@ -869,12 +857,85 @@ function CropModal({
   );
 }
 
-function clampCropValue(key: keyof CropSettings, value: number): number {
-  if (key === "zoom") {
-    return Math.min(3, Math.max(1, Number.isFinite(value) ? value : DEFAULT_CROP_SETTINGS.zoom));
+function readCropperSettings(cropper: CropperRef): CropSettings {
+  return normalizeCropSettings({
+    coordinates: cropper.getCoordinates(),
+    transforms: cropper.getTransforms()
+  });
+}
+
+function createDefaultCropCoordinates(savedCoordinates: Coordinates | null, targetAspect: number) {
+  return (state: CropperState): Coordinates => {
+    if (savedCoordinates) {
+      return fitCoordinatesToAspect(savedCoordinates, targetAspect, state.imageSize.width, state.imageSize.height);
+    }
+
+    return createCenteredCropCoordinates(state.imageSize.width, state.imageSize.height, targetAspect, 0.8);
+  };
+}
+
+function createCenteredCropCoordinates(
+  sourceWidth: number,
+  sourceHeight: number,
+  targetAspect: number,
+  scale: number
+): Coordinates {
+  const safeScale = Math.min(0.9, Math.max(0.2, scale));
+  const maxWidth = sourceWidth * safeScale;
+  const maxHeight = sourceHeight * safeScale;
+  let width = maxWidth;
+  let height = width / targetAspect;
+
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * targetAspect;
   }
 
-  return Math.min(100, Math.max(-100, Number.isFinite(value) ? value : 0));
+  return {
+    height,
+    left: (sourceWidth - width) / 2,
+    top: (sourceHeight - height) / 2,
+    width
+  };
+}
+
+function fitCoordinatesToAspect(
+  coordinates: Coordinates,
+  targetAspect: number,
+  sourceWidth: number,
+  sourceHeight: number
+): Coordinates {
+  if (Math.abs(coordinates.width / coordinates.height - targetAspect) < 0.001) {
+    return {
+      height: Math.max(1, coordinates.height),
+      left: coordinates.left,
+      top: coordinates.top,
+      width: Math.max(1, coordinates.width)
+    };
+  }
+
+  const centerX = coordinates.left + coordinates.width / 2;
+  const centerY = coordinates.top + coordinates.height / 2;
+  let width = Math.min(coordinates.width, sourceWidth);
+  let height = width / targetAspect;
+
+  if (height > Math.min(coordinates.height, sourceHeight)) {
+    height = Math.min(coordinates.height, sourceHeight);
+    width = height * targetAspect;
+  }
+
+  width = Math.min(width, sourceWidth);
+  height = Math.min(height, sourceHeight);
+
+  const left = Math.min(sourceWidth - width, Math.max(0, centerX - width / 2));
+  const top = Math.min(sourceHeight - height, Math.max(0, centerY - height / 2));
+
+  return {
+    height: Math.max(1, height),
+    left,
+    top,
+    width: Math.max(1, width)
+  };
 }
 
 function createArtworkId(): string {

@@ -1,13 +1,14 @@
 "use client";
 
+import { prepareSource, updateCanvas, type Coordinates, type Transforms } from "advanced-cropper";
+
 import { getFaceSpecs, type CartonDimensions, type FaceKey } from "@/lib/carton";
 
 const MAX_LONG_EDGE = 1400;
 
 export type CropSettings = {
-  zoom: number;
-  offsetX: number;
-  offsetY: number;
+  coordinates: Coordinates | null;
+  transforms: Transforms;
 };
 
 export type ArtworkImport = {
@@ -17,9 +18,14 @@ export type ArtworkImport = {
 };
 
 export const DEFAULT_CROP_SETTINGS: CropSettings = {
-  zoom: 1,
-  offsetX: 0,
-  offsetY: 0
+  coordinates: null,
+  transforms: {
+    flip: {
+      horizontal: false,
+      vertical: false
+    },
+    rotate: 0
+  }
 };
 
 export async function importArtworkFile(file: File): Promise<ArtworkImport> {
@@ -39,7 +45,14 @@ export async function cropArtworkToFace(
   settings: CropSettings = DEFAULT_CROP_SETTINGS
 ): Promise<string> {
   const image = await loadImage(sourceUrl);
-  return cropToFace(image, face, dimensions, settings);
+  return cropToFace(image, face, dimensions, normalizeCropSettings(settings));
+}
+
+export function normalizeCropSettings(settings: Partial<CropSettings> | undefined | null): CropSettings {
+  return {
+    coordinates: normalizeCoordinates(settings?.coordinates),
+    transforms: normalizeTransforms(settings?.transforms)
+  };
 }
 
 function readImageFile(file: File): Promise<string> {
@@ -100,44 +113,157 @@ function cropToFace(
 ): string {
   const spec = getFaceSpecs(dimensions)[face];
   const targetAspect = spec.artworkWidth / spec.artworkHeight;
-  const sourceAspect = image.naturalWidth / image.naturalHeight;
-  let sourceX = 0;
-  let sourceY = 0;
-  let sourceWidth = image.naturalWidth;
-  let sourceHeight = image.naturalHeight;
-  const zoom = Math.min(3, Math.max(1, settings.zoom));
-
-  if (sourceAspect > targetAspect) {
-    sourceWidth = sourceHeight * targetAspect;
-  } else {
-    sourceHeight = sourceWidth / targetAspect;
-  }
-
-  sourceWidth /= zoom;
-  sourceHeight /= zoom;
-  sourceX = panToSourceCoordinate(image.naturalWidth, sourceWidth, settings.offsetX);
-  sourceY = panToSourceCoordinate(image.naturalHeight, sourceHeight, settings.offsetY);
-
   const scale = MAX_LONG_EDGE / Math.max(spec.artworkWidth, spec.artworkHeight);
   const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
+  const sourceCanvas = document.createElement("canvas");
+  const transformedSource = getTransformedSource(sourceCanvas, image, settings.transforms);
+  const coordinates = fitCoordinatesToAspect(
+    settings.coordinates ?? getCenteredCoordinates(transformedSource.width, transformedSource.height, targetAspect),
+    targetAspect,
+    transformedSource.width,
+    transformedSource.height
+  );
 
-  if (!context) {
+  if (!canvas.getContext("2d")) {
     throw new Error("This browser could not crop the artwork.");
   }
 
-  canvas.width = Math.round(spec.artworkWidth * scale);
-  canvas.height = Math.round(spec.artworkHeight * scale);
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "high";
-  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+  updateCanvas(
+    canvas,
+    transformedSource.source,
+    coordinates,
+    {
+      height: Math.round(spec.artworkHeight * scale),
+      width: Math.round(spec.artworkWidth * scale)
+    },
+    {
+      fillColor: "#ffffff",
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high"
+    }
+  );
 
   return canvas.toDataURL("image/png");
 }
 
-function panToSourceCoordinate(sourceSize: number, cropSize: number, offset: number): number {
-  const maxOffset = Math.max(0, sourceSize - cropSize);
-  const normalizedOffset = (Math.min(100, Math.max(-100, offset)) + 100) / 200;
+function getTransformedSource(
+  canvas: HTMLCanvasElement,
+  image: HTMLImageElement,
+  transforms: Transforms
+): { source: HTMLCanvasElement | HTMLImageElement; width: number; height: number } {
+  if (transforms.rotate === 0 && !transforms.flip.horizontal && !transforms.flip.vertical) {
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight
+    };
+  }
 
-  return maxOffset * normalizedOffset;
+  const source = prepareSource(canvas, image, transforms);
+
+  return {
+    source,
+    width: source.width,
+    height: source.height
+  };
+}
+
+function getCenteredCoordinates(width: number, height: number, targetAspect: number): Coordinates {
+  const sourceAspect = width / height;
+  const cropWidth = sourceAspect > targetAspect ? height * targetAspect : width;
+  const cropHeight = sourceAspect > targetAspect ? height : width / targetAspect;
+
+  return {
+    height: cropHeight,
+    left: (width - cropWidth) / 2,
+    top: (height - cropHeight) / 2,
+    width: cropWidth
+  };
+}
+
+function fitCoordinatesToAspect(
+  coordinates: Coordinates,
+  targetAspect: number,
+  sourceWidth: number,
+  sourceHeight: number
+): Coordinates {
+  if (Math.abs(coordinates.width / coordinates.height - targetAspect) < 0.001) {
+    return {
+      height: Math.max(1, coordinates.height),
+      left: coordinates.left,
+      top: coordinates.top,
+      width: Math.max(1, coordinates.width)
+    };
+  }
+
+  const centerX = coordinates.left + coordinates.width / 2;
+  const centerY = coordinates.top + coordinates.height / 2;
+  let width = coordinates.width;
+  let height = width / targetAspect;
+
+  if (height > coordinates.height) {
+    height = coordinates.height;
+    width = height * targetAspect;
+  }
+
+  width = Math.min(width, sourceWidth);
+  height = Math.min(height, sourceHeight);
+
+  if (width / height > targetAspect) {
+    width = height * targetAspect;
+  } else {
+    height = width / targetAspect;
+  }
+
+  const left = Math.min(sourceWidth - width, Math.max(0, centerX - width / 2));
+  const top = Math.min(sourceHeight - height, Math.max(0, centerY - height / 2));
+
+  return {
+    height: Math.max(1, height),
+    left,
+    top,
+    width: Math.max(1, width)
+  };
+}
+
+function normalizeCoordinates(value: unknown): Coordinates | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<Coordinates>;
+  const width = Number(candidate.width);
+  const height = Number(candidate.height);
+  const left = Number(candidate.left);
+  const top = Number(candidate.top);
+
+  if (![width, height, left, top].every(Number.isFinite) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return { height, left, top, width };
+}
+
+function normalizeTransforms(value: unknown): Transforms {
+  if (!value || typeof value !== "object") {
+    return DEFAULT_CROP_SETTINGS.transforms;
+  }
+
+  const candidate = value as Partial<Transforms>;
+
+  return {
+    flip: {
+      horizontal: Boolean(candidate.flip?.horizontal),
+      vertical: Boolean(candidate.flip?.vertical)
+    },
+    rotate: normalizeRotation(Number(candidate.rotate))
+  };
+}
+
+function normalizeRotation(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return ((Math.round(value / 90) * 90) % 360 + 360) % 360;
 }
