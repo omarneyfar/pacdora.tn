@@ -3,27 +3,77 @@ import { promises as fs } from "fs";
 import path from "path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { FACE_KEYS, type CartonDimensions, type FaceKey, type Project, isFaceKey, normalizeDimensions } from "@/lib/carton";
+import {
+  FACE_KEYS,
+  isFaceKey,
+  normalizeDimensions,
+  type ArtworkSourceType,
+  type CartonDimensions,
+  type FaceKey,
+  type Project,
+  type ProjectArtworkSource,
+  type ProjectCropSettings,
+  type ProjectFaceAsset,
+  type ProjectWorkspace
+} from "@/lib/carton";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage", "projects");
 const LOCAL_DB_FILE = path.join(process.cwd(), "storage", "projects-db.json");
 const PROJECT_ID_PATTERN = /^[a-zA-Z0-9_-]{10,40}$/;
+const ASSET_ID_PATTERN = /^[a-zA-Z0-9_-]{1,80}$/;
 const FACE_DATA_PATTERN = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/;
+const IMAGE_DATA_PATTERN = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$/;
 const MAX_FACE_BYTES = 5 * 1024 * 1024;
+const MAX_ASSET_BYTES = 12 * 1024 * 1024;
 const SUPABASE_BUCKET = process.env.SUPABASE_PROJECTS_BUCKET ?? "project-faces";
 const SUPABASE_TABLE = process.env.SUPABASE_PROJECTS_TABLE ?? "projects";
+const DEFAULT_PROJECT_NAME = "Untitled carton";
 let localDbWriteQueue = Promise.resolve();
 
 export type ProjectInput = {
+  name?: string;
   dimensions?: Partial<CartonDimensions>;
   faces?: Partial<Record<FaceKey, string>>;
+  workspace?: ProjectWorkspaceInput;
+};
+
+export type ProjectImage = {
+  buffer: Buffer;
+  contentType: string;
+};
+
+type ProjectWorkspaceInput = {
+  sources?: ProjectArtworkSourceInput[];
+  selectedSourceId?: string;
+  faceAssets?: Partial<Record<FaceKey, ProjectFaceAssetInput>>;
+};
+
+type ProjectArtworkSourceInput = {
+  id?: string;
+  dataUrl?: string;
+  fileName?: string;
+  mimeType?: string;
+  sourceType?: ArtworkSourceType;
+  url?: string;
+};
+
+type ProjectFaceAssetInput = {
+  sourceId?: string;
+  dataUrl?: string;
+  fileName?: string;
+  sourceType?: ArtworkSourceType;
+  crop?: Partial<ProjectCropSettings>;
+  url?: string;
 };
 
 type ProjectRow = {
   id: string;
+  name?: string | null;
   dimensions: Partial<CartonDimensions>;
   faces: Partial<Record<FaceKey, string>>;
+  workspace?: unknown;
   created_at: string;
+  updated_at?: string | null;
 };
 
 type LocalProjectsDb = {
@@ -36,6 +86,14 @@ export async function createProject(input: ProjectInput): Promise<Project> {
   }
 
   return createFileProject(input);
+}
+
+export async function updateProject(id: string, input: ProjectInput): Promise<Project | null> {
+  if (isSupabaseConfigured()) {
+    return updateSupabaseProject(id, input);
+  }
+
+  return updateFileProject(id, input);
 }
 
 export async function readProject(id: string): Promise<Project | null> {
@@ -54,29 +112,60 @@ export async function readFaceImage(id: string, face: string): Promise<Buffer | 
   return readFileFaceImage(id, face);
 }
 
+export async function readProjectAssetImage(id: string, assetId: string): Promise<ProjectImage | null> {
+  if (isSupabaseConfigured()) {
+    return readSupabaseAssetImage(id, assetId);
+  }
+
+  return readFileAssetImage(id, assetId);
+}
+
 async function createFileProject(input: ProjectInput): Promise<Project> {
   const id = await createUniqueId();
+  return writeFileProjectSnapshot(id, input);
+}
+
+async function updateFileProject(id: string, input: ProjectInput): Promise<Project | null> {
+  if (!isValidProjectId(id)) {
+    return null;
+  }
+
+  const existing = await readFileProject(id);
+  if (!existing) {
+    return null;
+  }
+
+  return writeFileProjectSnapshot(id, input, existing);
+}
+
+async function writeFileProjectSnapshot(id: string, input: ProjectInput, existing?: Project): Promise<Project> {
   const projectDir = getProjectDir(id);
   await fs.mkdir(projectDir, { recursive: true });
 
-  const faces: Partial<Record<FaceKey, string>> = {};
+  const faces =
+    input.faces === undefined
+      ? (existing?.faces ?? {})
+      : await writeFaceImages(id, input.faces, async (face, buffer) => {
+          await fs.writeFile(path.join(projectDir, `${face}.png`), buffer);
+        });
 
-  for (const face of FACE_KEYS) {
-    const value = input.faces?.[face];
-    if (!value) {
-      continue;
-    }
+  const workspace =
+    input.workspace === undefined
+      ? existing?.workspace
+      : await prepareWorkspace(id, input.workspace, faces, existing?.workspace, async (assetId, image) => {
+          await fs.mkdir(path.join(projectDir, "assets"), { recursive: true });
+          await fs.writeFile(path.join(projectDir, "assets", assetId), image.buffer);
+        });
 
-    const buffer = decodeFaceImage(value);
-    await fs.writeFile(path.join(projectDir, `${face}.png`), buffer);
-    faces[face] = getFaceUrl(id, face);
-  }
-
+  const createdAt = existing?.createdAt ?? new Date().toISOString();
   const project: Project = {
     id,
-    dimensions: normalizeDimensions(input.dimensions),
+    name: normalizeProjectName(input.name, existing?.name),
+    dimensions: normalizeDimensions(input.dimensions ?? existing?.dimensions),
     faces,
-    createdAt: new Date().toISOString()
+    createdAt,
+    updatedAt: new Date().toISOString(),
+    ...(workspace ? { workspace } : {})
   };
 
   await fs.writeFile(path.join(projectDir, "project.json"), JSON.stringify(project, null, 2), "utf8");
@@ -97,7 +186,11 @@ async function readFileProject(id: string): Promise<Project | null> {
 
   try {
     const content = await fs.readFile(path.join(getProjectDir(id), "project.json"), "utf8");
-    const project = JSON.parse(content) as Project;
+    const project = normalizeProjectRecord(JSON.parse(content), id);
+    if (!project) {
+      return null;
+    }
+
     await saveProjectToLocalDb(project);
     return project;
   } catch (error) {
@@ -125,38 +218,95 @@ async function readFileFaceImage(id: string, face: string): Promise<Buffer | nul
   }
 }
 
+async function readFileAssetImage(id: string, assetId: string): Promise<ProjectImage | null> {
+  if (!isValidProjectId(id) || !isValidAssetId(assetId)) {
+    return null;
+  }
+
+  const project = await readFileProject(id);
+  const source = project?.workspace?.sources.find((candidate) => candidate.id === assetId);
+  if (!source) {
+    return null;
+  }
+
+  try {
+    return {
+      buffer: await fs.readFile(path.join(getProjectDir(id), "assets", assetId)),
+      contentType: source.mimeType
+    };
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 async function createSupabaseProject(input: ProjectInput): Promise<Project> {
   const supabase = getSupabaseClient();
   await ensureSupabaseBucket(supabase);
 
   const id = await createUniqueSupabaseId(supabase);
-  const faces: Partial<Record<FaceKey, string>> = {};
+  return writeSupabaseProjectSnapshot(id, input);
+}
 
-  for (const face of FACE_KEYS) {
-    const value = input.faces?.[face];
-    if (!value) {
-      continue;
-    }
-
-    const buffer = decodeFaceImage(value);
-    const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(getSupabaseFacePath(id, face), buffer, {
-      cacheControl: "31536000",
-      contentType: "image/png",
-      upsert: false
-    });
-
-    if (error) {
-      throw new Error(`Could not upload ${face} artwork to Supabase Storage: ${error.message}`);
-    }
-
-    faces[face] = getFaceUrl(id, face);
+async function updateSupabaseProject(id: string, input: ProjectInput): Promise<Project | null> {
+  if (!isValidProjectId(id)) {
+    return null;
   }
 
+  const existing = await readSupabaseProject(id);
+  if (!existing) {
+    return null;
+  }
+
+  return writeSupabaseProjectSnapshot(id, input, existing);
+}
+
+async function writeSupabaseProjectSnapshot(id: string, input: ProjectInput, existing?: Project): Promise<Project> {
+  const supabase = getSupabaseClient();
+  await ensureSupabaseBucket(supabase);
+
+  const faces =
+    input.faces === undefined
+      ? (existing?.faces ?? {})
+      : await writeFaceImages(id, input.faces, async (face, buffer) => {
+          const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(getSupabaseFacePath(id, face), buffer, {
+            cacheControl: "31536000",
+            contentType: "image/png",
+            upsert: true
+          });
+
+          if (error) {
+            throw new Error(`Could not upload ${face} artwork to Supabase Storage: ${error.message}`);
+          }
+        });
+
+  const workspace =
+    input.workspace === undefined
+      ? existing?.workspace
+      : await prepareWorkspace(id, input.workspace, faces, existing?.workspace, async (assetId, image) => {
+          const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(getSupabaseAssetPath(id, assetId), image.buffer, {
+            cacheControl: "31536000",
+            contentType: image.contentType,
+            upsert: true
+          });
+
+          if (error) {
+            throw new Error(`Could not upload source artwork to Supabase Storage: ${error.message}`);
+          }
+        });
+
+  const createdAt = existing?.createdAt ?? new Date().toISOString();
   const project: Project = {
     id,
-    dimensions: normalizeDimensions(input.dimensions),
+    name: normalizeProjectName(input.name, existing?.name),
+    dimensions: normalizeDimensions(input.dimensions ?? existing?.dimensions),
     faces,
-    createdAt: new Date().toISOString()
+    createdAt,
+    updatedAt: new Date().toISOString(),
+    ...(workspace ? { workspace } : {})
   };
 
   await writeSupabaseProject(project);
@@ -165,18 +315,24 @@ async function createSupabaseProject(input: ProjectInput): Promise<Project> {
 
 async function writeSupabaseProject(project: Project): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from(SUPABASE_TABLE).insert({
-    created_at: project.createdAt,
-    dimensions: project.dimensions,
-    faces: project.faces,
-    id: project.id
-  });
+  const { error } = await supabase.from(SUPABASE_TABLE).upsert(
+    {
+      created_at: project.createdAt,
+      dimensions: project.dimensions,
+      faces: project.faces,
+      id: project.id,
+      name: project.name,
+      updated_at: project.updatedAt,
+      workspace: project.workspace ?? null
+    },
+    { onConflict: "id" }
+  );
 
   if (!error) {
     return;
   }
 
-  if (!isMissingSupabaseTableError(error)) {
+  if (!isMissingSupabaseTableOrColumnError(error)) {
     throw new Error(`Could not save project metadata to Supabase: ${error.message}`);
   }
 
@@ -191,13 +347,13 @@ async function readSupabaseProject(id: string): Promise<Project | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from(SUPABASE_TABLE)
-    .select("id, dimensions, faces, created_at")
+    .select("id, name, dimensions, faces, workspace, created_at, updated_at")
     .eq("id", id)
     .maybeSingle<ProjectRow>();
 
   if (error) {
-    if (isMissingSupabaseTableError(error)) {
-      return readSupabaseProjectJson(id);
+    if (isMissingSupabaseTableOrColumnError(error)) {
+      return (await readSupabaseProjectJson(id)) ?? readSupabaseLegacyProject(id);
     }
 
     throw new Error(`Could not read project from Supabase: ${error.message}`);
@@ -207,12 +363,26 @@ async function readSupabaseProject(id: string): Promise<Project | null> {
     return readSupabaseProjectJson(id);
   }
 
-  return {
-    id: data.id,
-    dimensions: normalizeDimensions(data.dimensions),
-    faces: normalizeFaces(data.faces),
-    createdAt: data.created_at
-  };
+  return projectFromRow(data) ?? readSupabaseProjectJson(id);
+}
+
+async function readSupabaseLegacyProject(id: string): Promise<Project | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from(SUPABASE_TABLE)
+    .select("id, dimensions, faces, created_at")
+    .eq("id", id)
+    .maybeSingle<ProjectRow>();
+
+  if (error) {
+    if (isMissingSupabaseTableOrColumnError(error)) {
+      return null;
+    }
+
+    throw new Error(`Could not read legacy project from Supabase: ${error.message}`);
+  }
+
+  return data ? projectFromRow(data) : null;
 }
 
 async function readSupabaseFaceImage(id: string, face: string): Promise<Buffer | null> {
@@ -224,7 +394,7 @@ async function readSupabaseFaceImage(id: string, face: string): Promise<Buffer |
   const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download(getSupabaseFacePath(id, face));
 
   if (error) {
-    if ("statusCode" in error && String(error.statusCode) === "404") {
+    if (isMissingSupabaseObjectError(error)) {
       return null;
     }
 
@@ -232,6 +402,34 @@ async function readSupabaseFaceImage(id: string, face: string): Promise<Buffer |
   }
 
   return Buffer.from(await data.arrayBuffer());
+}
+
+async function readSupabaseAssetImage(id: string, assetId: string): Promise<ProjectImage | null> {
+  if (!isValidProjectId(id) || !isValidAssetId(assetId)) {
+    return null;
+  }
+
+  const project = await readSupabaseProject(id);
+  const source = project?.workspace?.sources.find((candidate) => candidate.id === assetId);
+  if (!source) {
+    return null;
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download(getSupabaseAssetPath(id, assetId));
+
+  if (error) {
+    if (isMissingSupabaseObjectError(error)) {
+      return null;
+    }
+
+    throw new Error(`Could not read source artwork from Supabase Storage: ${error.message}`);
+  }
+
+  return {
+    buffer: Buffer.from(await data.arrayBuffer()),
+    contentType: source.mimeType
+  };
 }
 
 async function writeSupabaseProjectJson(project: Project): Promise<void> {
@@ -264,17 +462,103 @@ async function readSupabaseProjectJson(id: string): Promise<Project | null> {
     throw new Error(`Could not read project metadata from Supabase Storage: ${error.message}`);
   }
 
-  const parsed = JSON.parse(await data.text()) as Partial<Project>;
+  return normalizeProjectRecord(JSON.parse(await data.text()), id);
+}
 
-  if (parsed.id !== id || typeof parsed.createdAt !== "string") {
-    return null;
+async function writeFaceImages(
+  id: string,
+  inputFaces: Partial<Record<FaceKey, string>>,
+  writeImage: (face: FaceKey, buffer: Buffer) => Promise<void>
+): Promise<Partial<Record<FaceKey, string>>> {
+  const faces: Partial<Record<FaceKey, string>> = {};
+
+  for (const face of FACE_KEYS) {
+    const value = inputFaces[face];
+    if (!value) {
+      continue;
+    }
+
+    if (isOwnFaceUrl(id, face, value)) {
+      faces[face] = getFaceUrl(id, face);
+      continue;
+    }
+
+    const buffer = decodeFaceImage(value);
+    await writeImage(face, buffer);
+    faces[face] = getFaceUrl(id, face);
   }
 
+  return faces;
+}
+
+async function prepareWorkspace(
+  id: string,
+  input: ProjectWorkspaceInput,
+  faces: Partial<Record<FaceKey, string>>,
+  existing: ProjectWorkspace | undefined,
+  writeAsset: (assetId: string, image: ProjectImage) => Promise<void>
+): Promise<ProjectWorkspace> {
+  const existingSources = new Map((existing?.sources ?? []).map((source) => [source.id, source]));
+  const sources: ProjectArtworkSource[] = [];
+
+  for (const rawSource of input.sources ?? []) {
+    const sourceId = normalizeAssetId(rawSource.id);
+    if (!sourceId) {
+      throw new Error("Artwork source is missing a valid ID.");
+    }
+
+    const existingSource = existingSources.get(sourceId);
+    const sourceValue = rawSource.dataUrl ?? rawSource.url ?? existingSource?.url;
+    let mimeType = normalizeImageMimeType(rawSource.mimeType ?? existingSource?.mimeType);
+
+    if (sourceValue && isImageDataUrl(sourceValue)) {
+      const image = decodeProjectAsset(sourceValue);
+      await writeAsset(sourceId, image);
+      mimeType = image.contentType;
+    } else if (!sourceValue || !isOwnAssetUrl(id, sourceId, sourceValue)) {
+      throw new Error("Artwork source image is missing. Upload the source image again.");
+    }
+
+    sources.push({
+      id: sourceId,
+      fileName: normalizeFileName(rawSource.fileName, existingSource?.fileName ?? "Artwork"),
+      mimeType,
+      sourceType: normalizeSourceType(rawSource.sourceType ?? existingSource?.sourceType),
+      url: getAssetUrl(id, sourceId)
+    });
+  }
+
+  const sourceById = new Map(sources.map((source) => [source.id, source]));
+  const faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>> = {};
+
+  for (const face of FACE_KEYS) {
+    const rawAsset = input.faceAssets?.[face];
+    const faceUrl = faces[face];
+    if (!rawAsset?.sourceId || !faceUrl) {
+      continue;
+    }
+
+    const source = sourceById.get(rawAsset.sourceId);
+    if (!source) {
+      continue;
+    }
+
+    faceAssets[face] = {
+      sourceId: source.id,
+      fileName: normalizeFileName(rawAsset.fileName, source.fileName),
+      sourceType: normalizeSourceType(rawAsset.sourceType ?? source.sourceType),
+      crop: normalizeCropSettings(rawAsset.crop),
+      url: getFaceUrl(id, face)
+    };
+  }
+
+  const selectedSourceId =
+    input.selectedSourceId && sourceById.has(input.selectedSourceId) ? input.selectedSourceId : sources[0]?.id;
+
   return {
-    id,
-    dimensions: normalizeDimensions(parsed.dimensions),
-    faces: normalizeFaces(parsed.faces),
-    createdAt: parsed.createdAt
+    sources,
+    ...(selectedSourceId ? { selectedSourceId } : {}),
+    faceAssets
   };
 }
 
@@ -290,6 +574,23 @@ function decodeFaceImage(dataUrl: string): Buffer {
   }
 
   return buffer;
+}
+
+function decodeProjectAsset(dataUrl: string): ProjectImage {
+  const match = dataUrl.match(IMAGE_DATA_PATTERN);
+  if (!match) {
+    throw new Error("Source artwork must be a PNG or JPG image.");
+  }
+
+  const buffer = Buffer.from(match[2], "base64");
+  if (buffer.length > MAX_ASSET_BYTES) {
+    throw new Error("Source artwork is too large. Please use an image under 12 MB.");
+  }
+
+  return {
+    buffer,
+    contentType: match[1]
+  };
 }
 
 async function createUniqueId(): Promise<string> {
@@ -316,7 +617,7 @@ async function createUniqueSupabaseId(supabase: SupabaseClient): Promise<string>
     const id = randomBytes(9).toString("base64url");
     const { data, error } = await supabase.from(SUPABASE_TABLE).select("id").eq("id", id).maybeSingle();
 
-    if (error && !isMissingSupabaseTableError(error)) {
+    if (error && !isMissingSupabaseTableOrColumnError(error)) {
       throw new Error(`Could not check Supabase project ID: ${error.message}`);
     }
 
@@ -333,6 +634,163 @@ async function createUniqueSupabaseId(supabase: SupabaseClient): Promise<string>
   throw new Error("Could not create a unique project ID.");
 }
 
+function projectFromRow(row: ProjectRow): Project | null {
+  return normalizeProjectRecord(
+    {
+      createdAt: row.created_at,
+      dimensions: row.dimensions,
+      faces: row.faces,
+      id: row.id,
+      name: row.name ?? undefined,
+      updatedAt: row.updated_at ?? undefined,
+      workspace: row.workspace
+    },
+    row.id
+  );
+}
+
+function normalizeProjectRecord(value: unknown, fallbackId?: string): Project | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<Project>;
+  const id = typeof candidate.id === "string" ? candidate.id : fallbackId;
+  const createdAt = typeof candidate.createdAt === "string" ? candidate.createdAt : undefined;
+
+  if (!id || !isValidProjectId(id) || !createdAt) {
+    return null;
+  }
+
+  const faces = normalizeFaces(candidate.faces);
+
+  return {
+    id,
+    name: normalizeProjectName(candidate.name),
+    dimensions: normalizeDimensions(candidate.dimensions),
+    faces,
+    createdAt,
+    updatedAt: typeof candidate.updatedAt === "string" ? candidate.updatedAt : createdAt,
+    ...(candidate.workspace ? { workspace: normalizeWorkspace(candidate.workspace, id, faces) } : {})
+  };
+}
+
+function normalizeWorkspace(
+  value: unknown,
+  projectId: string,
+  faces: Partial<Record<FaceKey, string>>
+): ProjectWorkspace | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const candidate = value as Partial<ProjectWorkspace>;
+  const sources: ProjectArtworkSource[] = Array.isArray(candidate.sources)
+    ? candidate.sources.flatMap((source) => normalizeStoredSource(source, projectId))
+    : [];
+  const sourceIds = new Set(sources.map((source) => source.id));
+  const selectedSourceId =
+    typeof candidate.selectedSourceId === "string" && sourceIds.has(candidate.selectedSourceId)
+      ? candidate.selectedSourceId
+      : sources[0]?.id;
+  const faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>> = {};
+  const storedFaceAssets =
+    candidate.faceAssets && typeof candidate.faceAssets === "object"
+      ? (candidate.faceAssets as Partial<Record<FaceKey, Partial<ProjectFaceAsset>>>)
+      : {};
+
+  for (const face of FACE_KEYS) {
+    const asset = storedFaceAssets[face];
+    if (!asset?.sourceId || !sourceIds.has(asset.sourceId) || !faces[face]) {
+      continue;
+    }
+
+    const source = sources.find((candidateSource) => candidateSource.id === asset.sourceId);
+    faceAssets[face] = {
+      sourceId: asset.sourceId,
+      fileName: normalizeFileName(asset.fileName, source?.fileName ?? "Artwork"),
+      sourceType: normalizeSourceType(asset.sourceType ?? source?.sourceType),
+      crop: normalizeCropSettings(asset.crop),
+      url: getFaceUrl(projectId, face)
+    };
+  }
+
+  return {
+    sources,
+    ...(selectedSourceId ? { selectedSourceId } : {}),
+    faceAssets
+  };
+}
+
+function normalizeStoredSource(value: unknown, projectId: string): ProjectArtworkSource[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const source = value as Partial<ProjectArtworkSource>;
+  const id = normalizeAssetId(source.id);
+  if (!id) {
+    return [];
+  }
+
+  return [
+    {
+      id,
+      fileName: normalizeFileName(source.fileName, "Artwork"),
+      mimeType: normalizeImageMimeType(source.mimeType),
+      sourceType: normalizeSourceType(source.sourceType),
+      url: getAssetUrl(projectId, id)
+    }
+  ];
+}
+
+function normalizeCropSettings(value: unknown): ProjectCropSettings {
+  const candidate = value && typeof value === "object" ? (value as Partial<ProjectCropSettings>) : {};
+  const coordinates =
+    candidate.coordinates && typeof candidate.coordinates === "object"
+      ? normalizeCoordinates(candidate.coordinates)
+      : null;
+  const transforms =
+    candidate.transforms && typeof candidate.transforms === "object" ? candidate.transforms : undefined;
+
+  return {
+    coordinates,
+    transforms: {
+      flip: {
+        horizontal: Boolean(transforms?.flip?.horizontal),
+        vertical: Boolean(transforms?.flip?.vertical)
+      },
+      rotate: normalizeRotation(Number(transforms?.rotate))
+    }
+  };
+}
+
+function normalizeCoordinates(value: unknown): ProjectCropSettings["coordinates"] {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<NonNullable<ProjectCropSettings["coordinates"]>>;
+  const width = Number(candidate.width);
+  const height = Number(candidate.height);
+  const left = Number(candidate.left);
+  const top = Number(candidate.top);
+
+  if (![width, height, left, top].every(Number.isFinite) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return { height, left, top, width };
+}
+
+function normalizeRotation(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return ((Math.round(value / 90) * 90) % 360 + 360) % 360;
+}
+
 function getProjectDir(id: string): string {
   return path.join(STORAGE_ROOT, id);
 }
@@ -341,8 +799,16 @@ function getSupabaseFacePath(id: string, face: FaceKey): string {
   return `${id}/${face}.png`;
 }
 
+function getSupabaseAssetPath(id: string, assetId: string): string {
+  return `${id}/assets/${assetId}`;
+}
+
 function getFaceUrl(id: string, face: FaceKey): string {
   return `/api/project-faces/${id}/${face}`;
+}
+
+function getAssetUrl(id: string, assetId: string): string {
+  return `/api/project-assets/${id}/${assetId}`;
 }
 
 function getSupabaseProjectPath(id: string): string {
@@ -408,17 +874,11 @@ function normalizeLocalProjects(value: unknown): Record<string, Project> {
 
   const projects: Record<string, Project> = {};
 
-  for (const [id, project] of Object.entries(value as Record<string, Partial<Project>>)) {
-    if (!isValidProjectId(id) || !project || typeof project.createdAt !== "string") {
-      continue;
+  for (const [id, project] of Object.entries(value as Record<string, unknown>)) {
+    const normalizedProject = normalizeProjectRecord(project, id);
+    if (normalizedProject) {
+      projects[id] = normalizedProject;
     }
-
-    projects[id] = {
-      id,
-      dimensions: normalizeDimensions(project.dimensions),
-      faces: normalizeFaces(project.faces),
-      createdAt: project.createdAt
-    };
   }
 
   return projects;
@@ -426,6 +886,14 @@ function normalizeLocalProjects(value: unknown): Record<string, Project> {
 
 function isValidProjectId(id: string): boolean {
   return PROJECT_ID_PATTERN.test(id);
+}
+
+function isValidAssetId(id: string): boolean {
+  return ASSET_ID_PATTERN.test(id);
+}
+
+function normalizeAssetId(value: unknown): string | null {
+  return typeof value === "string" && isValidAssetId(value) ? value : null;
 }
 
 function normalizeFaces(value: unknown): Partial<Record<FaceKey, string>> {
@@ -444,6 +912,45 @@ function normalizeFaces(value: unknown): Partial<Record<FaceKey, string>> {
   }
 
   return nextFaces;
+}
+
+function normalizeProjectName(value: unknown, fallback = DEFAULT_PROJECT_NAME): string {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  const name = candidate || fallback;
+  return name.slice(0, 80);
+}
+
+function normalizeFileName(value: unknown, fallback: string): string {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  return (candidate || fallback).slice(0, 140);
+}
+
+function normalizeSourceType(value: unknown): ArtworkSourceType {
+  return value === "pdf" ? "pdf" : "image";
+}
+
+function normalizeImageMimeType(value: unknown): string {
+  return value === "image/jpeg" ? "image/jpeg" : "image/png";
+}
+
+function isImageDataUrl(value: string): boolean {
+  return IMAGE_DATA_PATTERN.test(value);
+}
+
+function isOwnFaceUrl(projectId: string, face: FaceKey, value: string): boolean {
+  return getUrlPath(value) === getFaceUrl(projectId, face) || getUrlPath(value) === `/api/projects/${projectId}/faces/${face}`;
+}
+
+function isOwnAssetUrl(projectId: string, assetId: string, value: string): boolean {
+  return getUrlPath(value) === getAssetUrl(projectId, assetId);
+}
+
+function getUrlPath(value: string): string {
+  try {
+    return new URL(value, "http://local.foldview").pathname;
+  } catch {
+    return value;
+  }
 }
 
 function isSupabaseConfigured(): boolean {
@@ -471,9 +978,17 @@ function getSupabaseUrl(): string | undefined {
   return rawUrl?.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 }
 
-function isMissingSupabaseTableError(error: unknown): boolean {
+function isMissingSupabaseTableOrColumnError(error: unknown): boolean {
   const candidate = error as { code?: string; message?: string };
-  return candidate.code === "PGRST205" || candidate.message?.includes("Could not find the table") === true;
+  const message = candidate.message?.toLowerCase() ?? "";
+
+  return (
+    candidate.code === "PGRST204" ||
+    candidate.code === "PGRST205" ||
+    message.includes("could not find the table") ||
+    message.includes("could not find the") ||
+    message.includes("column")
+  );
 }
 
 function isMissingSupabaseObjectError(error: unknown): boolean {

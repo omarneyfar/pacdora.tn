@@ -11,11 +11,54 @@ export type CartonDimensions = {
   depth: number;
 };
 
+export type ArtworkSourceType = "image" | "pdf";
+
+export type ProjectCropSettings = {
+  coordinates: {
+    height: number;
+    left: number;
+    top: number;
+    width: number;
+  } | null;
+  transforms: {
+    flip: {
+      horizontal: boolean;
+      vertical: boolean;
+    };
+    rotate: number;
+  };
+};
+
+export type ProjectArtworkSource = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sourceType: ArtworkSourceType;
+  url: string;
+};
+
+export type ProjectFaceAsset = {
+  sourceId: string;
+  fileName: string;
+  sourceType: ArtworkSourceType;
+  crop: ProjectCropSettings;
+  url: string;
+};
+
+export type ProjectWorkspace = {
+  sources: ProjectArtworkSource[];
+  selectedSourceId?: string;
+  faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>>;
+};
+
 export type Project = {
   id: string;
+  name: string;
   dimensions: CartonDimensions;
   faces: Partial<Record<FaceKey, string>>;
   createdAt: string;
+  updatedAt: string;
+  workspace?: ProjectWorkspace;
 };
 
 export type FaceSpec = {

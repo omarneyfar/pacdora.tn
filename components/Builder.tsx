@@ -21,6 +21,7 @@ import {
   Paintbrush,
   RotateCcw,
   RotateCw,
+  Save,
   Trash2,
   Upload,
   ZoomIn,
@@ -63,6 +64,7 @@ type ArtworkSource = {
   id: string;
   dataUrl: string;
   fileName: string;
+  mimeType?: string;
   sourceType: "image" | "pdf";
 };
 
@@ -84,17 +86,22 @@ type CropModalState = {
 
 type ParameterSectionKey = "dimensions" | "dieline" | "library";
 
-export function Builder() {
+export function Builder({ projectId: initialProjectId }: { projectId?: string } = {}) {
+  const [projectId, setProjectId] = useState(initialProjectId ?? "");
+  const [projectName, setProjectName] = useState("Untitled carton");
   const [dimensions, setDimensions] = useState<CartonDimensions>(DEFAULT_CARTON_DIMENSIONS);
   const [sources, setSources] = useState<ArtworkSource[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState("");
   const [faces, setFaces] = useState<FaceAssets>({});
   const [busyFace, setBusyFace] = useState<FaceKey | null>(null);
+  const [isProjectLoading, setIsProjectLoading] = useState(Boolean(initialProjectId));
+  const [isProjectSaving, setIsProjectSaving] = useState(false);
   const [isRecropping, setIsRecropping] = useState(false);
   const [cropModal, setCropModal] = useState<CropModalState | null>(null);
   const [shareUrl, setShareUrl] = useState("");
+  const [saveStatus, setSaveStatus] = useState("");
   const [error, setError] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [openSections, setOpenSections] = useState<Record<ParameterSectionKey, boolean>>({
     dimensions: true,
@@ -112,6 +119,47 @@ export function Builder() {
   useEffect(() => {
     sourcesRef.current = sources;
   }, [sources]);
+
+  useEffect(() => {
+    if (!initialProjectId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadProject() {
+      setIsProjectLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(`/api/projects/${initialProjectId}`);
+
+        if (!response.ok) {
+          throw new Error("This project could not be opened.");
+        }
+
+        const project = (await response.json()) as Project;
+        if (isMounted) {
+          hydrateProject(project);
+          setSaveStatus("Saved");
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError instanceof Error ? loadError.message : "Could not open this project.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsProjectLoading(false);
+        }
+      }
+    }
+
+    loadProject();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialProjectId]);
 
   useEffect(() => {
     if (!skippedInitialDimensionSync.current) {
@@ -196,10 +244,16 @@ export function Builder() {
   );
   const uploadedCount = Object.keys(faces).length;
   const selectedSource = sources.find((source) => source.id === selectedSourceId);
-  const canShare = uploadedCount > 0 && !busyFace && !isSaving && !isRecropping;
+  const canSave = !busyFace && !isProjectLoading && !isProjectSaving && !isRecropping && !isSharing;
+  const canShare = uploadedCount > 0 && canSave;
+
+  function markProjectChanged() {
+    setShareUrl("");
+    setSaveStatus(projectId ? "Unsaved changes" : "");
+  }
 
   function handleDimensionChange(key: keyof CartonDimensions, value: string) {
-    setShareUrl("");
+    markProjectChanged();
     setDimensions((current) =>
       normalizeDimensions({
         ...current,
@@ -218,12 +272,13 @@ export function Builder() {
   async function handleUpload(face: FaceKey, file: File) {
     setBusyFace(face);
     setError("");
-    setShareUrl("");
+    markProjectChanged();
 
     try {
       const imported = await importArtworkFile(file);
       const source: ArtworkSource = {
         id: createArtworkId(),
+        mimeType: file.type === "application/pdf" ? "image/png" : file.type,
         ...imported
       };
 
@@ -247,7 +302,7 @@ export function Builder() {
     const nextCrop = normalizeCropSettings(crop);
     setBusyFace(face);
     setError("");
-    setShareUrl("");
+    markProjectChanged();
 
     try {
       const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, nextCrop);
@@ -278,7 +333,7 @@ export function Builder() {
   }
 
   function clearFace(face: FaceKey) {
-    setShareUrl("");
+    markProjectChanged();
     setFaces((current) => {
       const next = { ...current };
       delete next[face];
@@ -286,38 +341,143 @@ export function Builder() {
     });
   }
 
-  async function createShareLink() {
-    setIsSaving(true);
+  async function saveProject() {
+    setIsProjectSaving(true);
     setError("");
 
     try {
-      const response = await fetch("/api/projects", {
-        method: "POST",
+      const response = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
+        method: projectId ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          dimensions,
-          faces: Object.fromEntries(
-            FACE_KEYS.flatMap((face) => (faces[face] ? [[face, faces[face]?.dataUrl]] : []))
-          )
-        })
+        body: JSON.stringify(createProjectPayload())
       });
 
       if (!response.ok) {
         const problem = (await response.json()) as { error?: string };
-        throw new Error(problem.error ?? "Could not create a share link.");
+        throw new Error(problem.error ?? "Could not save this project.");
       }
 
       const project = (await response.json()) as Project;
+      hydrateProject(project);
+      setSaveStatus("Saved");
+
+      if (!projectId) {
+        window.history.replaceState(null, "", `/project/${project.id}/edit`);
+      }
+
+      return project;
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save this project.");
+      return null;
+    } finally {
+      setIsProjectSaving(false);
+    }
+  }
+
+  async function createShareLink() {
+    setIsSharing(true);
+    setError("");
+
+    try {
+      const project = await saveProject();
+      if (!project) {
+        return;
+      }
+
       const nextUrl = `${window.location.origin}/view/${project.id}`;
       setShareUrl(nextUrl);
       await copyToClipboard(nextUrl);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not create a share link.");
     } finally {
-      setIsSaving(false);
+      setIsSharing(false);
     }
+  }
+
+  function createProjectPayload() {
+    return {
+      name: projectName,
+      dimensions,
+      faces: Object.fromEntries(FACE_KEYS.flatMap((face) => (faces[face] ? [[face, faces[face]?.dataUrl]] : []))),
+      workspace: {
+        sources: sources.map((source) => ({
+          id: source.id,
+          dataUrl: source.dataUrl,
+          fileName: source.fileName,
+          mimeType: source.mimeType,
+          sourceType: source.sourceType
+        })),
+        selectedSourceId,
+        faceAssets: Object.fromEntries(
+          FACE_KEYS.flatMap((face) => {
+            const asset = faces[face];
+            if (!asset) {
+              return [];
+            }
+
+            return [
+              [
+                face,
+                {
+                  sourceId: asset.sourceId,
+                  dataUrl: asset.dataUrl,
+                  fileName: asset.fileName,
+                  sourceType: asset.sourceType,
+                  crop: asset.crop
+                }
+              ]
+            ];
+          })
+        )
+      }
+    };
+  }
+
+  function hydrateProject(project: Project) {
+    const workspaceSources: ArtworkSource[] =
+      project.workspace?.sources.map((source) => ({
+        id: source.id,
+        dataUrl: source.url,
+        fileName: source.fileName,
+        mimeType: source.mimeType,
+        sourceType: source.sourceType
+      })) ?? [];
+    const nextFaces = FACE_KEYS.reduce<FaceAssets>((next, face) => {
+      const asset = project.workspace?.faceAssets[face];
+
+      if (asset) {
+        next[face] = {
+          sourceId: asset.sourceId,
+          dataUrl: asset.url,
+          fileName: asset.fileName,
+          sourceType: asset.sourceType,
+          crop: normalizeCropSettings(asset.crop)
+        };
+        return next;
+      }
+
+      if (project.faces[face]) {
+        next[face] = {
+          sourceId: "",
+          dataUrl: project.faces[face],
+          fileName: `${face}.png`,
+          sourceType: "image",
+          crop: DEFAULT_CROP_SETTINGS
+        };
+      }
+
+      return next;
+    }, {});
+
+    setProjectId(project.id);
+    setProjectName(project.name);
+    setDimensions(normalizeDimensions(project.dimensions));
+    setSources(workspaceSources);
+    setSelectedSourceId(project.workspace?.selectedSourceId ?? workspaceSources[0]?.id ?? "");
+    setFaces(nextFaces);
+    setShareUrl("");
   }
 
   async function copyToClipboard(value = shareUrl) {
@@ -341,17 +501,30 @@ export function Builder() {
           <span className="brand-mark">
             <Box aria-hidden size={19} />
           </span>
-          <div>
+          <div className="brand-copy">
             <h1>FoldView</h1>
-            <p>3D carton preview for fast client approvals</p>
+            <input
+              aria-label="Project name"
+              className="project-name-input"
+              value={projectName}
+              onChange={(event) => {
+                markProjectChanged();
+                setProjectName(event.currentTarget.value);
+              }}
+            />
           </div>
         </div>
         <div className="header-actions">
           <div className="dimension-pill">
             {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
           </div>
+          {saveStatus ? <span className="save-status">{saveStatus}</span> : null}
+          <button className="secondary-button header-save-button" disabled={!canSave} type="button" onClick={saveProject}>
+            {isProjectSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Save aria-hidden size={18} />}
+            {projectId ? "Save" : "Save project"}
+          </button>
           <button className="primary-button header-share-button" disabled={!canShare} type="button" onClick={createShareLink}>
-            {isSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Link aria-hidden size={18} />}
+            {isSharing ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Link aria-hidden size={18} />}
             Share
           </button>
           {shareUrl ? (
@@ -368,6 +541,14 @@ export function Builder() {
         </div>
       </header>
 
+      {isProjectLoading ? (
+        <section className="builder-loading">
+          <div className="empty-state">
+            <LoaderCircle aria-hidden className="spin" size={26} />
+            Opening project
+          </div>
+        </section>
+      ) : (
       <section className="builder-grid">
         <aside className="tool-panel" aria-label="Parameters">
           <div className="parameters-title">
@@ -422,7 +603,7 @@ export function Builder() {
               onCrop={(face) => {
                 const asset = faces[face];
 
-                if (asset) {
+                if (asset && sources.some((source) => source.id === asset.sourceId)) {
                   setCropModal({ face, sourceId: asset.sourceId, settings: asset.crop });
                 }
               }}
@@ -447,6 +628,7 @@ export function Builder() {
           <CartonStage dimensions={dimensions} faces={previewFaces} />
         </section>
       </section>
+      )}
 
       {cropModal ? (
         <CropModal
