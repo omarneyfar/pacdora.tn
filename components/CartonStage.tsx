@@ -25,18 +25,18 @@ type FacePlaneProps = {
 const CAMERA_TARGET = new Vector3(0, 0.03, 0);
 const DEFAULT_CAMERA_POSITION = new Vector3(4.9, 3.7, 6.1);
 const DEFAULT_CAMERA_DISTANCE = DEFAULT_CAMERA_POSITION.distanceTo(CAMERA_TARGET);
-const MIN_ZOOM_LEVEL = -2;
-const MAX_ZOOM_LEVEL = 4;
+const MIN_ZOOM_PERCENT = 50;
+const MAX_ZOOM_PERCENT = 200;
+const ZOOM_BUTTON_FACTOR = 1.16;
 
 export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, className = "" }: CartonStageProps) {
   const safeDimensions = normalizeDimensions(dimensions);
-  const [zoomLevel, setZoomLevel] = useState(0);
+  const [zoomPercent, setZoomPercent] = useState(100);
   const [resetSignal, setResetSignal] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const unit = 3.35 / Math.max(safeDimensions.width, safeDimensions.height, safeDimensions.depth);
   const shadowY = -(safeDimensions.height * unit) / 2 - 0.08;
-  const zoomPercent = Math.round(100 * Math.pow(1.16, zoomLevel));
 
   useEffect(() => {
     function handleFullscreenChange() {
@@ -48,15 +48,15 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
   }, []);
 
   function zoomOut() {
-    setZoomLevel((current) => Math.max(MIN_ZOOM_LEVEL, current - 1));
+    setZoomPercent((current) => clampZoomPercent(current / ZOOM_BUTTON_FACTOR));
   }
 
   function zoomIn() {
-    setZoomLevel((current) => Math.min(MAX_ZOOM_LEVEL, current + 1));
+    setZoomPercent((current) => clampZoomPercent(current * ZOOM_BUTTON_FACTOR));
   }
 
   function resetView() {
-    setZoomLevel(0);
+    setZoomPercent(100);
     setResetSignal((current) => current + 1);
   }
 
@@ -81,14 +81,14 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
           <Environment preset="city" />
         </Suspense>
         <ContactShadows blur={2.8} far={6} opacity={0.28} position={[0, shadowY, 0]} scale={6} />
-        <CameraControls resetSignal={resetSignal} zoomLevel={zoomLevel} />
+        <CameraControls resetSignal={resetSignal} zoomPercent={zoomPercent} onZoomPercentChange={setZoomPercent} />
       </Canvas>
       <div className="stage-toolbox" aria-label="Canvas tools">
-        <button className="stage-tool" disabled={zoomLevel <= MIN_ZOOM_LEVEL} title="Zoom out" type="button" onClick={zoomOut}>
+        <button className="stage-tool" disabled={zoomPercent <= MIN_ZOOM_PERCENT} title="Zoom out" type="button" onClick={zoomOut}>
           <ZoomOut aria-hidden size={17} />
         </button>
         <span className="stage-zoom-readout">{zoomPercent}%</span>
-        <button className="stage-tool" disabled={zoomLevel >= MAX_ZOOM_LEVEL} title="Zoom in" type="button" onClick={zoomIn}>
+        <button className="stage-tool" disabled={zoomPercent >= MAX_ZOOM_PERCENT} title="Zoom in" type="button" onClick={zoomIn}>
           <ZoomIn aria-hidden size={17} />
         </button>
         <button className="stage-tool" title="Reset view" type="button" onClick={resetView}>
@@ -100,6 +100,22 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
       </div>
     </div>
   );
+}
+
+function clampZoomPercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 100;
+  }
+
+  return Math.round(Math.min(MAX_ZOOM_PERCENT, Math.max(MIN_ZOOM_PERCENT, value)));
+}
+
+function distanceFromZoomPercent(zoomPercent: number): number {
+  return DEFAULT_CAMERA_DISTANCE * (100 / clampZoomPercent(zoomPercent));
+}
+
+function zoomPercentFromDistance(distance: number): number {
+  return clampZoomPercent((DEFAULT_CAMERA_DISTANCE / distance) * 100);
 }
 
 function CartonModel({
@@ -171,14 +187,24 @@ function FacePlane({ size, position, rotation, textureUrl }: FacePlaneProps) {
   );
 }
 
-function CameraControls({ resetSignal, zoomLevel }: { resetSignal: number; zoomLevel: number }) {
+function CameraControls({
+  resetSignal,
+  zoomPercent,
+  onZoomPercentChange
+}: {
+  resetSignal: number;
+  zoomPercent: number;
+  onZoomPercentChange: (zoomPercent: number) => void;
+}) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const lastResetSignal = useRef(resetSignal);
   const { camera } = useThree();
 
   useEffect(() => {
-    const distance = DEFAULT_CAMERA_DISTANCE * Math.pow(0.86, zoomLevel);
+    const shouldResetAngle = resetSignal !== lastResetSignal.current;
+    const distance = distanceFromZoomPercent(zoomPercent);
     const direction =
-      resetSignal > 0
+      shouldResetAngle
         ? DEFAULT_CAMERA_POSITION.clone().sub(CAMERA_TARGET).normalize()
         : camera.position.clone().sub(CAMERA_TARGET).normalize();
 
@@ -190,17 +216,23 @@ function CameraControls({ resetSignal, zoomLevel }: { resetSignal: number; zoomL
     camera.lookAt(CAMERA_TARGET);
     controlsRef.current?.target.copy(CAMERA_TARGET);
     controlsRef.current?.update();
-  }, [camera, resetSignal, zoomLevel]);
+    lastResetSignal.current = resetSignal;
+  }, [camera, resetSignal, zoomPercent]);
+
+  function handleControlsChange() {
+    onZoomPercentChange(zoomPercentFromDistance(camera.position.distanceTo(CAMERA_TARGET)));
+  }
 
   return (
     <OrbitControls
       ref={controlsRef}
       enableDamping
       enablePan={false}
-      maxDistance={8.4}
+      maxDistance={distanceFromZoomPercent(MIN_ZOOM_PERCENT)}
       maxPolarAngle={Math.PI * 0.82}
-      minDistance={3.6}
+      minDistance={distanceFromZoomPercent(MAX_ZOOM_PERCENT)}
       target={CAMERA_TARGET.toArray()}
+      onChange={handleControlsChange}
     />
   );
 }
@@ -219,9 +251,9 @@ function ArtworkMaterial({ url }: { url: string }) {
     return () => preparedTexture.dispose();
   }, [preparedTexture]);
 
-  return <meshStandardMaterial color="#ffffff" map={preparedTexture} roughness={0.46} side={DoubleSide} />;
+  return <meshBasicMaterial map={preparedTexture} side={DoubleSide} toneMapped={false} />;
 }
 
 function BlankMaterial() {
-  return <meshStandardMaterial color="#fbfaf4" roughness={0.62} side={DoubleSide} />;
+  return <meshBasicMaterial color="#fbfaf4" side={DoubleSide} toneMapped={false} />;
 }
