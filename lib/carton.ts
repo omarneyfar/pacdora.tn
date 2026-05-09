@@ -1,4 +1,4 @@
-feat: initialize project with Next.js, TypeScript, and Playwright for visual verification
+export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as const;
 
 export type FaceKey = (typeof FACE_KEYS)[number];
 
