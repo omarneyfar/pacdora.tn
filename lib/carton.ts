@@ -42,12 +42,12 @@ export const DIMENSION_LIMITS = {
 
 export function getDielineSize(dimensions: CartonDimensions) {
   return {
-    width: dimensions.height + dimensions.width + dimensions.height,
-    height:
+    width:
       dimensions.height +
-      dimensions.depth +
+      dimensions.width +
       dimensions.height +
-      dimensions.depth,
+      dimensions.width,
+    height: dimensions.height + dimensions.depth + dimensions.height,
   };
 }
 
@@ -114,8 +114,8 @@ export function getFaceSpecs(
       height: depth,
       artworkWidth: width,
       artworkHeight: depth,
-      x: height,
-      y: height + depth + height,
+      x: height + width + height,
+      y: height,
     },
   };
 }

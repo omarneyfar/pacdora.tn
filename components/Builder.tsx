@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import {
   Box,
   Check,
+  ChevronDown,
+  ChevronRight,
   Copy,
   Crop,
   ExternalLink,
@@ -18,7 +20,15 @@ import {
   Trash2,
   Upload
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type WheelEvent as ReactWheelEvent
+} from "react";
 
 import {
   DEFAULT_CROP_SETTINGS,
@@ -66,6 +76,8 @@ type CropModalState = {
   settings: CropSettings;
 };
 
+type ParameterSectionKey = "dimensions" | "dieline" | "library";
+
 export function Builder() {
   const [dimensions, setDimensions] = useState<CartonDimensions>(DEFAULT_CARTON_DIMENSIONS);
   const [sources, setSources] = useState<ArtworkSource[]>([]);
@@ -78,6 +90,11 @@ export function Builder() {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<ParameterSectionKey, boolean>>({
+    dimensions: true,
+    dieline: true,
+    library: true
+  });
   const facesRef = useRef(faces);
   const sourcesRef = useRef(sources);
   const skippedInitialDimensionSync = useRef(false);
@@ -185,6 +202,13 @@ export function Builder() {
     );
   }
 
+  function toggleSection(section: ParameterSectionKey) {
+    setOpenSections((current) => ({
+      ...current,
+      [section]: !current[section]
+    }));
+  }
+
   async function handleUpload(face: FaceKey, file: File) {
     setBusyFace(face);
     setError("");
@@ -196,20 +220,10 @@ export function Builder() {
         id: createArtworkId(),
         ...imported
       };
-      const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, DEFAULT_CROP_SETTINGS);
 
       setSources((current) => [source, ...current]);
       setSelectedSourceId(source.id);
-      setFaces((current) => ({
-        ...current,
-        [face]: {
-          sourceId: source.id,
-          dataUrl,
-          fileName: source.fileName,
-          sourceType: source.sourceType,
-          crop: DEFAULT_CROP_SETTINGS
-        }
-      }));
+      setCropModal({ face, sourceId: source.id, settings: DEFAULT_CROP_SETTINGS });
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Could not prepare the selected artwork.");
     } finally {
@@ -325,32 +339,57 @@ export function Builder() {
             <p>3D carton preview for fast client approvals</p>
           </div>
         </div>
-        <div className="dimension-pill">
-          {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
+        <div className="header-actions">
+          <div className="dimension-pill">
+            {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
+          </div>
+          <button className="primary-button header-share-button" disabled={!canShare} type="button" onClick={createShareLink}>
+            {isSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Link aria-hidden size={18} />}
+            Share
+          </button>
+          {shareUrl ? (
+            <div className="header-share-result">
+              <input aria-label="Share URL" readOnly value={shareUrl} />
+              <button className="icon-button" title="Copy link" type="button" onClick={() => copyToClipboard()}>
+                {copied ? <Check aria-hidden size={18} /> : <Copy aria-hidden size={18} />}
+              </button>
+              <a className="icon-button" href={shareUrl} rel="noreferrer" target="_blank" title="Open shared viewer">
+                <ExternalLink aria-hidden size={18} />
+              </a>
+            </div>
+          ) : null}
         </div>
       </header>
 
       <section className="builder-grid">
-        <aside className="tool-panel" aria-label="Artwork uploads">
-          <div className="panel-section dimension-section">
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Box size</span>
-                <h2>Pizza carton dimensions</h2>
-              </div>
-              {isRecropping ? <span className="count-badge">Updating</span> : null}
+        <aside className="tool-panel" aria-label="Parameters">
+          <div className="parameters-title">
+            <div>
+              <span className="eyebrow">Parameters</span>
+              <h2>Box setup</h2>
             </div>
-            <DimensionControls dimensions={dimensions} onChange={handleDimensionChange} />
+            {isRecropping ? <span className="count-badge">Updating</span> : null}
           </div>
 
-          <div className="panel-section dieline-section">
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Flat dieline</span>
-                <h2>Fill exterior faces</h2>
-              </div>
-              <span className="count-badge">{uploadedCount}/6</span>
-            </div>
+          <CollapsibleSection
+            className="dimension-section"
+            eyebrow="Box size"
+            isOpen={openSections.dimensions}
+            title="Pizza carton dimensions"
+            trailing={`${dimensions.width} x ${dimensions.depth} x ${dimensions.height}`}
+            onToggle={() => toggleSection("dimensions")}
+          >
+            <DimensionControls dimensions={dimensions} onChange={handleDimensionChange} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            className="dieline-section"
+            eyebrow="Flat dieline"
+            isOpen={openSections.dieline}
+            title="Fill exterior faces"
+            trailing={`${uploadedCount}/6`}
+            onToggle={() => toggleSection("dieline")}
+          >
             <DielineUploader
               busyFace={busyFace}
               dimensions={dimensions}
@@ -358,7 +397,7 @@ export function Builder() {
               selectedSourceId={selectedSourceId}
               onApplySelected={(face) => {
                 if (selectedSourceId) {
-                  applySourceToFace(face, selectedSourceId);
+                  setCropModal({ face, sourceId: selectedSourceId, settings: DEFAULT_CROP_SETTINGS });
                 }
               }}
               onClear={clearFace}
@@ -374,39 +413,20 @@ export function Builder() {
             <p className="helper-text">
               Hover a side to upload, reuse the selected artwork, crop, or delete the assigned image.
             </p>
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel-section library-section">
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Artwork library</span>
-                <h2>Reuse uploaded images</h2>
-              </div>
-              <span className="count-badge">{sources.length}</span>
-            </div>
+          <CollapsibleSection
+            className="library-section"
+            eyebrow="Artwork library"
+            isOpen={openSections.library}
+            title="Reuse uploaded images"
+            trailing={String(sources.length)}
+            onToggle={() => toggleSection("library")}
+          >
             <ArtworkLibrary selectedSourceId={selectedSourceId} sources={sources} onSelect={setSelectedSourceId} />
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel-section share-section">
-            <button className="primary-button" disabled={!canShare} type="button" onClick={createShareLink}>
-              {isSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Link aria-hidden size={18} />}
-              Create view-only link
-            </button>
-
-            {shareUrl ? (
-              <div className="share-result">
-                <input aria-label="Share URL" readOnly value={shareUrl} />
-                <button className="icon-button" title="Copy link" type="button" onClick={() => copyToClipboard()}>
-                  {copied ? <Check aria-hidden size={18} /> : <Copy aria-hidden size={18} />}
-                </button>
-                <a className="icon-button" href={shareUrl} rel="noreferrer" target="_blank" title="Open shared viewer">
-                  <ExternalLink aria-hidden size={18} />
-                </a>
-              </div>
-            ) : null}
-
-            {error ? <div className="error-banner">{error}</div> : null}
-          </div>
+          {error ? <div className="sidebar-error error-banner">{error}</div> : null}
         </aside>
 
         <section className="viewer-panel" aria-label="3D carton preview">
@@ -432,6 +452,40 @@ export function Builder() {
         />
       ) : null}
     </main>
+  );
+}
+
+function CollapsibleSection({
+  children,
+  className,
+  eyebrow,
+  isOpen,
+  title,
+  trailing,
+  onToggle
+}: {
+  children: ReactNode;
+  className?: string;
+  eyebrow: string;
+  isOpen: boolean;
+  title: string;
+  trailing?: string;
+  onToggle: () => void;
+}) {
+  return (
+    <section className={`panel-section collapsible-section ${className ?? ""} ${isOpen ? "" : "is-collapsed"}`}>
+      <button className="collapsible-heading" type="button" aria-expanded={isOpen} onClick={onToggle}>
+        <span className="collapsible-title">
+          <span className="eyebrow">{eyebrow}</span>
+          <strong>{title}</strong>
+        </span>
+        <span className="collapsible-meta">
+          {trailing ? <span className="count-badge">{trailing}</span> : null}
+          {isOpen ? <ChevronDown aria-hidden size={18} /> : <ChevronRight aria-hidden size={18} />}
+        </span>
+      </button>
+      {isOpen ? <div className="collapsible-body">{children}</div> : null}
+    </section>
   );
 }
 
@@ -637,6 +691,15 @@ function CropModal({
 }) {
   const [settings, setSettings] = useState<CropSettings>(initialSettings);
   const [preview, setPreview] = useState("");
+  const dragStart = useRef<{
+    height: number;
+    offsetX: number;
+    offsetY: number;
+    pointerId: number;
+    width: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const spec = getFaceSpecs(dimensions)[face];
 
   useEffect(() => {
@@ -666,7 +729,54 @@ function CropModal({
   function updateSetting(key: keyof CropSettings, value: string) {
     setSettings((current) => ({
       ...current,
-      [key]: Number(value)
+      [key]: clampCropValue(key, Number(value))
+    }));
+  }
+
+  function handleCropPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    dragStart.current = {
+      height: bounds.height,
+      offsetX: settings.offsetX,
+      offsetY: settings.offsetY,
+      pointerId: event.pointerId,
+      width: bounds.width,
+      x: event.clientX,
+      y: event.clientY
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleCropPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const start = dragStart.current;
+
+    if (!start) {
+      return;
+    }
+
+    const nextOffsetX = start.offsetX - ((event.clientX - start.x) / start.width) * 200;
+    const nextOffsetY = start.offsetY - ((event.clientY - start.y) / start.height) * 200;
+
+    setSettings((current) => ({
+      ...current,
+      offsetX: clampCropValue("offsetX", nextOffsetX),
+      offsetY: clampCropValue("offsetY", nextOffsetY)
+    }));
+  }
+
+  function handleCropPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragStart.current?.pointerId === event.pointerId) {
+      dragStart.current = null;
+    }
+  }
+
+  function handleCropWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const nextZoom = settings.zoom + (event.deltaY > 0 ? -0.08 : 0.08);
+
+    setSettings((current) => ({
+      ...current,
+      zoom: clampCropValue("zoom", nextZoom)
     }));
   }
 
@@ -687,8 +797,22 @@ function CropModal({
           </button>
         </div>
 
-        <div className="crop-preview" style={{ aspectRatio: `${spec.artworkWidth} / ${spec.artworkHeight}` }}>
+        <div
+          className="crop-preview"
+          style={{ aspectRatio: `${spec.artworkWidth} / ${spec.artworkHeight}` }}
+          onPointerCancel={handleCropPointerUp}
+          onPointerDown={handleCropPointerDown}
+          onPointerMove={handleCropPointerMove}
+          onPointerUp={handleCropPointerUp}
+          onWheel={handleCropWheel}
+        >
           {preview ? <img alt="" src={preview} /> : null}
+          <span className="crop-grid" aria-hidden />
+          <span className="crop-corner top-left" aria-hidden />
+          <span className="crop-corner top-right" aria-hidden />
+          <span className="crop-corner bottom-left" aria-hidden />
+          <span className="crop-corner bottom-right" aria-hidden />
+          <span className="crop-instruction">Drag to position</span>
           {!preview ? (
             <span className="crop-loading">
               <LoaderCircle aria-hidden className="spin" size={18} />
@@ -743,6 +867,14 @@ function CropModal({
       </div>
     </div>
   );
+}
+
+function clampCropValue(key: keyof CropSettings, value: number): number {
+  if (key === "zoom") {
+    return Math.min(3, Math.max(1, Number.isFinite(value) ? value : DEFAULT_CROP_SETTINGS.zoom));
+  }
+
+  return Math.min(100, Math.max(-100, Number.isFinite(value) ? value : 0));
 }
 
 function createArtworkId(): string {

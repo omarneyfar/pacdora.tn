@@ -67,6 +67,39 @@ a {
   padding: 12px 16px;
 }
 
+.header-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 1 auto;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.header-share-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  width: auto;
+}
+
+.header-share-result {
+  display: grid;
+  flex: 1 1 360px;
+  gap: 6px;
+  grid-template-columns: minmax(170px, 1fr) 38px 38px;
+  max-width: 520px;
+  min-width: 0;
+}
+
+.header-share-result input {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  min-width: 0;
+  padding: 0 10px;
+}
+
 .brand {
   align-items: center;
   display: flex;
@@ -148,7 +181,9 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .viewer-panel {
@@ -190,9 +225,67 @@ a {
   line-height: 1.2;
 }
 
+.parameters-title {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.parameters-title h2 {
+  font-size: 17px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.collapsible-section {
+  flex: 0 0 auto;
+}
+
+.collapsible-heading {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.collapsible-title {
+  min-width: 0;
+}
+
+.collapsible-title strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.collapsible-meta {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.collapsible-body {
+  margin-top: 10px;
+}
+
+.collapsible-section.is-collapsed {
+  flex: 0 0 auto;
+}
+
 .dimension-section,
-.library-section,
-.share-section {
+.library-section {
   flex: 0 0 auto;
 }
 
@@ -255,11 +348,10 @@ a {
   background-size: 20px 20px;
   border: 1px dashed var(--line-strong);
   border-radius: 8px;
-  height: 100%;
   margin: 0 auto;
   max-width: 640px;
   position: relative;
-  width: auto;
+  width: 100%;
 }
 
 .dieline-face {
@@ -449,12 +541,6 @@ a {
   margin: 0;
 }
 
-.share-section {
-  display: grid;
-  gap: 8px;
-  margin-top: auto;
-}
-
 .primary-button,
 .secondary-button,
 .icon-button {
@@ -488,20 +574,6 @@ a {
   padding: 0 14px;
 }
 
-.share-result {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: minmax(0, 1fr) 40px 40px;
-}
-
-.share-result input {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--ink);
-  min-width: 0;
-  padding: 0 10px;
-}
-
 .icon-button {
   background: var(--surface-strong);
   border: 1px solid var(--line);
@@ -523,6 +595,11 @@ a {
   font-size: 13px;
   line-height: 1.35;
   padding: 10px;
+}
+
+.sidebar-error {
+  flex: 0 0 auto;
+  margin: 12px;
 }
 
 .viewer-toolbar {
@@ -648,11 +725,11 @@ a {
   box-shadow: var(--shadow);
   display: grid;
   gap: 14px;
-  max-height: min(720px, calc(100vh - 32px));
-  max-width: 620px;
+  max-height: min(820px, calc(100vh - 32px));
+  max-width: 860px;
   overflow: auto;
   padding: 16px;
-  width: min(620px, 100%);
+  width: min(860px, 100%);
 }
 
 .crop-header,
@@ -689,18 +766,83 @@ a {
   background-size: 16px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  cursor: grab;
   display: flex;
   justify-content: center;
-  max-height: 420px;
+  max-height: 520px;
   overflow: hidden;
   position: relative;
   width: 100%;
 }
 
+.crop-preview:active {
+  cursor: grabbing;
+}
+
 .crop-preview img {
   height: 100%;
   object-fit: contain;
+  pointer-events: none;
+  user-select: none;
   width: 100%;
+}
+
+.crop-grid {
+  background:
+    linear-gradient(90deg, transparent 33.333%, rgba(255, 253, 247, 0.72) 33.333%, rgba(255, 253, 247, 0.72) 33.9%, transparent 33.9%, transparent 66.666%, rgba(255, 253, 247, 0.72) 66.666%, rgba(255, 253, 247, 0.72) 67.2%, transparent 67.2%),
+    linear-gradient(0deg, transparent 33.333%, rgba(255, 253, 247, 0.72) 33.333%, rgba(255, 253, 247, 0.72) 33.9%, transparent 33.9%, transparent 66.666%, rgba(255, 253, 247, 0.72) 66.666%, rgba(255, 253, 247, 0.72) 67.2%, transparent 67.2%);
+  border: 2px solid rgba(255, 253, 247, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(31, 42, 36, 0.32);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.crop-corner {
+  border-color: var(--accent);
+  border-style: solid;
+  height: 24px;
+  pointer-events: none;
+  position: absolute;
+  width: 24px;
+}
+
+.crop-corner.top-left {
+  border-width: 3px 0 0 3px;
+  left: 10px;
+  top: 10px;
+}
+
+.crop-corner.top-right {
+  border-width: 3px 3px 0 0;
+  right: 10px;
+  top: 10px;
+}
+
+.crop-corner.bottom-left {
+  border-width: 0 0 3px 3px;
+  bottom: 10px;
+  left: 10px;
+}
+
+.crop-corner.bottom-right {
+  border-width: 0 3px 3px 0;
+  bottom: 10px;
+  right: 10px;
+}
+
+.crop-instruction {
+  background: rgba(31, 42, 36, 0.78);
+  border-radius: 999px;
+  bottom: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  left: 50%;
+  padding: 7px 10px;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
 }
 
 .crop-loading {
