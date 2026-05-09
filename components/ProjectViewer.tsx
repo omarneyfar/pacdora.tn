@@ -72,7 +72,7 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
         ) : error ? (
           <div className="empty-state error-state">{error}</div>
         ) : project ? (
-          <CartonStage className="shared-stage" faces={project.faces} />
+          <CartonStage className="shared-stage" dimensions={project.dimensions} faces={project.faces} />
         ) : null}
       </section>
     </main>

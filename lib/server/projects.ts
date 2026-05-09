@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 
-import { CARTON_DIMENSIONS, FACE_KEYS, type FaceKey, type Project, isFaceKey } from "@/lib/carton";
+import { FACE_KEYS, type CartonDimensions, type FaceKey, type Project, isFaceKey, normalizeDimensions } from "@/lib/carton";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage", "projects");
 const PROJECT_ID_PATTERN = /^[a-zA-Z0-9_-]{10,40}$/;
@@ -10,6 +10,7 @@ const FACE_DATA_PATTERN = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/;
 const MAX_FACE_BYTES = 5 * 1024 * 1024;
 
 export type ProjectInput = {
+  dimensions?: Partial<CartonDimensions>;
   faces?: Partial<Record<FaceKey, string>>;
 };
 
@@ -33,7 +34,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
 
   const project: Project = {
     id,
-    dimensions: CARTON_DIMENSIONS,
+    dimensions: normalizeDimensions(input.dimensions),
     faces,
     createdAt: new Date().toISOString()
   };

@@ -1,13 +1,45 @@
 "use client";
 
-import { FACE_SPECS, type FaceKey } from "@/lib/carton";
+import { getFaceSpecs, type CartonDimensions, type FaceKey } from "@/lib/carton";
 
 const MAX_LONG_EDGE = 1400;
 
-export async function createCroppedFaceArtwork(file: File, face: FaceKey): Promise<string> {
+export type CropSettings = {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+export type ArtworkImport = {
+  dataUrl: string;
+  fileName: string;
+  sourceType: "image" | "pdf";
+};
+
+export const DEFAULT_CROP_SETTINGS: CropSettings = {
+  zoom: 1,
+  offsetX: 0,
+  offsetY: 0
+};
+
+export async function importArtworkFile(file: File): Promise<ArtworkImport> {
   const sourceUrl = file.type === "application/pdf" ? await renderPdfFirstPage(file) : await readImageFile(file);
+
+  return {
+    dataUrl: sourceUrl,
+    fileName: file.name,
+    sourceType: file.type === "application/pdf" ? "pdf" : "image"
+  };
+}
+
+export async function cropArtworkToFace(
+  sourceUrl: string,
+  face: FaceKey,
+  dimensions: CartonDimensions,
+  settings: CropSettings = DEFAULT_CROP_SETTINGS
+): Promise<string> {
   const image = await loadImage(sourceUrl);
-  return cropToFace(image, face);
+  return cropToFace(image, face, dimensions, settings);
 }
 
 function readImageFile(file: File): Promise<string> {
@@ -60,24 +92,33 @@ function loadImage(sourceUrl: string): Promise<HTMLImageElement> {
   });
 }
 
-function cropToFace(image: HTMLImageElement, face: FaceKey): string {
-  const spec = FACE_SPECS[face];
-  const targetAspect = spec.width / spec.height;
+function cropToFace(
+  image: HTMLImageElement,
+  face: FaceKey,
+  dimensions: CartonDimensions,
+  settings: CropSettings
+): string {
+  const spec = getFaceSpecs(dimensions)[face];
+  const targetAspect = spec.artworkWidth / spec.artworkHeight;
   const sourceAspect = image.naturalWidth / image.naturalHeight;
   let sourceX = 0;
   let sourceY = 0;
   let sourceWidth = image.naturalWidth;
   let sourceHeight = image.naturalHeight;
+  const zoom = Math.min(3, Math.max(1, settings.zoom));
 
   if (sourceAspect > targetAspect) {
     sourceWidth = sourceHeight * targetAspect;
-    sourceX = (image.naturalWidth - sourceWidth) / 2;
   } else {
     sourceHeight = sourceWidth / targetAspect;
-    sourceY = (image.naturalHeight - sourceHeight) / 2;
   }
 
-  const scale = MAX_LONG_EDGE / Math.max(spec.width, spec.height);
+  sourceWidth /= zoom;
+  sourceHeight /= zoom;
+  sourceX = panToSourceCoordinate(image.naturalWidth, sourceWidth, settings.offsetX);
+  sourceY = panToSourceCoordinate(image.naturalHeight, sourceHeight, settings.offsetY);
+
+  const scale = MAX_LONG_EDGE / Math.max(spec.artworkWidth, spec.artworkHeight);
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -85,11 +126,18 @@ function cropToFace(image: HTMLImageElement, face: FaceKey): string {
     throw new Error("This browser could not crop the artwork.");
   }
 
-  canvas.width = Math.round(spec.width * scale);
-  canvas.height = Math.round(spec.height * scale);
+  canvas.width = Math.round(spec.artworkWidth * scale);
+  canvas.height = Math.round(spec.artworkHeight * scale);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
 
   return canvas.toDataURL("image/png");
+}
+
+function panToSourceCoordinate(sourceSize: number, cropSize: number, offset: number): number {
+  const maxOffset = Math.max(0, sourceSize - cropSize);
+  const normalizedOffset = (Math.min(100, Math.max(-100, offset)) + 100) / 200;
+
+  return maxOffset * normalizedOffset;
 }
