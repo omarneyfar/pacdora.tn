@@ -332,7 +332,7 @@ export function Builder() {
 
       <section className="builder-grid">
         <aside className="tool-panel" aria-label="Artwork uploads">
-          <div className="panel-section">
+          <div className="panel-section dimension-section">
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Box size</span>
@@ -343,7 +343,7 @@ export function Builder() {
             <DimensionControls dimensions={dimensions} onChange={handleDimensionChange} />
           </div>
 
-          <div className="panel-section">
+          <div className="panel-section dieline-section">
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Flat dieline</span>
@@ -376,7 +376,7 @@ export function Builder() {
             </p>
           </div>
 
-          <div className="panel-section">
+          <div className="panel-section library-section">
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Artwork library</span>
@@ -491,98 +491,100 @@ function DielineUploader({
   const faceSpecs = getFaceSpecs(dimensions);
 
   return (
-    <div className="dieline-board" style={{ aspectRatio: `${dielineSize.width} / ${dielineSize.height}` }}>
-      {FACE_KEYS.map((face) => {
-        const spec = faceSpecs[face];
-        const asset = faces[face];
-        const isBusy = busyFace === face;
-        const inputId = `face-upload-${face}`;
-        const isRotatedOnDieline = spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight;
-        const style = {
-          left: `${(spec.x / dielineSize.width) * 100}%`,
-          top: `${(spec.y / dielineSize.height) * 100}%`,
-          width: `${(spec.width / dielineSize.width) * 100}%`,
-          height: `${(spec.height / dielineSize.height) * 100}%`
-        };
+    <div className="dieline-fit">
+      <div className="dieline-board" style={{ aspectRatio: `${dielineSize.width} / ${dielineSize.height}` }}>
+        {FACE_KEYS.map((face) => {
+          const spec = faceSpecs[face];
+          const asset = faces[face];
+          const isBusy = busyFace === face;
+          const inputId = `face-upload-${face}`;
+          const isRotatedOnDieline = spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight;
+          const style = {
+            left: `${(spec.x / dielineSize.width) * 100}%`,
+            top: `${(spec.y / dielineSize.height) * 100}%`,
+            width: `${(spec.width / dielineSize.width) * 100}%`,
+            height: `${(spec.height / dielineSize.height) * 100}%`
+          };
 
-        return (
-          <div className={`dieline-face ${asset ? "is-filled" : ""}`} key={face} style={style}>
-            <input
-              accept="image/png,image/jpeg,application/pdf"
-              aria-label={`Upload ${spec.label} artwork`}
-              disabled={Boolean(busyFace)}
-              id={inputId}
-              type="file"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
+          return (
+            <div className={`dieline-face ${asset ? "is-filled" : ""}`} key={face} style={style}>
+              <input
+                accept="image/png,image/jpeg,application/pdf"
+                aria-label={`Upload ${spec.label} artwork`}
+                disabled={Boolean(busyFace)}
+                id={inputId}
+                type="file"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
 
-                if (file) {
-                  onUpload(face, file);
-                }
-              }}
-            />
-            {asset ? (
-              <img
-                alt=""
-                className={`face-preview ${isRotatedOnDieline ? "is-rotated-on-dieline" : ""}`}
-                src={asset.dataUrl}
+                  if (file) {
+                    onUpload(face, file);
+                  }
+                }}
               />
-            ) : null}
-            <span className="face-content">
-              {isBusy ? (
-                <LoaderCircle aria-hidden className="spin" size={17} />
-              ) : asset?.sourceType === "pdf" ? (
-                <FileText aria-hidden size={17} />
-              ) : asset ? (
-                <ImageIcon aria-hidden size={17} />
-              ) : (
-                <Upload aria-hidden size={17} />
-              )}
-              <strong>{spec.label}</strong>
-              <span className="face-file">
-                {asset ? asset.fileName : `${spec.artworkWidth} x ${spec.artworkHeight} mm`}
-              </span>
-            </span>
-            <div className="face-actions" aria-label={`${spec.label} actions`}>
-              <button
-                className="face-action"
-                disabled={!selectedSourceId || Boolean(busyFace)}
-                title="Use selected artwork"
-                type="button"
-                onClick={() => onApplySelected(face)}
-              >
-                <Paintbrush aria-hidden size={15} />
-              </button>
-              <label className="face-action" htmlFor={inputId} title={asset ? "Upload another image" : "Upload image"}>
-                <Upload aria-hidden size={15} />
-              </label>
               {asset ? (
-                <>
-                  <button
-                    className="face-action"
-                    disabled={Boolean(busyFace)}
-                    title="Crop this side"
-                    type="button"
-                    onClick={() => onCrop(face)}
-                  >
-                    <Crop aria-hidden size={15} />
-                  </button>
-                  <button
-                    className="face-action danger"
-                    disabled={Boolean(busyFace)}
-                    title="Delete this side image"
-                    type="button"
-                    onClick={() => onClear(face)}
-                  >
-                    <Trash2 aria-hidden size={15} />
-                  </button>
-                </>
+                <img
+                  alt=""
+                  className={`face-preview ${isRotatedOnDieline ? "is-rotated-on-dieline" : ""}`}
+                  src={asset.dataUrl}
+                />
               ) : null}
+              <span className="face-content">
+                {isBusy ? (
+                  <LoaderCircle aria-hidden className="spin" size={17} />
+                ) : asset?.sourceType === "pdf" ? (
+                  <FileText aria-hidden size={17} />
+                ) : asset ? (
+                  <ImageIcon aria-hidden size={17} />
+                ) : (
+                  <Upload aria-hidden size={17} />
+                )}
+                <strong>{spec.label}</strong>
+                <span className="face-file">
+                  {asset ? asset.fileName : `${spec.artworkWidth} x ${spec.artworkHeight} mm`}
+                </span>
+              </span>
+              <div className="face-actions" aria-label={`${spec.label} actions`}>
+                <button
+                  className="face-action"
+                  disabled={!selectedSourceId || Boolean(busyFace)}
+                  title="Use selected artwork"
+                  type="button"
+                  onClick={() => onApplySelected(face)}
+                >
+                  <Paintbrush aria-hidden size={15} />
+                </button>
+                <label className="face-action" htmlFor={inputId} title={asset ? "Upload another image" : "Upload image"}>
+                  <Upload aria-hidden size={15} />
+                </label>
+                {asset ? (
+                  <>
+                    <button
+                      className="face-action"
+                      disabled={Boolean(busyFace)}
+                      title="Crop this side"
+                      type="button"
+                      onClick={() => onCrop(face)}
+                    >
+                      <Crop aria-hidden size={15} />
+                    </button>
+                    <button
+                      className="face-action danger"
+                      disabled={Boolean(busyFace)}
+                      title="Delete this side image"
+                      type="button"
+                      onClick={() => onClear(face)}
+                    >
+                      <Trash2 aria-hidden size={15} />
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
