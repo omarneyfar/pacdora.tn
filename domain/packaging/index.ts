@@ -1,3 +1,18 @@
+import type { DielineGraph as PackagingDielineGraph } from "@/domain/dieline/types";
+import { generateFoldingCartonGraph } from "@/domain/dieline/templates/foldingCartonGraph";
+
+export type {
+  Bounds,
+  DielineCrease,
+  DielineCutPath,
+  DielineFace,
+  DielineFaceNode,
+  DielineGraph,
+  DielineGraphSource,
+  Point,
+  Size,
+} from "@/domain/dieline/types";
+
 export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as const;
 export const PROJECT_STATUSES = ["draft", "published"] as const;
 export const TEMPLATE_IDS = ["folding-carton"] as const;
@@ -141,6 +156,7 @@ export type PackagingTemplate = {
   defaultDimensions: CartonDimensions;
   getFaceSpecs(dimensions: CartonDimensions): Record<FaceKey, FaceSpec>;
   getDielineSpec(dimensions: CartonDimensions): DielineSpec;
+  getDielineGraph(dimensions: CartonDimensions): PackagingDielineGraph;
   getModelSpec(dimensions: CartonDimensions): ModelSpec;
 };
 
@@ -253,6 +269,10 @@ export function getDielineSpec(dimensions: CartonDimensions): DielineSpec {
     faces: getFaceSpecs(safeDimensions),
     guides: getDielinePrintGuides(safeDimensions),
   };
+}
+
+export function getDielineGraph(dimensions: CartonDimensions): PackagingDielineGraph {
+  return generateFoldingCartonGraph(normalizeDimensions(dimensions));
 }
 
 export function getFaceSpecs(
@@ -443,6 +463,7 @@ export const FOLDING_CARTON_TEMPLATE: PackagingTemplate = {
   defaultDimensions: DEFAULT_CARTON_DIMENSIONS,
   getFaceSpecs,
   getDielineSpec,
+  getDielineGraph,
   getModelSpec,
 };
 
