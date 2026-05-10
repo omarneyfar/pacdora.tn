@@ -525,6 +525,39 @@ a {
   color: #7c8790;
 }
 
+.dieline-import-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dieline-import-button,
+.dieline-template-button {
+  align-items: center;
+  display: inline-flex;
+  flex: 1 1 0;
+  gap: 7px;
+  justify-content: center;
+}
+
+.dieline-import-button input {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+.dieline-source-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  margin: -2px 0 0;
+}
+
+.dieline-source-note strong {
+  color: var(--ink);
+}
+
 .dimension-grid {
   display: grid;
   gap: 8px;
@@ -605,6 +638,14 @@ a {
 
 .dieline-face-fill.is-filled {
   fill: #ffffff;
+}
+
+.dieline-face-role-flap {
+  fill: rgba(255, 253, 247, 0.68);
+}
+
+.dieline-face-role-glue {
+  fill: rgba(47, 125, 107, 0.08);
 }
 
 .dieline-face-artwork {

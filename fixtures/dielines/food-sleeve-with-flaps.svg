@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 674" width="372" height="674">
+  <g id="FACES">
+    <rect id="face-top" data-label="Top flap" x="70" y="0" width="232" height="70" data-role="panel" />
+    <polygon id="face-left-top-flap" data-label="Left top flap" data-role="flap" data-artwork-enabled="false" points="0,130 70,70 70,302 0,250" />
+    <rect id="face-front" data-label="Front panel" x="70" y="70" width="232" height="232" data-role="panel" />
+    <polygon id="face-right-top-flap" data-label="Right top flap" data-role="flap" data-artwork-enabled="false" points="302,70 372,130 372,250 302,302" />
+    <rect id="face-left" data-label="Left side" x="0" y="302" width="70" height="232" data-role="panel" />
+    <rect id="face-back" data-label="Back panel" x="70" y="302" width="232" height="232" data-role="panel" />
+    <rect id="face-right" data-label="Right side" x="302" y="302" width="70" height="232" data-role="panel" />
+    <rect id="face-bottom" data-label="Bottom flap" x="70" y="534" width="232" height="70" data-role="panel" />
+    <polygon id="face-bottom-lock" data-label="Bottom lock tab" data-role="flap" data-artwork-enabled="false" points="105,604 267,604 292,674 80,674" />
+  </g>
+  <g id="CREASES">
+    <line id="crease-top-front" data-kind="crease" data-face-a="top" data-face-b="front" x1="70" y1="70" x2="302" y2="70" />
+    <line id="crease-front-back" data-kind="crease" data-face-a="front" data-face-b="back" x1="70" y1="302" x2="302" y2="302" />
+    <line id="crease-left-back" data-kind="crease" data-face-a="left" data-face-b="back" x1="70" y1="302" x2="70" y2="534" />
+    <line id="crease-back-right" data-kind="crease" data-face-a="back" data-face-b="right" x1="302" y1="302" x2="302" y2="534" />
+    <line id="crease-back-bottom" data-kind="crease" data-face-a="back" data-face-b="bottom" x1="70" y1="534" x2="302" y2="534" />
+  </g>
+</svg>

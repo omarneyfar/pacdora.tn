@@ -12,14 +12,16 @@ import {
   ZoomOut,
 } from "lucide-react";
 
-import { getPackagingTemplate, type CartonDimensions, type FaceKey } from "@/domain/packaging";
-import { normalizeCropSettings, type CropSettings } from "@/features/artwork/artwork";
+import type { CartonDimensions, FaceKey } from "@/domain/packaging";
+import type { DielineGraph } from "@/domain/dieline/types";
+import { getFaceArtworkSize, normalizeCropSettings, type CropSettings } from "@/features/artwork/artwork";
 import type { ArtworkSource } from "@/store/artworkSlice";
 
 /* ── Props ─────────────────────────────────────────────────────── */
 
 type CropModalProps = {
   dimensions: CartonDimensions;
+  dielineGraph?: DielineGraph | null;
   face: FaceKey;
   initialSettings: CropSettings;
   source: ArtworkSource | undefined;
@@ -35,6 +37,7 @@ type CropModalProps = {
  */
 export function CropModal({
   dimensions,
+  dielineGraph,
   face,
   initialSettings,
   source,
@@ -50,8 +53,9 @@ export function CropModal({
 
   const [settings, setSettings] = useState<CropSettings>(initialCrop);
 
-  const spec = getPackagingTemplate().getFaceSpecs(dimensions)[face];
-  const targetAspect = spec.artworkWidth / spec.artworkHeight;
+  const target = getFaceArtworkSize(face, dimensions, dielineGraph);
+  const label = target.label;
+  const targetAspect = target.width / target.height;
 
   const defaultCoordinates = useMemo(
     () => createDefaultCropCoordinates(initialCrop.coordinates, targetAspect),
@@ -106,13 +110,13 @@ export function CropModal({
       className="crop-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label={`Crop ${spec.label} artwork`}
+      aria-label={`Crop ${label} artwork`}
     >
       <div className="crop-dialog">
         {/* ── Header ──────────────────────────────────────────── */}
         <div className="crop-header">
           <div>
-            <span className="eyebrow">{spec.label} crop</span>
+            <span className="eyebrow">{label} crop</span>
             <h2>{source.fileName}</h2>
           </div>
           <div className="crop-header-actions">
@@ -208,7 +212,7 @@ export function CropModal({
         {/* ── Status bar ──────────────────────────────────────── */}
         <div className="crop-status">
           <span>
-            Output {spec.artworkWidth} x {spec.artworkHeight} mm
+            Output {Math.round(target.width)} x {Math.round(target.height)} mm
           </span>
           <span>
             Crop{" "}

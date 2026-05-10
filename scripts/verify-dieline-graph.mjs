@@ -10,6 +10,7 @@ const projectRoot = path.resolve(scriptsDir, "..");
 const moduleCache = new Map();
 
 const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"));
+const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
 const dimensions = { width: 232, height: 70, depth: 232 };
 const template = packaging.getPackagingTemplate("folding-carton");
 const graph = template.getDielineGraph(dimensions);
@@ -48,6 +49,18 @@ for (const faceId of expectedFaceIds) {
 
 assert(graph.cutPaths.length > 0, "Expected exterior cut paths");
 assert(graph.cutPaths.every((cutPath) => cutPath.d.startsWith("M ")), "Every cut path must be an SVG path");
+
+const sampleSvg = fs.readFileSync(path.join(projectRoot, "fixtures", "dielines", "food-sleeve-with-flaps.svg"), "utf8");
+const imported = importSvgDieline(sampleSvg).graph;
+const importedFaceIds = new Set(imported.faces.map((face) => face.id));
+
+for (const faceId of [...expectedFaceIds, "left-top-flap", "right-top-flap", "bottom-lock"]) {
+  assert(importedFaceIds.has(faceId), `Imported SVG missing face ${faceId}`);
+}
+
+assert(imported.faces.some((face) => face.role === "flap" && !face.artworkEnabled), "Imported SVG should preserve structural flaps");
+assert(imported.creases.length === 5, `Expected 5 imported creases, got ${imported.creases.length}`);
+assert(imported.cutPaths.length > 0, "Imported SVG should have generated cut paths");
 
 console.log("Dieline graph verification passed.");
 

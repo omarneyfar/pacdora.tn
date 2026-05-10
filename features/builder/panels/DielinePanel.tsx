@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
+import { FileUp, RotateCcw } from "lucide-react";
 
 import type { FaceKey } from "@/domain/packaging";
 import { DEFAULT_CROP_SETTINGS } from "@/features/artwork/artwork";
+import { useDielineImport } from "@/hooks/useDielineImport";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { openCropModal, setShowDielineGuides, toggleSection } from "@/store/uiSlice";
 
@@ -27,8 +29,12 @@ type DielinePanelProps = {
  */
 export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   const dispatch = useAppDispatch();
+  const { importDielineFile, useTemplateDieline } = useDielineImport();
 
   const dimensions = useAppSelector((s) => s.builder.dimensions);
+  const dielineSource = useAppSelector((s) => s.builder.dielineSource);
+  const dielineFileName = useAppSelector((s) => s.builder.dielineFileName);
+  const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
   const faces = useAppSelector((s) => s.artwork.faces);
   const sources = useAppSelector((s) => s.artwork.sources);
   const busyFace = useAppSelector((s) => s.artwork.busyFace);
@@ -91,9 +97,41 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
         onChange={handleGuideChange}
       />
 
+      <div className="dieline-import-row">
+        <label className="secondary-button dieline-import-button" title="Import SVG dieline">
+          <FileUp aria-hidden size={16} />
+          Import SVG
+          <input
+            accept=".svg,image/svg+xml"
+            type="file"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) {
+                void importDielineFile(file);
+              }
+            }}
+          />
+        </label>
+
+        {dielineSource === "svg-upload" ? (
+          <button className="secondary-button dieline-template-button" type="button" onClick={useTemplateDieline}>
+            <RotateCcw aria-hidden size={16} />
+            Template
+          </button>
+        ) : null}
+      </div>
+
+      {dielineSource === "svg-upload" ? (
+        <p className="dieline-source-note">
+          Imported: <strong>{dielineFileName || "custom dieline"}</strong>
+        </p>
+      ) : null}
+
       <DielineRenderer
         busyFace={busyFace}
         dimensions={dimensions}
+        graph={dielineGraph}
         faces={faces}
         selectedSourceId={selectedSourceId}
         showPrintGuides={showDielineGuides}

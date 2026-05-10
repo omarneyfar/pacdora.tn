@@ -1,4 +1,4 @@
-import type { Bounds, DielineFace, DielineGraph, Point } from "./types";
+import type { Bounds, DielineCutPath, DielineFace, DielineGraph, Point } from "./types";
 
 const EPSILON = 0.000001;
 
@@ -118,6 +118,31 @@ export function getGraphBounds(graph: Pick<DielineGraph, "faces">): Bounds {
   return getPolygonBounds(graph.faces.flatMap((face) => face.vertices));
 }
 
+export function createExteriorCutPaths(faces: DielineFace[]): DielineCutPath[] {
+  const edgeGroups = new Map<string, Array<{ start: Point; end: Point }>>();
+
+  for (const face of faces) {
+    for (const edge of getFaceEdges(face)) {
+      const key = getEdgeKey(edge.start, edge.end);
+      const current = edgeGroups.get(key) ?? [];
+      current.push(edge);
+      edgeGroups.set(key, current);
+    }
+  }
+
+  return Array.from(edgeGroups.values())
+    .filter((edges) => edges.length === 1)
+    .map(([edge], index) => {
+      const points = [edge.start, edge.end];
+
+      return {
+        id: `cut-${index + 1}`,
+        points,
+        d: pointsToPath(points, false)
+      };
+    });
+}
+
 export function normalizeGraphBounds(graph: DielineGraph): DielineGraph {
   const bounds = getGraphBounds(graph);
 
@@ -168,4 +193,17 @@ export function normalizeGraphBounds(graph: DielineGraph): DielineGraph {
 
 function formatCoordinate(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function getFaceEdges(face: DielineFace): Array<{ start: Point; end: Point }> {
+  return face.vertices.map((start, index) => ({
+    start,
+    end: face.vertices[(index + 1) % face.vertices.length]
+  }));
+}
+
+function getEdgeKey(start: Point, end: Point): string {
+  const a = `${start.x},${start.y}`;
+  const b = `${end.x},${end.y}`;
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
 }

@@ -4,16 +4,22 @@ import {
   DEFAULT_CARTON_DIMENSIONS,
   normalizeDimensions,
   type CartonDimensions,
+  type ProjectDieline,
   type ProjectStatus,
 } from "@/domain/packaging";
+import type { DielineGraph } from "@/domain/dieline/types";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "published" | "unsaved";
+export type DielineSource = "template" | "svg-upload";
 
 export type BuilderState = {
   projectId: string;
   projectName: string;
   projectStatus: ProjectStatus;
   dimensions: CartonDimensions;
+  dielineSource: DielineSource;
+  dielineFileName: string;
+  dielineGraph: DielineGraph | null;
   saveStatus: SaveStatus;
   isProjectLoading: boolean;
   isProjectSaving: boolean;
@@ -25,6 +31,9 @@ const initialState: BuilderState = {
   projectName: "Untitled carton",
   projectStatus: "draft",
   dimensions: DEFAULT_CARTON_DIMENSIONS,
+  dielineSource: "template",
+  dielineFileName: "",
+  dielineGraph: null,
   saveStatus: "idle",
   isProjectLoading: false,
   isProjectSaving: false,
@@ -53,6 +62,18 @@ export const builderSlice = createSlice({
 
     setDimensions(state, action: PayloadAction<CartonDimensions>) {
       state.dimensions = normalizeDimensions(action.payload);
+    },
+
+    setImportedDieline(state, action: PayloadAction<{ fileName: string; graph: DielineGraph }>) {
+      state.dielineSource = "svg-upload";
+      state.dielineFileName = action.payload.fileName;
+      state.dielineGraph = action.payload.graph;
+    },
+
+    resetDieline(state) {
+      state.dielineSource = "template";
+      state.dielineFileName = "";
+      state.dielineGraph = null;
     },
 
     setSaveStatus(state, action: PayloadAction<SaveStatus>) {
@@ -95,13 +116,17 @@ export const builderSlice = createSlice({
         name: string;
         status: ProjectStatus;
         dimensions: CartonDimensions;
+        dieline?: ProjectDieline;
       }>,
     ) {
-      const { projectId, name, status, dimensions } = action.payload;
+      const { projectId, name, status, dimensions, dieline } = action.payload;
       state.projectId = projectId;
       state.projectName = name;
       state.projectStatus = status;
       state.dimensions = normalizeDimensions(dimensions);
+      state.dielineSource = dieline?.source ?? "template";
+      state.dielineFileName = dieline?.fileName ?? "";
+      state.dielineGraph = dieline?.source === "svg-upload" ? (dieline.graph ?? null) : null;
       state.saveStatus = status === "published" ? "published" : "saved";
       state.isProjectLoading = false;
       state.isProjectSaving = false;
@@ -119,6 +144,8 @@ export const {
   setProjectName,
   setProjectStatus,
   setDimensions,
+  setImportedDieline,
+  resetDieline,
   setSaveStatus,
   setIsProjectLoading,
   setIsProjectSaving,

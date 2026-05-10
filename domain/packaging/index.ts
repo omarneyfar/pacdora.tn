@@ -60,10 +60,18 @@ export type ProjectFaceAsset = {
   crop: ProjectCropSettings;
 };
 
+export type ProjectDieline = {
+  source: "template" | "svg-upload";
+  fileName?: string;
+  importedAt?: string;
+  graph?: PackagingDielineGraph;
+};
+
 export type ProjectWorkspace = {
   sources: ProjectArtworkSource[];
   selectedSourceId?: string;
   faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>>;
+  dieline?: ProjectDieline;
 };
 
 export type Project = {

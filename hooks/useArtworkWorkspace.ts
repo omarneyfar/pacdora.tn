@@ -26,6 +26,7 @@ export function useArtworkWorkspace() {
   const dispatch = useAppDispatch();
   const sources = useAppSelector((s) => s.artwork.sources);
   const dimensions = useAppSelector((s) => s.builder.dimensions);
+  const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
 
   const handleUpload = useCallback(
     async (face: FaceKey, file: File) => {
@@ -68,7 +69,7 @@ export function useArtworkWorkspace() {
       dispatch(markChanged());
 
       try {
-        const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, normalizedCrop);
+        const dataUrl = await cropArtworkToFace(source.dataUrl, face, dimensions, normalizedCrop, dielineGraph);
 
         dispatch(
           setFace({
@@ -88,7 +89,7 @@ export function useArtworkWorkspace() {
         dispatch(setBusyFace(null));
       }
     },
-    [dimensions, dispatch, sources],
+    [dielineGraph, dimensions, dispatch, sources],
   );
 
   const clearFace = useCallback(

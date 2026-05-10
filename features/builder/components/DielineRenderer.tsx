@@ -16,7 +16,6 @@ import {
   getPackagingTemplate,
   type CartonDimensions,
   type FaceKey,
-  type FaceSpec,
 } from "@/domain/packaging";
 import type { DielineFace, DielineGraph } from "@/domain/dieline/types";
 import { getFaceKeyFromGraphFaceId } from "@/domain/dieline/compat";
@@ -25,6 +24,7 @@ import type { FaceAssets } from "@/store/artworkSlice";
 type DielineRendererProps = {
   busyFace: FaceKey | null;
   dimensions: CartonDimensions;
+  graph?: DielineGraph | null;
   faces: FaceAssets;
   selectedSourceId: string;
   showPrintGuides: boolean;
@@ -40,12 +40,15 @@ type RenderableFace = {
   faceKey: FaceKey;
   inputId: string;
   isBusy: boolean;
-  spec: FaceSpec;
+  isRotated: boolean;
+  outputHeight: number;
+  outputWidth: number;
 };
 
 export const DielineRenderer = memo(function DielineRenderer({
   busyFace,
   dimensions,
+  graph: importedGraph,
   faces,
   selectedSourceId,
   showPrintGuides,
@@ -57,16 +60,21 @@ export const DielineRenderer = memo(function DielineRenderer({
   const rawId = useId();
   const idPrefix = useMemo(() => rawId.replace(/[^a-zA-Z0-9_-]/g, ""), [rawId]);
   const template = getPackagingTemplate();
-  const graph = useMemo(() => template.getDielineGraph(dimensions), [dimensions, template]);
+  const graph = useMemo(() => importedGraph ?? template.getDielineGraph(dimensions), [dimensions, importedGraph, template]);
   const faceSpecs = useMemo(() => template.getFaceSpecs(dimensions), [dimensions, template]);
+  const isImportedGraph = Boolean(importedGraph);
   const renderableFaces = useMemo(
     () =>
       graph.faces.flatMap<RenderableFace>((face) => {
         const faceKey = getFaceKeyFromGraphFaceId(face.id);
 
-        if (!faceKey) {
+        if (!faceKey || !face.artworkEnabled) {
           return [];
         }
+
+        const spec = faceSpecs[faceKey];
+        const outputWidth = isImportedGraph ? face.bounds.width : spec.artworkWidth;
+        const outputHeight = isImportedGraph ? face.bounds.height : spec.artworkHeight;
 
         return [
           {
@@ -75,11 +83,13 @@ export const DielineRenderer = memo(function DielineRenderer({
             faceKey,
             inputId: `${idPrefix}-face-upload-${faceKey}`,
             isBusy: busyFace === faceKey,
-            spec: faceSpecs[faceKey],
+            isRotated: !isImportedGraph && (spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight),
+            outputHeight,
+            outputWidth,
           },
         ];
       }),
-    [busyFace, faceSpecs, faces, graph.faces, idPrefix],
+    [busyFace, faceSpecs, faces, graph.faces, idPrefix, isImportedGraph],
   );
 
   return (
@@ -104,23 +114,28 @@ export const DielineRenderer = memo(function DielineRenderer({
           </defs>
 
           <g className="dieline-face-fill-layer">
-            {renderableFaces.map(({ asset, face }) => (
-              <polygon
-                className={`dieline-face-fill ${asset ? "is-filled" : ""}`}
-                key={face.id}
-                points={getPolygonPoints(face)}
-              />
-            ))}
+            {graph.faces.map((face) => {
+              const faceKey = getFaceKeyFromGraphFaceId(face.id);
+              const hasAsset = faceKey ? Boolean(faces[faceKey]) : false;
+
+              return (
+                <polygon
+                  className={`dieline-face-fill dieline-face-role-${face.role} ${hasAsset ? "is-filled" : ""}`}
+                  key={face.id}
+                  points={getPolygonPoints(face)}
+                />
+              );
+            })}
           </g>
 
           <g className="dieline-artwork-layer">
-            {renderableFaces.map(({ asset, face, spec }) =>
+            {renderableFaces.map(({ asset, face, isRotated }) =>
               asset ? (
                 <ArtworkImage
                   assetUrl={asset.dataUrl}
                   face={face}
                   idPrefix={idPrefix}
-                  isRotated={spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight}
+                  isRotated={isRotated}
                   key={face.id}
                 />
               ) : null,
@@ -130,7 +145,7 @@ export const DielineRenderer = memo(function DielineRenderer({
           {showPrintGuides ? <GraphGuideLayer graph={graph} /> : null}
         </svg>
 
-        {renderableFaces.map(({ asset, face, faceKey, inputId, isBusy, spec }) => (
+        {renderableFaces.map(({ asset, face, faceKey, inputId, isBusy, outputHeight, outputWidth }) => (
           <div
             className={`dieline-face-hotspot ${asset ? "is-filled" : ""}`}
             key={face.id}
@@ -161,7 +176,7 @@ export const DielineRenderer = memo(function DielineRenderer({
               )}
               <strong>{face.label}</strong>
               <span className="face-file">
-                {asset ? asset.fileName : `${spec.artworkWidth} x ${spec.artworkHeight} mm`}
+                {asset ? asset.fileName : `${Math.round(outputWidth)} x ${Math.round(outputHeight)} mm`}
               </span>
             </span>
 

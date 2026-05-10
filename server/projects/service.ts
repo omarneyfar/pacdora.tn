@@ -16,10 +16,12 @@ import {
   type ProjectArtworkSource,
   type ProjectCropSettings,
   type ProjectFaceAsset,
+  type ProjectDieline,
   type ProjectStatus,
   type TemplateId,
   type ProjectWorkspace
 } from "@/domain/packaging";
+import { normalizeDielineGraph } from "@/domain/dieline/validation";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage", "projects");
 const LOCAL_DB_FILE = path.join(process.cwd(), "storage", "projects-db.json");
@@ -60,7 +62,10 @@ type ProjectWorkspaceInput = {
   sources?: ProjectArtworkSourceInput[];
   selectedSourceId?: string | null;
   faceAssets?: Partial<Record<FaceKey, ProjectFaceAssetInput | null>>;
+  dieline?: ProjectDielineInput | null;
 };
+
+type ProjectDielineInput = Partial<ProjectDieline>;
 
 type ProjectArtworkSourceInput = {
   id?: string;
@@ -646,6 +651,15 @@ async function createDuplicateProjectInput(project: Project): Promise<ProjectInp
     return next;
   }, {});
   const faces = await createDuplicateFaceInput(project);
+  const workspace =
+    sources.length > 0 || project.workspace?.dieline
+      ? {
+          sources,
+          selectedSourceId: project.workspace?.selectedSourceId,
+          faceAssets,
+          ...(project.workspace?.dieline ? { dieline: project.workspace.dieline } : {})
+        }
+      : undefined;
 
   return {
     name: `${project.name} copy`,
@@ -653,15 +667,7 @@ async function createDuplicateProjectInput(project: Project): Promise<ProjectInp
     templateId: project.templateId,
     dimensions: project.dimensions,
     ...(Object.keys(faces).length > 0 ? { faces } : {}),
-    ...(sources.length > 0
-      ? {
-          workspace: {
-            sources,
-            selectedSourceId: project.workspace?.selectedSourceId,
-            faceAssets
-          }
-        }
-      : {})
+    ...(workspace ? { workspace } : {})
   };
 }
 
@@ -790,10 +796,16 @@ async function prepareWorkspace(
           ? existing.selectedSourceId
           : sources[0]?.id;
 
+  const hasDielineInput = Object.prototype.hasOwnProperty.call(input, "dieline");
+  const dieline = hasDielineInput
+    ? normalizeWorkspaceDieline(input.dieline, true)
+    : existing?.dieline;
+
   return {
     sources,
     ...(selectedSourceId ? { selectedSourceId } : {}),
-    faceAssets
+    faceAssets,
+    ...(dieline ? { dieline } : {})
   };
 }
 
@@ -977,10 +989,48 @@ function normalizeWorkspace(value: unknown, projectId: string): ProjectWorkspace
     };
   }
 
+  const storedDieline = normalizeWorkspaceDieline(candidate.dieline, false);
+
   return {
     sources,
     ...(selectedSourceId ? { selectedSourceId } : {}),
-    faceAssets
+    faceAssets,
+    ...(storedDieline ? { dieline: storedDieline } : {})
+  };
+}
+
+function normalizeWorkspaceDieline(value: unknown, strict: boolean): ProjectDieline | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (typeof value !== "object") {
+    if (strict) {
+      throw new Error("Imported dieline is invalid.");
+    }
+
+    return undefined;
+  }
+
+  const candidate = value as Partial<ProjectDieline>;
+  if (candidate.source !== "svg-upload") {
+    return undefined;
+  }
+
+  const graph = normalizeDielineGraph(candidate.graph);
+  if (!graph) {
+    if (strict) {
+      throw new Error("Imported dieline graph is invalid.");
+    }
+
+    return undefined;
+  }
+
+  return {
+    source: "svg-upload",
+    fileName: normalizeFileName(candidate.fileName, "custom-dieline.svg"),
+    ...(typeof candidate.importedAt === "string" ? { importedAt: candidate.importedAt } : {}),
+    graph
   };
 }
 

@@ -5,6 +5,7 @@ import {
   type CartonDimensions,
   type FaceKey,
   type Project,
+  type ProjectDieline,
   type ProjectStatus,
   type TemplateId,
 } from "@/domain/packaging";
@@ -37,6 +38,7 @@ export type ProjectSavePayload = {
     sources: SourcePayload[];
     selectedSourceId: string;
     faceAssets: Partial<Record<FaceKey, FacePayload>>;
+    dieline: ProjectDieline | null;
   };
 };
 
@@ -49,6 +51,7 @@ export type ProjectPatchPayload = {
     sources?: SourcePayload[];
     selectedSourceId?: string | null;
     faceAssets?: Partial<Record<FaceKey, FacePayload | null>>;
+    dieline?: ProjectDieline | null;
   };
 };
 
@@ -61,6 +64,9 @@ export type LiveProjectState = {
   sources: SourcePayload[];
   selectedSourceId: string;
   faces: Partial<Record<FaceKey, { sourceId: string; fileName: string; sourceType: "image" | "pdf"; crop: CropSettings } | undefined>>;
+  dielineSource: "template" | "svg-upload";
+  dielineFileName: string;
+  dielineGraph: ProjectDieline["graph"] | null;
 };
 
 export function createFullProjectPayload(
@@ -83,6 +89,14 @@ export function createFullProjectPayload(
         sourceType: source.sourceType,
       })),
       selectedSourceId: state.selectedSourceId,
+      dieline:
+        state.dielineSource === "svg-upload" && state.dielineGraph
+          ? {
+              source: "svg-upload",
+              ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
+              graph: state.dielineGraph,
+            }
+          : null,
       faceAssets: Object.fromEntries(
         FACE_KEYS.flatMap((face) => {
           const asset = state.faces[face];
@@ -140,6 +154,9 @@ export function createProjectPatchPayload(
   }
 
   if (Object.keys(changedFaceAssets).length > 0) workspacePatch.faceAssets = changedFaceAssets;
+  if (!sameJson(current.workspace.dieline, saved.workspace.dieline)) {
+    workspacePatch.dieline = current.workspace.dieline;
+  }
   if (Object.keys(workspacePatch).length > 0) patch.workspace = workspacePatch;
 
   return patch;
@@ -165,6 +182,7 @@ export function createSavedPayloadFromProject(project: Project): ProjectSavePayl
     workspace: {
       sources,
       selectedSourceId: project.workspace?.selectedSourceId ?? sources[0]?.id ?? "",
+      dieline: project.workspace?.dieline ?? null,
       faceAssets: Object.fromEntries(
         FACE_KEYS.flatMap((face) => {
           const asset = project.workspace?.faceAssets[face];

@@ -45,6 +45,7 @@ export function BuilderShell({ projectId: initialProjectId }: { projectId?: stri
 
   const isProjectLoading = useAppSelector((s) => s.builder.isProjectLoading);
   const dimensions = useAppSelector((s) => s.builder.dimensions);
+  const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
   const faces = useAppSelector((s) => s.artwork.faces);
   const sources = useAppSelector((s) => s.artwork.sources);
   const selectedSource = useAppSelector((s) =>
@@ -136,6 +137,7 @@ export function BuilderShell({ projectId: initialProjectId }: { projectId?: stri
         <CropModal
           key={`${cropModal.face}-${cropModal.sourceId}`}
           dimensions={dimensions}
+          dielineGraph={dielineGraph}
           face={cropModal.face}
           initialSettings={cropModal.settings}
           source={sources.find((s) => s.id === cropModal.sourceId)}
