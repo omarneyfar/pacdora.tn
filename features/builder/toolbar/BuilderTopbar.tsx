@@ -18,20 +18,12 @@ import { markChanged, setProjectName, setProjectStatus } from "@/store/builderSl
 import { clearShareUrl } from "@/store/uiSlice";
 import { StatusControl } from "../components/StatusControl";
 
-/* ── Props ─────────────────────────────────────────────────────── */
-
 type BuilderTopbarProps = {
   onSave: () => Promise<unknown>;
   onPublish: () => Promise<void>;
   copyShareUrl: () => Promise<void>;
 };
 
-/* ── Component ─────────────────────────────────────────────────── */
-
-/**
- * Top navigation bar for the builder — brand, project name input,
- * status toggle, save/publish buttons, and share URL display.
- */
 export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbarProps) {
   const dispatch = useAppDispatch();
 
@@ -43,40 +35,40 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
   const isProjectSaving = useAppSelector((s) => s.builder.isProjectSaving);
   const isSharing = useAppSelector((s) => s.builder.isSharing);
   const isProjectLoading = useAppSelector((s) => s.builder.isProjectLoading);
-
   const busyFace = useAppSelector((s) => s.artwork.busyFace);
   const isRecropping = useAppSelector((s) => s.artwork.isRecropping);
   const uploadedCount = Object.keys(useAppSelector((s) => s.artwork.faces)).length;
-
   const shareUrl = useAppSelector((s) => s.ui.shareUrl);
   const copied = useAppSelector((s) => s.ui.copied);
 
   const canSave = !busyFace && !isProjectLoading && !isProjectSaving && !isRecropping && !isSharing;
   const canShare = uploadedCount > 0 && canSave;
+  const saveStatusLabel = getSaveStatusLabel(saveStatus);
 
   const handleNameChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      dispatch(markChanged());
+      dispatch(clearShareUrl());
       dispatch(setProjectName(event.currentTarget.value));
+      dispatch(markChanged({ forceDraft: false }));
     },
     [dispatch],
   );
 
   const handleStatusChange = useCallback(
     (status: ProjectStatus) => {
-      if (status === projectStatus) return;
+      if (status === projectStatus) {
+        return;
+      }
+
       dispatch(clearShareUrl());
       dispatch(setProjectStatus(status));
-      dispatch(markChanged());
+      dispatch(markChanged({ forceDraft: false }));
     },
     [dispatch, projectStatus],
   );
 
-  const saveStatusLabel = getSaveStatusLabel(saveStatus);
-
   return (
     <header className="topbar">
-      {/* ── Brand ──────────────────────────────────────────────── */}
       <div className="brand">
         <span className="brand-mark">
           <Box aria-hidden size={19} />
@@ -92,7 +84,6 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
         </div>
       </div>
 
-      {/* ── Actions ────────────────────────────────────────────── */}
       <div className="header-actions">
         <div className="dimension-pill">
           {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
@@ -109,9 +100,7 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
           Projects
         </a>
 
-        {saveStatusLabel ? (
-          <span className="save-status">{saveStatusLabel}</span>
-        ) : null}
+        {saveStatusLabel ? <span className="save-status">{saveStatusLabel}</span> : null}
 
         <button
           className="secondary-button header-save-button"
@@ -141,7 +130,6 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
           Publish
         </button>
 
-        {/* ── Share URL display ────────────────────────────────── */}
         {shareUrl ? (
           <div className="header-share-result">
             <input aria-label="Share URL" readOnly value={shareUrl} />
@@ -151,11 +139,7 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
               type="button"
               onClick={copyShareUrl}
             >
-              {copied ? (
-                <Check aria-hidden size={18} />
-              ) : (
-                <Copy aria-hidden size={18} />
-              )}
+              {copied ? <Check aria-hidden size={18} /> : <Copy aria-hidden size={18} />}
             </button>
             <a
               className="icon-button"
@@ -173,8 +157,6 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
   );
 }
 
-/* ── Helpers ──────────────────────────────────────────────────── */
-
 function getSaveStatusLabel(status: string): string {
   switch (status) {
     case "saved":
@@ -184,7 +166,7 @@ function getSaveStatusLabel(status: string): string {
     case "unsaved":
       return "Unsaved changes";
     case "saving":
-      return "Saving…";
+      return "Saving...";
     default:
       return "";
   }

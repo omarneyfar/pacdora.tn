@@ -1,4 +1,5 @@
 import { BuilderShell } from "@/features/builder/BuilderShell";
+import { StoreProvider } from "@/store/StoreProvider";
 
 type EditProjectPageProps = {
   params: Promise<{ id: string }>;
@@ -6,5 +7,9 @@ type EditProjectPageProps = {
 
 export default async function EditProjectPage({ params }: EditProjectPageProps) {
   const { id } = await params;
-  return <BuilderShell projectId={id} />;
+  return (
+    <StoreProvider key={id}>
+      <BuilderShell projectId={id} />
+    </StoreProvider>
+  );
 }

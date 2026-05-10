@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   FACE_KEYS,
   normalizeDimensions,
+  type FaceKey,
   type Project,
   type ProjectStatus,
 } from "@/domain/packaging";
@@ -17,12 +18,18 @@ import { createProject, readProject, updateProject } from "@/features/projects/p
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   hydrateBuilder,
+  resetBuilder,
   setIsProjectLoading,
   setIsProjectSaving,
   setSaveStatus,
 } from "@/store/builderSlice";
-import { hydrateArtwork, type ArtworkSource, type FaceAsset } from "@/store/artworkSlice";
-import { clearShareUrl, setError } from "@/store/uiSlice";
+import {
+  hydrateArtwork,
+  resetArtwork,
+  type ArtworkSource,
+  type FaceAsset,
+} from "@/store/artworkSlice";
+import { clearShareUrl, resetUi, setError } from "@/store/uiSlice";
 import {
   createFullProjectPayload,
   createProjectPatchPayload,
@@ -32,10 +39,6 @@ import {
   type ProjectSavePayload,
 } from "@/utils/projectPayload";
 
-/**
- * Manages project lifecycle — loading, saving, patching, and hydrating.
- * All async persistence logic lives here, not in components.
- */
 export function useProjectPersistence(initialProjectId?: string) {
   const dispatch = useAppDispatch();
 
@@ -47,12 +50,22 @@ export function useProjectPersistence(initialProjectId?: string) {
   const selectedSourceId = useAppSelector((s) => s.artwork.selectedSourceId);
   const faces = useAppSelector((s) => s.artwork.faces);
 
-  // These refs track the last saved snapshot for diffing — they don't drive renders.
   const lastSavedProjectRef = useRef<Project | null>(null);
   const lastSavedPayloadRef = useRef<ProjectSavePayload | null>(null);
   const suppressDimSyncRef = useRef(false);
 
-  /* ── Hydrate project state from API response ─────────────────── */
+  const clearSavedSnapshot = useCallback(() => {
+    lastSavedProjectRef.current = null;
+    lastSavedPayloadRef.current = null;
+  }, []);
+
+  const resetBuilderSession = useCallback(() => {
+    suppressDimSyncRef.current = true;
+    clearSavedSnapshot();
+    dispatch(resetBuilder());
+    dispatch(resetArtwork());
+    dispatch(resetUi());
+  }, [clearSavedSnapshot, dispatch]);
 
   const hydrateProject = useCallback(
     async (project: Project) => {
@@ -70,7 +83,7 @@ export function useProjectPersistence(initialProjectId?: string) {
       const renderedFaces = await renderProjectFaces(project);
       const hasEditableWorkspace = Boolean(project.workspace?.sources.length);
 
-      const nextFaces = FACE_KEYS.reduce<Partial<Record<string, FaceAsset>>>((acc, face) => {
+      const nextFaces = FACE_KEYS.reduce<Partial<Record<FaceKey, FaceAsset>>>((acc, face) => {
         const asset = project.workspace?.faceAssets[face];
 
         if (asset) {
@@ -123,24 +136,25 @@ export function useProjectPersistence(initialProjectId?: string) {
     [dispatch],
   );
 
-  /* ── Load project on mount ───────────────────────────────────── */
-
   useEffect(() => {
-    if (!initialProjectId) return;
+    resetBuilderSession();
+
+    if (!initialProjectId) {
+      return;
+    }
 
     let isMounted = true;
+    const loadProjectId = initialProjectId;
 
     async function loadProject() {
       dispatch(setIsProjectLoading(true));
       dispatch(setError(""));
 
       try {
-        const project = await readProject(initialProjectId!);
+        const project = await readProject(loadProjectId);
         if (isMounted) {
           await hydrateProject(project);
-          dispatch(
-            setSaveStatus(project.status === "published" ? "published" : "saved"),
-          );
+          dispatch(setSaveStatus(project.status === "published" ? "published" : "saved"));
         }
       } catch (loadError) {
         if (isMounted) {
@@ -158,9 +172,7 @@ export function useProjectPersistence(initialProjectId?: string) {
     return () => {
       isMounted = false;
     };
-  }, [initialProjectId, dispatch, hydrateProject]);
-
-  /* ── Save / create project ───────────────────────────────────── */
+  }, [dispatch, hydrateProject, initialProjectId, resetBuilderSession]);
 
   const saveProject = useCallback(
     async (nextStatus?: ProjectStatus): Promise<Project | null> => {
@@ -169,28 +181,32 @@ export function useProjectPersistence(initialProjectId?: string) {
       dispatch(setError(""));
 
       try {
-        const liveState = {
-          projectName,
-          projectStatus: statusToSave,
-          dimensions,
-          sources: sources.map((s) => ({
-            id: s.id,
-            dataUrl: s.dataUrl,
-            fileName: s.fileName,
-            mimeType: s.mimeType,
-            sourceType: s.sourceType,
-          })),
-          selectedSourceId,
-          faces,
-        };
-
-        const fullPayload = createFullProjectPayload(liveState, statusToSave);
+        const fullPayload = createFullProjectPayload(
+          {
+            projectName,
+            projectStatus: statusToSave,
+            dimensions,
+            sources: sources.map((source) => ({
+              id: source.id,
+              dataUrl: source.dataUrl,
+              fileName: source.fileName,
+              mimeType: source.mimeType,
+              sourceType: source.sourceType,
+            })),
+            selectedSourceId,
+            faces,
+          },
+          statusToSave,
+        );
 
         if (projectId) {
           const patch = createProjectPatchPayload(fullPayload, lastSavedPayloadRef.current);
+
           if (isEmptyPatchPayload(patch)) {
             dispatch(
-              setSaveStatus(lastSavedProjectRef.current?.status === "published" ? "published" : "saved"),
+              setSaveStatus(
+                lastSavedProjectRef.current?.status === "published" ? "published" : "saved",
+              ),
             );
             return lastSavedProjectRef.current;
           }
@@ -202,10 +218,7 @@ export function useProjectPersistence(initialProjectId?: string) {
 
         const project = await createProject(fullPayload);
         await hydrateProject(project);
-
-        // Update browser URL without a full navigation.
         window.history.replaceState(null, "", `/project/${project.id}/edit`);
-
         return project;
       } catch (saveError) {
         dispatch(setError(getErrorMessage(saveError, "Could not save this project.")));
@@ -215,15 +228,15 @@ export function useProjectPersistence(initialProjectId?: string) {
       }
     },
     [
+      dimensions,
       dispatch,
+      faces,
       hydrateProject,
       projectId,
       projectName,
       projectStatus,
-      dimensions,
-      sources,
       selectedSourceId,
-      faces,
+      sources,
     ],
   );
 

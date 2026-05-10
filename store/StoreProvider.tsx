@@ -1,14 +1,13 @@
 "use client";
 
-import { Provider } from "react-redux";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { Provider } from "react-redux";
 
-import { store } from "./index";
+import { makeStore } from "./index";
 
-/**
- * Client-side Redux Provider wrapper.
- * Must be a separate "use client" component because the root layout is a Server Component.
- */
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const [store] = useState(makeStore);
+
   return <Provider store={store}>{children}</Provider>;
 }

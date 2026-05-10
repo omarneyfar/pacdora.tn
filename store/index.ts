@@ -1,31 +1,26 @@
 "use client";
 
-import { useDispatch, useSelector } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { useDispatch, useSelector } from "react-redux";
 
-import { builderReducer } from "./builderSlice";
 import { artworkReducer } from "./artworkSlice";
+import { builderReducer } from "./builderSlice";
 import { uiReducer } from "./uiSlice";
 
-/* ── Store ─────────────────────────────────────────────────────── */
+export function makeStore() {
+  return configureStore({
+    reducer: {
+      artwork: artworkReducer,
+      builder: builderReducer,
+      ui: uiReducer,
+    },
+  });
+}
 
-export const store = configureStore({
-  reducer: {
-    builder: builderReducer,
-    artwork: artworkReducer,
-    ui: uiReducer,
-  },
-});
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];
 
-/* ── Typed helpers ─────────────────────────────────────────────── */
-
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-/**
- * Always use these typed hooks instead of the raw `useDispatch` / `useSelector`.
- * This gives full type inference for selectors and action creators.
- */
 export function useAppDispatch() {
   return useDispatch<AppDispatch>();
 }

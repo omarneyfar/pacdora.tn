@@ -7,11 +7,7 @@ import {
   type ProjectStatus,
 } from "@/domain/packaging";
 
-/* ── Save status enum ──────────────────────────────────────────── */
-
 export type SaveStatus = "idle" | "saving" | "saved" | "published" | "unsaved";
-
-/* ── State shape ───────────────────────────────────────────────── */
 
 export type BuilderState = {
   projectId: string;
@@ -35,7 +31,9 @@ const initialState: BuilderState = {
   isSharing: false,
 };
 
-/* ── Slice ─────────────────────────────────────────────────────── */
+type MarkChangedPayload = {
+  forceDraft: boolean;
+};
 
 export const builderSlice = createSlice({
   name: "builder",
@@ -73,13 +71,23 @@ export const builderSlice = createSlice({
       state.isSharing = action.payload;
     },
 
-    /** Mark the project as changed — resets share URL and switches status to unsaved. */
-    markChanged(state) {
-      state.projectStatus = "draft";
-      state.saveStatus = state.projectId ? "unsaved" : "idle";
+    markChanged: {
+      reducer(state, action: PayloadAction<MarkChangedPayload>) {
+        if (action.payload.forceDraft) {
+          state.projectStatus = "draft";
+        }
+
+        state.saveStatus = state.projectId ? "unsaved" : "idle";
+      },
+      prepare(payload?: Partial<MarkChangedPayload>) {
+        return {
+          payload: {
+            forceDraft: payload?.forceDraft ?? true,
+          },
+        };
+      },
     },
 
-    /** Hydrate builder identity from a loaded project. */
     hydrateBuilder(
       state,
       action: PayloadAction<{
@@ -96,9 +104,10 @@ export const builderSlice = createSlice({
       state.dimensions = normalizeDimensions(dimensions);
       state.saveStatus = status === "published" ? "published" : "saved";
       state.isProjectLoading = false;
+      state.isProjectSaving = false;
+      state.isSharing = false;
     },
 
-    /** Reset to a blank project state. */
     resetBuilder() {
       return initialState;
     },
