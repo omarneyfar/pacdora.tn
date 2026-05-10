@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Box, FileUp, LoaderCircle, Save } from "lucide-react";
+import { Box, FileUp, LoaderCircle, Pen, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { importSvgDieline } from "@/domain/dieline/svgImporter";
@@ -9,6 +9,9 @@ import type { DielineFace, DielineGraph } from "@/domain/dieline/types";
 import type { DielineTemplate, DielineTemplateStatus } from "@/domain/dielines";
 import { createDieline, readDieline, updateDieline } from "./dielineClient";
 import { DielinePreview } from "./DielinePreview";
+import { DielineCreator } from "./DielineCreator";
+
+type StudioMode = "import" | "create";
 
 type DielineStudioProps = {
   dielineId?: string;
@@ -27,6 +30,8 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
   const [notice, setNotice] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(dielineId));
   const [isSaving, setIsSaving] = useState(false);
+  const [studioMode, setStudioMode] = useState<StudioMode>("import");
+
 
   const artworkFaceCount = useMemo(() => graph?.faces.filter((face) => face.artworkEnabled).length ?? 0, [graph]);
 
@@ -112,7 +117,7 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
 
   async function saveTemplate() {
     if (!graph) {
-      setError("Import an SVG dieline before saving.");
+      setError("Create or import a dieline before saving.");
       return;
     }
 
@@ -124,8 +129,8 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
       const payload = {
         name,
         status,
-        source: "svg-upload" as const,
-        fileName: sourceFileName,
+        source: sourceFileName ? ("svg-upload" as const) : ("svg-upload" as const),
+        fileName: sourceFileName || "manual-creation",
         graph,
       };
       const saved = templateId ? await updateDieline(templateId, payload) : await createDieline(payload);
@@ -170,7 +175,7 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
         </div>
       </header>
 
-      <section className="dieline-studio-grid">
+      <section className={`dieline-studio-grid ${studioMode === "create" ? "dieline-studio-grid-create" : ""}`}>
         <aside className="dieline-studio-sidebar">
           <div className="dieline-studio-card">
             <span className="eyebrow">Setup</span>
@@ -185,16 +190,41 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
                 </button>
               ))}
             </div>
-            <label className="primary-button dieline-studio-import">
-              <FileUp aria-hidden size={18} />
-              Import SVG
-              <input accept=".svg,image/svg+xml" type="file" onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) void importFile(file);
-              }} />
-            </label>
-            {sourceFileName ? <p className="dieline-source-note">Source: <strong>{sourceFileName}</strong></p> : null}
+
+            {/* ── Mode toggle ─────────────────────────────── */}
+            <div className="studio-mode-toggle" aria-label="Creation mode">
+              <button
+                className={`studio-mode-btn ${studioMode === "import" ? "is-active" : ""}`}
+                type="button"
+                onClick={() => setStudioMode("import")}
+              >
+                <FileUp aria-hidden size={14} />
+                Import SVG
+              </button>
+              <button
+                className={`studio-mode-btn ${studioMode === "create" ? "is-active" : ""}`}
+                type="button"
+                onClick={() => setStudioMode("create")}
+              >
+                <Pen aria-hidden size={14} />
+                Create manually
+              </button>
+            </div>
+
+            {studioMode === "import" ? (
+              <>
+                <label className="primary-button dieline-studio-import">
+                  <FileUp aria-hidden size={18} />
+                  Choose SVG file
+                  <input accept=".svg,image/svg+xml" type="file" onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+                    if (file) void importFile(file);
+                  }} />
+                </label>
+                {sourceFileName ? <p className="dieline-source-note">Source: <strong>{sourceFileName}</strong></p> : null}
+              </>
+            ) : null}
           </div>
 
           <div className="dieline-studio-card">
@@ -220,52 +250,67 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
           ) : null}
         </aside>
 
-        <section className="dieline-studio-preview" aria-label="Dieline preview">
-          {isLoading ? (
-            <div className="projects-empty">
-              <LoaderCircle aria-hidden className="spin" size={26} />
-              Opening dieline
-            </div>
-          ) : graph ? (
-            <DielinePreview graph={graph} />
-          ) : (
-            <div className="projects-empty">
-              <strong>No dieline imported</strong>
-              <span>Upload an SVG to begin preparing faces and flaps.</span>
-            </div>
-          )}
-        </section>
+        {studioMode === "create" ? (
+          <section className="dieline-studio-preview dieline-studio-preview-full" aria-label="Manual dieline creator">
+            <DielineCreator
+              initialGraph={graph ?? undefined}
+              onApply={(createdGraph) => {
+                setGraph(createdGraph);
+                setSourceFileName("");
+                setStudioMode("import");
+              }}
+            />
+          </section>
+        ) : (
+          <>
+            <section className="dieline-studio-preview" aria-label="Dieline preview">
+              {isLoading ? (
+                <div className="projects-empty">
+                  <LoaderCircle aria-hidden className="spin" size={26} />
+                  Opening dieline
+                </div>
+              ) : graph ? (
+                <DielinePreview graph={graph} />
+              ) : (
+                <div className="projects-empty">
+                  <strong>No dieline imported</strong>
+                  <span>Upload an SVG or switch to &ldquo;Create manually&rdquo; to build one visually.</span>
+                </div>
+              )}
+            </section>
 
-        <aside className="dieline-face-editor" aria-label="Detected faces">
-          <div className="dieline-studio-card">
-            <span className="eyebrow">Detected parts</span>
-            {graph ? (
-              <div className="dieline-face-list">
-                {graph.faces.map((face) => (
-                  <article className="dieline-face-editor-row" key={face.id}>
-                    <div>
-                      <strong>{face.id}</strong>
-                      <span>{Math.round(face.bounds.width)} x {Math.round(face.bounds.height)} mm</span>
-                    </div>
-                    <input aria-label={`Label for ${face.id}`} value={face.label} onChange={(event) => updateFace(face.id, { label: event.currentTarget.value })} />
-                    <select aria-label={`Role for ${face.id}`} value={face.role} onChange={(event) => updateFace(face.id, { role: event.currentTarget.value as DielineFace["role"] })}>
-                      <option value="panel">Panel</option>
-                      <option value="flap">Flap</option>
-                      <option value="glue">Glue</option>
-                      <option value="unknown">Unknown</option>
-                    </select>
-                    <label className="toggle-row compact-toggle-row">
-                      <input checked={face.artworkEnabled} type="checkbox" onChange={(event) => updateFace(face.id, { artworkEnabled: event.currentTarget.checked })} />
-                      Artwork
-                    </label>
-                  </article>
-                ))}
+            <aside className="dieline-face-editor" aria-label="Detected faces">
+              <div className="dieline-studio-card">
+                <span className="eyebrow">Detected parts</span>
+                {graph ? (
+                  <div className="dieline-face-list">
+                    {graph.faces.map((face) => (
+                      <article className="dieline-face-editor-row" key={face.id}>
+                        <div>
+                          <strong>{face.id}</strong>
+                          <span>{Math.round(face.bounds.width)} x {Math.round(face.bounds.height)} mm</span>
+                        </div>
+                        <input aria-label={`Label for ${face.id}`} value={face.label} onChange={(event) => updateFace(face.id, { label: event.currentTarget.value })} />
+                        <select aria-label={`Role for ${face.id}`} value={face.role} onChange={(event) => updateFace(face.id, { role: event.currentTarget.value as DielineFace["role"] })}>
+                          <option value="panel">Panel</option>
+                          <option value="flap">Flap</option>
+                          <option value="glue">Glue</option>
+                          <option value="unknown">Unknown</option>
+                        </select>
+                        <label className="toggle-row compact-toggle-row">
+                          <input checked={face.artworkEnabled} type="checkbox" onChange={(event) => updateFace(face.id, { artworkEnabled: event.currentTarget.checked })} />
+                          Artwork
+                        </label>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="helper-text">Detected faces will appear here after import.</p>
+                )}
               </div>
-            ) : (
-              <p className="helper-text">Detected faces will appear here after import.</p>
-            )}
-          </div>
-        </aside>
+            </aside>
+          </>
+        )}
       </section>
     </main>
   );

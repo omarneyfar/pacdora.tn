@@ -10,7 +10,10 @@ const projectRoot = path.resolve(scriptsDir, "..");
 const moduleCache = new Map();
 
 const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"));
+const geometry = loadTs(path.join(projectRoot, "domain", "dieline", "geometry"));
+const { buildFoldedModel, getFoldErrors } = loadTs(path.join(projectRoot, "domain", "dieline", "fold3d"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
+const { getSeedDielines } = loadTs(path.join(projectRoot, "server", "dielines", "seedDielines"));
 const dimensions = { width: 232, height: 70, depth: 232 };
 const template = packaging.getPackagingTemplate("folding-carton");
 const graph = template.getDielineGraph(dimensions);
@@ -62,7 +65,220 @@ assert(imported.faces.some((face) => face.role === "flap" && !face.artworkEnable
 assert(imported.creases.length === 5, `Expected 5 imported creases, got ${imported.creases.length}`);
 assert(imported.cutPaths.length > 0, "Imported SVG should have generated cut paths");
 
+assertFoldedModel(graph, "default folding carton");
+assertFoldedModel(imported, "SVG fixture");
+assertTwoPanelFold();
+assertNestedFold();
+
+for (const seed of getSeedDielines()) {
+  assertFoldedModel(seed.graph, `seed ${seed.id}`);
+}
+
 console.log("Dieline graph verification passed.");
+
+function assertTwoPanelFold() {
+  const root = geometry.createDielineFace({
+    id: "root",
+    label: "Root",
+    role: "panel",
+    artworkEnabled: true,
+    vertices: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 0, y: 100 }
+    ]
+  });
+  const side = geometry.createDielineFace({
+    id: "side",
+    label: "Side",
+    role: "panel",
+    artworkEnabled: true,
+    vertices: [
+      { x: 0, y: -60 },
+      { x: 100, y: -60 },
+      { x: 100, y: 0 },
+      { x: 0, y: 0 }
+    ]
+  });
+  const twoPanelGraph = {
+    size: { width: 100, height: 160 },
+    faces: [root, side],
+    creases: [
+      {
+        id: "crease-root-side",
+        faceA: "root",
+        faceB: "side",
+        edgeStart: { x: 0, y: 0 },
+        edgeEnd: { x: 100, y: 0 },
+        foldAngle: Math.PI / 2,
+        direction: 1
+      }
+    ],
+    cutPaths: geometry.createExteriorCutPaths([root, side]),
+    faceTree: [
+      {
+        faceId: "root",
+        creaseId: null,
+        children: [{ faceId: "side", creaseId: "crease-root-side", children: [] }]
+      }
+    ]
+  };
+
+  const model = assertFoldedModel(twoPanelGraph, "two-panel hinge");
+  const sideFace = model.faces.find((face) => face.faceId === "side");
+  assert(sideFace?.worldVertices.some((point) => Math.abs(point[1]) > 0.25), "Two-panel hinge did not fold out of plane");
+}
+
+function assertNestedFold() {
+  const root = geometry.createDielineFace({
+    id: "root",
+    label: "Root",
+    role: "panel",
+    artworkEnabled: true,
+    vertices: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 0, y: 100 }
+    ]
+  });
+  const side = geometry.createDielineFace({
+    id: "side",
+    label: "Side",
+    role: "panel",
+    artworkEnabled: true,
+    vertices: [
+      { x: 100, y: 0 },
+      { x: 160, y: 0 },
+      { x: 160, y: 100 },
+      { x: 100, y: 100 }
+    ]
+  });
+  const flap = geometry.createDielineFace({
+    id: "flap",
+    label: "Flap",
+    role: "flap",
+    artworkEnabled: false,
+    vertices: [
+      { x: 160, y: 0 },
+      { x: 210, y: 0 },
+      { x: 210, y: 100 },
+      { x: 160, y: 100 }
+    ]
+  });
+  const nestedGraph = {
+    size: { width: 210, height: 100 },
+    faces: [root, side, flap],
+    creases: [
+      {
+        id: "crease-root-side",
+        faceA: "root",
+        faceB: "side",
+        edgeStart: { x: 100, y: 0 },
+        edgeEnd: { x: 100, y: 100 },
+        foldAngle: Math.PI / 2,
+        direction: 1
+      },
+      {
+        id: "crease-side-flap",
+        faceA: "side",
+        faceB: "flap",
+        edgeStart: { x: 160, y: 0 },
+        edgeEnd: { x: 160, y: 100 },
+        foldAngle: Math.PI / 2,
+        direction: 1
+      }
+    ],
+    cutPaths: geometry.createExteriorCutPaths([root, side, flap]),
+    faceTree: [
+      {
+        faceId: "root",
+        creaseId: null,
+        children: [
+          {
+            faceId: "side",
+            creaseId: "crease-root-side",
+            children: [{ faceId: "flap", creaseId: "crease-side-flap", children: [] }]
+          }
+        ]
+      }
+    ]
+  };
+
+  const model = assertFoldedModel(nestedGraph, "nested hinge");
+  const flapFace = model.faces.find((face) => face.faceId === "flap");
+  assert(flapFace?.worldVertices.every((point) => Number.isFinite(point[0])), "Nested flap did not produce finite vertices");
+}
+
+function assertFoldedModel(testGraph, label) {
+  const model = buildFoldedModel(testGraph);
+  const errors = getFoldErrors(model);
+  const warnings = model.diagnostics.filter((diagnostic) => diagnostic.level === "warning");
+
+  assert(errors.length === 0, `${label}: fold errors: ${errors.map((error) => error.message).join("; ")}`);
+  assert(warnings.length === 0, `${label}: fold warnings: ${warnings.map((warning) => warning.message).join("; ")}`);
+  assert(model.faces.length === testGraph.faces.length, `${label}: expected ${testGraph.faces.length} folded faces, got ${model.faces.length}`);
+
+  const graphFaceIds = new Set(testGraph.faces.map((face) => face.id));
+  const foldedFaceIds = new Set(model.faces.map((face) => face.faceId));
+  assert(foldedFaceIds.size === model.faces.length, `${label}: folded model contains duplicate face IDs`);
+
+  for (const faceId of graphFaceIds) {
+    assert(foldedFaceIds.has(faceId), `${label}: folded model missing face ${faceId}`);
+  }
+
+  for (const face of model.faces) {
+    assert(face.worldMatrix.length === 16, `${label}: ${face.faceId} world matrix is not 4x4`);
+    assert(face.worldMatrix.every(Number.isFinite), `${label}: ${face.faceId} world matrix contains non-finite values`);
+    assert(face.worldVertices.length >= 3, `${label}: ${face.faceId} has too few world vertices`);
+    assert(face.worldVertices.flat().every(Number.isFinite), `${label}: ${face.faceId} world vertices contain non-finite values`);
+  }
+
+  assert([...model.bounds.min, ...model.bounds.max, ...model.bounds.size, ...model.bounds.center, model.bounds.radius].every(Number.isFinite), `${label}: bounds are not finite`);
+  assert(model.bounds.radius > 0, `${label}: bounds radius must be positive`);
+  assertCreaseCoincidence(testGraph, model, label);
+
+  return model;
+}
+
+function assertCreaseCoincidence(testGraph, model, label) {
+  const foldedById = new Map(model.faces.map((face) => [face.faceId, face]));
+  const graphFaceById = new Map(testGraph.faces.map((face) => [face.id, face]));
+
+  for (const crease of testGraph.creases) {
+    const foldedA = foldedById.get(crease.faceA);
+    const foldedB = foldedById.get(crease.faceB);
+    const graphA = graphFaceById.get(crease.faceA);
+    const graphB = graphFaceById.get(crease.faceB);
+
+    if (!foldedA || !foldedB || !graphA || !graphB) {
+      continue;
+    }
+
+    for (const point of [crease.edgeStart, crease.edgeEnd]) {
+      const worldA = transformLocalPoint(foldedA.worldMatrix, {
+        x: (point.x - graphA.bounds.x) * model.scale,
+        y: (point.y - graphA.bounds.y) * model.scale
+      });
+      const worldB = transformLocalPoint(foldedB.worldMatrix, {
+        x: (point.x - graphB.bounds.x) * model.scale,
+        y: (point.y - graphB.bounds.y) * model.scale
+      });
+      const distance = Math.hypot(worldA[0] - worldB[0], worldA[1] - worldB[1], worldA[2] - worldB[2]);
+
+      assert(distance < 0.00001, `${label}: crease ${crease.id} endpoints are separated by ${distance}`);
+    }
+  }
+}
+
+function transformLocalPoint(matrix, point) {
+  return [
+    matrix[0] * point.x + matrix[4] * point.y + matrix[12],
+    matrix[1] * point.x + matrix[5] * point.y + matrix[13],
+    matrix[2] * point.x + matrix[6] * point.y + matrix[14]
+  ];
+}
 
 function loadTs(modulePath) {
   const filename = resolveTsFile(modulePath);

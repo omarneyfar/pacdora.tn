@@ -69,6 +69,7 @@ if (!projectResponse.ok()) {
 }
 
 const project = await projectResponse.json();
+const customDieline = await ensureCustomDieline(api);
 const browser = await chromium.launch();
 
 try {
@@ -84,16 +85,21 @@ try {
     });
     const page = await context.newPage();
 
-    await page.goto(baseURL, { waitUntil: "networkidle" });
+    await page.goto(baseURL, { waitUntil: "domcontentloaded" });
     await assertLayout(page, `home-${target.name}`);
     await assertCanvasPixels(page, `home-${target.name}`);
 
-    await page.goto(`${baseURL}/project/${project.id}/edit`, { waitUntil: "networkidle" });
+    await page.goto(`${baseURL}/project/${project.id}/edit`, { waitUntil: "domcontentloaded" });
     await assertLayout(page, `edit-${target.name}`);
     await assertDielinePixels(page, `edit-${target.name}`);
     await assertCanvasPixels(page, `edit-${target.name}`);
 
-    await page.goto(`${baseURL}/view/${project.id}`, { waitUntil: "networkidle" });
+    await page.goto(`${baseURL}/?dielineId=${customDieline.id}`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.body.innerText.includes("Custom dieline") || document.body.innerText.includes("Using:"), null, { timeout: 10000 });
+    await assertLayout(page, `custom-dieline-${target.name}`);
+    await assertCanvasPixels(page, `custom-dieline-${target.name}`);
+
+    await page.goto(`${baseURL}/view/${project.id}`, { waitUntil: "domcontentloaded" });
     await assertLayout(page, `view-${target.name}`);
     await assertCanvasPixels(page, `view-${target.name}`);
 
@@ -106,7 +112,158 @@ try {
 
 console.log(`Visual verification passed for project ${project.id}`);
 
+async function ensureCustomDieline(apiContext) {
+  const listResponse = await apiContext.get("/api/dielines?limit=80&status=ready");
+
+  if (listResponse.ok()) {
+    const payload = await listResponse.json();
+    const templates = payload.templates ?? [];
+    const preferred = templates.find((template) =>
+      /seed-(sleeve|ste|mailer|tray)/.test(template.id),
+    );
+
+    if (preferred) {
+      return preferred;
+    }
+
+    if (templates[0]) {
+      return templates[0];
+    }
+  }
+
+  const createResponse = await apiContext.post("/api/dielines", {
+    data: {
+      name: "Visual verification custom tray",
+      status: "ready",
+      source: "svg-upload",
+      fileName: "visual-verification-custom-tray",
+      graph: createCustomTrayGraph()
+    }
+  });
+
+  if (!createResponse.ok()) {
+    throw new Error(`Could not create custom visual verification dieline: ${createResponse.status()}`);
+  }
+
+  return createResponse.json();
+}
+
+function createCustomTrayGraph() {
+  const W = 180;
+  const H = 120;
+  const D = 42;
+  const x0 = D;
+  const x1 = x0 + W;
+  const y0 = D;
+  const y1 = y0 + H;
+  const y2 = y1 + D;
+
+  const faces = [
+    face("base", "Base", x0, y0, W, H, "panel", true),
+    face("wall-top", "Top wall", x0, 0, W, D, "panel", true),
+    face("wall-bottom", "Bottom wall", x0, y1, W, D, "panel", true),
+    face("wall-left", "Left wall", 0, y0, D, H, "panel", true),
+    face("wall-right", "Right wall", x1, y0, D, H, "panel", true),
+    face("lid-panel", "Lid panel", x0, y2, W, W, "panel", true)
+  ];
+  const creases = [
+    crease("cr-base-top", "base", "wall-top", { x: x0, y: y0 }, { x: x1, y: y0 }),
+    crease("cr-base-bottom", "base", "wall-bottom", { x: x0, y: y1 }, { x: x1, y: y1 }),
+    crease("cr-base-left", "base", "wall-left", { x: x0, y: y0 }, { x: x0, y: y1 }),
+    crease("cr-base-right", "base", "wall-right", { x: x1, y: y0 }, { x: x1, y: y1 }),
+    crease("cr-bottom-lid", "wall-bottom", "lid-panel", { x: x0, y: y2 }, { x: x1, y: y2 })
+  ];
+
+  return {
+    size: { width: W + D * 2, height: H + D * 2 + W },
+    faces,
+    creases,
+    cutPaths: createExteriorCutPaths(faces),
+    faceTree: [
+      {
+        faceId: "base",
+        creaseId: null,
+        children: [
+          { faceId: "wall-top", creaseId: "cr-base-top", children: [] },
+          {
+            faceId: "wall-bottom",
+            creaseId: "cr-base-bottom",
+            children: [{ faceId: "lid-panel", creaseId: "cr-bottom-lid", children: [] }]
+          },
+          { faceId: "wall-left", creaseId: "cr-base-left", children: [] },
+          { faceId: "wall-right", creaseId: "cr-base-right", children: [] }
+        ]
+      }
+    ],
+    source: { type: "svg-upload", fileName: "visual-verification-custom-tray" }
+  };
+}
+
+function face(id, label, x, y, width, height, role, artworkEnabled) {
+  const vertices = [
+    { x, y },
+    { x: x + width, y },
+    { x: x + width, y: y + height },
+    { x, y: y + height }
+  ];
+
+  return {
+    id,
+    label,
+    vertices,
+    centroid: {
+      x: x + width / 2,
+      y: y + height / 2
+    },
+    bounds: { x, y, width, height },
+    role,
+    artworkEnabled
+  };
+}
+
+function crease(id, faceA, faceB, edgeStart, edgeEnd) {
+  return {
+    id,
+    faceA,
+    faceB,
+    edgeStart,
+    edgeEnd,
+    foldAngle: Math.PI / 2,
+    direction: 1
+  };
+}
+
+function createExteriorCutPaths(faces) {
+  const edgeGroups = new Map();
+
+  for (const currentFace of faces) {
+    const vertices = currentFace.vertices;
+    for (let index = 0; index < vertices.length; index += 1) {
+      const start = vertices[index];
+      const end = vertices[(index + 1) % vertices.length];
+      const key = getEdgeKey(start, end);
+      edgeGroups.set(key, [...(edgeGroups.get(key) ?? []), { start, end }]);
+    }
+  }
+
+  return Array.from(edgeGroups.values())
+    .filter((edges) => edges.length === 1)
+    .map(([edge], index) => ({
+      id: `cut-${index + 1}`,
+      points: [edge.start, edge.end],
+      d: `M ${edge.start.x} ${edge.start.y} L ${edge.end.x} ${edge.end.y}`
+    }));
+}
+
+function getEdgeKey(start, end) {
+  const a = `${start.x},${start.y}`;
+  const b = `${end.x},${end.y}`;
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
 async function assertLayout(page, name) {
+  await page.locator("canvas").first().waitFor({ state: "visible", timeout: 12000 });
+
   const metrics = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

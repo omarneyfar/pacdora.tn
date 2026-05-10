@@ -11,10 +11,11 @@ import {
   type DielineTemplateSource,
   type DielineTemplateStatus,
 } from "@/domain/dielines";
+import { getSeedDielines } from "./seedDielines";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage");
 const LOCAL_DB_FILE = path.join(STORAGE_ROOT, "dielines-db.json");
-const DIELINE_ID_PATTERN = /^[a-zA-Z0-9_-]{10,40}$/;
+const DIELINE_ID_PATTERN = /^[a-zA-Z0-9_-]{10,50}$/;
 
 let localDbWriteQueue = Promise.resolve();
 
@@ -86,6 +87,12 @@ export async function updateDielineTemplate(id: string, input: DielineTemplateIn
 
 export async function listDielineTemplates(options: DielineTemplateListOptions = {}): Promise<DielineTemplate[]> {
   const db = await readLocalDb();
+
+  // Auto-seed on first launch if library is empty
+  if (Object.keys(db.dielines).length === 0) {
+    await seedInitialDielines(db);
+  }
+
   return filterDielineList(Object.values(db.dielines), options);
 }
 
@@ -111,6 +118,28 @@ export async function deleteDielineTemplate(id: string): Promise<boolean> {
   delete db.dielines[id];
   await writeLocalDb(db);
   return true;
+}
+
+async function seedInitialDielines(db: LocalDielinesDb): Promise<void> {
+  const seeds = getSeedDielines();
+  const now = new Date().toISOString();
+
+  for (const seed of seeds) {
+    if (!db.dielines[seed.id]) {
+      db.dielines[seed.id] = {
+        id: seed.id,
+        name: seed.name,
+        status: "ready",
+        source: "template",
+        fileName: seed.fileName,
+        graph: seed.graph,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+  }
+
+  await writeLocalDb(db);
 }
 
 async function saveDielineTemplate(template: DielineTemplate): Promise<void> {

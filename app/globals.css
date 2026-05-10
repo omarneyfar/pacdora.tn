@@ -1598,6 +1598,201 @@ a {
   color: var(--surface);
 }
 
+/* ── Mode toggle ──────────────────────────────────────────────── */
+
+.studio-mode-toggle {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4px;
+}
+
+.studio-mode-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+  justify-content: center;
+  min-height: 34px;
+}
+
+.studio-mode-btn.is-active {
+  background: var(--accent);
+  color: white;
+}
+
+.studio-mode-btn:not(.is-active):hover {
+  color: var(--accent-dark);
+}
+
+/* ── Dieline creator layout ───────────────────────────────────── */
+
+.dieline-studio-grid-create {
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.dieline-studio-preview-full {
+  grid-column: 2 / -1;
+}
+
+.dieline-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.dieline-creator-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.dieline-creator-stats {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.dieline-creator-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dieline-creator-btn {
+  gap: 6px;
+  min-height: 36px;
+  width: auto;
+}
+
+.dieline-creator-body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  min-height: 0;
+}
+
+.dieline-creator-preview {
+  min-height: 0;
+  overflow: auto;
+}
+
+.dieline-creator-canvas {
+  cursor: pointer;
+  min-height: min(600px, calc(100dvh - 200px));
+}
+
+.dieline-creator-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dieline-creator-edge-buttons {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dieline-creator-edge-btn {
+  font-size: 12px;
+  font-weight: 800;
+  gap: 5px;
+  min-height: 34px;
+}
+
+.dieline-creator-edge-btn.is-active {
+  background: rgba(47, 125, 107, 0.1);
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.dieline-creator-add-form {
+  display: grid;
+  gap: 10px;
+}
+
+.dieline-creator-face-item {
+  align-items: flex-start;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.dieline-creator-face-item:hover {
+  border-color: var(--accent);
+}
+
+.dieline-creator-face-item.is-selected {
+  background: rgba(47, 125, 107, 0.06);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 125, 107, 0.12);
+}
+
+.dieline-creator-face-item strong {
+  font-size: 13px;
+}
+
+.dieline-creator-face-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── Creator SVG face styles ──────────────────────────────────── */
+
+.dieline-creator-face {
+  cursor: pointer;
+  fill: #fbfaf4;
+  stroke: rgba(31, 42, 36, 0.4);
+  stroke-width: 1;
+  transition: fill 120ms ease, stroke 120ms ease;
+  vector-effect: non-scaling-stroke;
+}
+
+.dieline-creator-face:hover {
+  fill: rgba(47, 125, 107, 0.08);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.dieline-creator-face.is-selected {
+  fill: rgba(47, 125, 107, 0.12);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.dieline-creator-face.dieline-face-role-flap {
+  fill: rgba(255, 253, 247, 0.68);
+}
+
+.dieline-creator-face.dieline-face-role-glue {
+  fill: rgba(47, 125, 107, 0.08);
+}
+
 .dieline-studio-import {
   position: relative;
 }

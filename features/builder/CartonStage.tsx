@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { ContactShadows, Edges, Environment, Line, OrbitControls, useTexture } from "@react-three/drei";
+import { ContactShadows, Edges, Line, OrbitControls, useTexture } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Maximize2, Minimize2, RotateCcw, Ruler, ZoomIn, ZoomOut } from "lucide-react";
 import { DoubleSide, SRGBColorSpace, Vector3, type Texture } from "three";
@@ -82,11 +82,11 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
       <Canvas camera={{ position: DEFAULT_CAMERA_POSITION.toArray(), fov: 40 }} dpr={[1, 1.75]} gl={{ antialias: true }}>
         <color attach="background" args={["#f6f1e6"]} />
         <ambientLight intensity={0.75} />
+        <hemisphereLight color="#ffffff" groundColor="#d8d1c5" intensity={0.55} />
         <directionalLight castShadow intensity={1.8} position={[3.5, 4.5, 4.5]} />
         <directionalLight intensity={0.6} position={[-4, 2, -2]} />
         <Suspense fallback={null}>
           <CartonModel faces={faces} modelSpec={modelSpec} showGuides={showGuides} />
-          <Environment preset="city" />
         </Suspense>
         <ContactShadows blur={2.8} far={6} opacity={0.28} position={[0, modelSpec.shadowY, 0]} scale={6} />
         <CameraControls resetSignal={resetSignal} zoomPercent={zoomPercent} onZoomPercentChange={setZoomPercent} />

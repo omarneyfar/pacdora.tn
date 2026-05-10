@@ -1,188 +1,118 @@
 # FoldView
 
-**A packaging design platform for printing houses.**
+FoldView is a packaging preview MVP for printing houses. It lets a designer prepare carton artwork, preview it in 3D, save projects, and publish view-only links for clients.
 
-FoldView is an interactive web application that lets designers and print professionals create, preview, and share 3D carton mockups — directly in the browser. Upload artwork, assign it to any face of a folding carton, crop and transform it, then share a published 3D preview with your clients through a single link.
+The product is inspired by tools like Pacdora, but this codebase is not a clone. The current goal is a focused foundation that can grow into custom dielines, reusable templates, and printer-friendly previews.
 
-Built as a focused, production-grade alternative to SaaS packaging editors like Pacdora or Packlane — designed to run on your own infrastructure.
+## Current Status
 
----
+The app has two main work areas:
 
-## What It Does
+- Project Builder: create or edit a carton project, upload artwork, crop it per face, preview in 3D, save as draft, and publish.
+- Dieline Studio: import an SVG dieline or manually assemble a reusable dieline template, then mark it ready and start a project from it.
 
-### For Designers
-- **Configurable carton dimensions** — set width, depth, and side height in millimeters (20–600 mm range)
-- **Six-face artwork assignment** — upload PNG, JPG, or PDF files to any face: front, back, left, right, top, bottom
-- **Professional crop tools** — aspect-locked cropping, rotation (90°), horizontal/vertical reflection, zoom
-- **Reusable artwork library** — every uploaded image is stored in a session library and can be applied to multiple faces
-- **Flat dieline with print guides** — SVG-rendered cut lines, fold lines, bleed areas, safe zones, and dimension labels
+The original fixed folding-carton flow is the most stable part. The newer graph-based custom dieline and generic 3D folding flow exists, builds, and is usable for experiments, but still has important correctness gaps listed in Known Problems.
 
-### For Client Presentation
-- **Real-time 3D preview** — orbit, zoom, reset, and fullscreen an interactive Three.js carton model
-- **3D guide overlay** — toggle fold lines and safe-area boundaries directly on the 3D model
-- **Draft / Published workflow** — projects stay private until explicitly published
-- **Shareable view-only links** — publish a project and send `/view/:id` to clients (no login required)
+## Latest Updates
 
-### For Print Production
-- **Dimension-driven geometry** — all dieline layouts and 3D proportions are derived from millimeter inputs, not hardcoded
-- **Cut / fold / bleed / safe guide system** — guides use standard prepress color conventions (red cut, blue fold, green bleed, gray safe)
-- **Pizza-box optimized** — default 232 × 232 × 70 mm template designed for common pizza carton dimensions
-- **PDF import** — first-page rasterization of PDFs at print-ready resolution (up to 1400px long edge)
-
----
+- Added `/dielines`, `/dielines/new`, and `/dielines/[id]/edit` for reusable dieline management.
+- Added `DielineGraph` based templates for folding carton variants, sleeve, tuck end, mailer, tray with lid, and full seal end.
+- Added `DielineCreator` for manual panel assembly.
+- Added `DielineCartonStage` as an experimental 3D renderer for graph-based dielines.
+- Added local seed dielines that populate the dieline library when it is empty.
+- Added a prepared-dieline picker in the builder sidebar.
+- Removed the Drei `Environment preset="city"` dependency from the 3D stages so the canvas no longer crashes when the remote HDR file cannot load.
 
 ## Tech Stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Framework | **Next.js 16** (App Router) | SSR, routing, API routes |
-| UI | **React 19** + TypeScript 6 | Component-driven interface |
-| State | **Redux Toolkit** | Global state with typed slices |
-| 3D Engine | **Three.js 0.184** via React Three Fiber + Drei | Interactive carton preview |
-| Image Editing | `react-advanced-cropper` | Aspect-locked crop, rotate, flip |
-| PDF Rendering | `pdfjs-dist` | Client-side PDF rasterization |
-| Backend | **Supabase** (Postgres + Storage) | Project persistence and asset storage |
-| Fallback | Local filesystem | Zero-config development without Supabase |
-| Icons | `lucide-react` | Consistent UI iconography |
-| Testing | **Playwright** | Visual smoke checks |
+| Framework | Next.js 16 App Router | Pages and API routes |
+| UI | React 19 + TypeScript | Builder, dashboards, studio |
+| State | Redux Toolkit | Builder, artwork, UI state |
+| 3D | Three.js, React Three Fiber, Drei | Interactive carton preview |
+| Crop | react-advanced-cropper / advanced-cropper | Crop, rotate, reflect artwork |
+| PDF | pdfjs-dist | First-page PDF rasterization |
+| Project Storage | Supabase or local filesystem | Project metadata and assets |
+| Dieline Storage | Local JSON file | Reusable dieline templates for now |
+| Verification | ESLint, Next build, Playwright scripts | Smoke checks |
 
----
+## Project Structure
 
-## Architecture
+```txt
+app/                         Next.js pages and API route entrypoints
+  api/projects/              Project CRUD
+  api/dielines/              Dieline template CRUD
+  project/[id]/edit/         Edit project route
+  projects/                  Project dashboard
+  view/[id]/                  Published view-only route
+  dielines/                  Dieline library and editor routes
 
-```
-app/                              Next.js pages and API route entrypoints
-  api/                            REST API — CRUD projects, face assets, source images
-  project/[id]/edit/              Builder page for existing projects
-  projects/                       Dashboard page
-  view/[id]/                      Published view-only client page
-
-store/                            Redux Toolkit state management
-  builderSlice.ts                 Project identity, dimensions, save state
-  artworkSlice.ts                 Artwork sources, face assignments, busy states
-  uiSlice.ts                     UI state — modals, sections, errors, guides
-
-hooks/                            Custom React hooks (all business logic)
-  useProjectPersistence.ts        Load, save, patch, hydrate projects
-  useArtworkWorkspace.ts          Upload, apply, crop, clear artwork
-  useDimensionSync.ts             Debounced recrop on dimension changes
-  useShareLink.ts                 Publish + clipboard copy
-
-domain/packaging/                 Pure TypeScript geometry engine
-  index.ts                       Face specs, dieline layout, 3D model, print guides
+domain/                      Pure TypeScript domain logic
+  packaging/                 Current fixed carton template and project DTOs
+  dieline/                   DielineGraph types, SVG import, validation, templates
+  dielines/                  Dieline template DTOs and status helpers
 
 features/
-  builder/                        Builder feature
-    BuilderShell.tsx              Root layout shell (~126 lines)
-    CartonStage.tsx               Three.js 3D carton preview
-    toolbar/BuilderTopbar.tsx     Top navigation bar
-    panels/ParametersPanel.tsx    Dimensions + library sidebar
-    panels/DielinePanel.tsx       Dieline + guides sidebar
-    components/                   7 memoized presentational components
-  artwork/                        Artwork import, crop, and rendering
-  projects/                       Dashboard UI + typed API client
-  viewer/                         Published view-only viewer
+  builder/                   Builder shell, panels, 3D stages, crop modal
+  artwork/                   Artwork import, crop, render helpers
+  projects/                  Project dashboard and client API helpers
+  viewer/                    Published view-only viewer
+  dielines/                  Dieline dashboard, studio, SVG/manual creator
 
-server/
-  projects/                       Application service + repository
-  db/                             Supabase / local database adapters
-  storage/                        Supabase / local asset storage adapters
-
-utils/
-  projectPayload.ts               Payload building, patch diffing, helpers
-
-supabase/                         Database schema and migrations
+hooks/                       Builder orchestration hooks
+store/                       Redux Toolkit slices and scoped provider
+server/                      Server services, storage, and persistence adapters
+scripts/                     Verification scripts
+supabase/                    Project database schema
+storage/                     Local runtime data, ignored by git
 ```
 
-### Design Principles
+## Core Data Model
 
-- **`app/` stays thin** — route files are 5–10 lines. No business logic in pages.
-- **`domain/` is framework-free** — pure TypeScript geometry engine, fully testable without React.
-- **`features/` owns the UI** — each feature has its own components, panels, and hooks.
-- **`server/` owns persistence** — adapters for Supabase or local filesystem.
-- **State flows through Redux** — no prop drilling. Components read from the store, hooks dispatch actions.
-- **Memoization where it matters** — 7 components use `React.memo`, geometry computations use `useMemo`.
+The fixed carton project model still uses six public face keys:
 
----
+```ts
+type FaceKey = "front" | "back" | "left" | "right" | "top" | "bottom";
+```
 
-## Data Model
+Custom dielines use a more flexible graph:
 
-Projects use the `folding-carton` packaging template:
-
-```typescript
-type Project = {
-  id: string;
-  name: string;
-  status: "draft" | "published";
-  templateId: "folding-carton";
-  dimensions: {
-    width: number;   // mm
-    height: number;  // side height, mm
-    depth: number;   // mm
-  };
-  faces: Partial<Record<"front" | "back" | "left" | "right" | "top" | "bottom", string>>;
-  workspace?: {
-    sources: ArtworkSource[];        // uploaded images
-    selectedSourceId?: string;       // active library selection
-    faceAssets: Partial<Record<FaceKey, FaceAsset>>;  // per-face crop settings
-  };
-  createdAt: string;
-  updatedAt: string;
+```ts
+type DielineGraph = {
+  size: { width: number; height: number };
+  faces: DielineFace[];
+  creases: DielineCrease[];
+  cutPaths: DielineCutPath[];
+  faceTree: DielineFaceNode[];
 };
 ```
 
-### Database Schema
-
-Postgres table with JSONB fields for dimensions, faces, and workspace:
-
-```sql
-create table public.projects (
-  id            text primary key,
-  name          text not null default 'Untitled carton',
-  status        text not null default 'draft'
-                check (status in ('draft', 'published')),
-  template_id   text not null default 'folding-carton'
-                check (template_id in ('folding-carton')),
-  dimensions    jsonb not null,
-  faces         jsonb not null default '{}',
-  workspace     jsonb,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now()
-);
-```
-
----
+Projects can store a selected custom/library dieline inside `workspace.dieline`, but artwork assignment is still limited by `FaceKey`. This mismatch is the main architecture problem to fix next.
 
 ## Getting Started
 
-### Prerequisites
-
-- **Node.js** 18+
-- **npm** 9+
-
-### Install
-
 ```bash
-git clone <repo-url>
-cd pacdora.tn
 npm install
-```
-
-### Local Development (No Supabase)
-
-By default, FoldView runs in local mode — no cloud credentials needed:
-
-```bash
 npm run dev
 ```
 
-Projects are saved to `storage/projects-db.json` and images to `storage/projects/`.
+Open:
 
-### With Supabase
+- Builder: `http://localhost:3000/`
+- Projects: `http://localhost:3000/projects`
+- Dielines: `http://localhost:3000/dielines`
 
-1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Run `supabase/schema.sql` in the SQL editor
-3. Copy `.env.example` to `.env` and fill in:
+Local mode works without Supabase. Project data is saved in `storage/projects-db.json`, project assets in `storage/projects/`, and dieline templates in `storage/dielines-db.json`.
+
+## Supabase Setup
+
+Supabase is currently used for projects and project assets.
+
+1. Create a Supabase project.
+2. Run `supabase/schema.sql` in the SQL editor.
+3. Copy `.env.example` to `.env`.
+4. Fill:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
@@ -191,94 +121,139 @@ SUPABASE_PROJECTS_BUCKET=project-faces
 SUPABASE_PROJECTS_TABLE=projects
 ```
 
-4. Start the dev server:
+Dieline templates are not yet stored in Supabase. They currently use local JSON storage.
 
-```bash
-npm run dev
+## How To Use
+
+### Build A Project
+
+1. Open `/`.
+2. Choose default folding carton or a prepared dieline from the sidebar.
+3. Upload PNG, JPG, or PDF artwork.
+4. Crop, rotate, or reflect the artwork.
+5. Reuse uploaded artwork from the library on multiple faces.
+6. Inspect the live 3D preview.
+7. Save the project.
+8. Publish when ready and share `/view/:id`.
+
+Draft projects cannot be viewed publicly. Published projects are unlisted but accessible to anyone with the link.
+
+### Create Or Import A Dieline
+
+1. Open `/dielines/new`.
+2. Choose Import SVG or Create manually.
+3. Save the dieline as Draft while it is being prepared.
+4. Change status to Ready when it can be used by projects.
+5. Start a project from the saved dieline, or select it from the builder sidebar.
+
+### SVG Import Rules
+
+The SVG importer currently supports simple `polygon`, `polyline`, `rect`, `line`, and `path` elements.
+
+Faces must use one of:
+
+```svg
+<rect id="face-front" ... />
+<polygon data-face-id="front" ... />
 ```
 
----
+Creases must be line elements and include connected faces:
 
-## Scripts
+```svg
+<line id="crease-front-right" data-face-a="front" data-face-b="right" x1="100" y1="0" x2="100" y2="160" />
+```
 
-| Script | Description |
-|---|---|
-| `npm run dev` | Start Next.js dev server on port 3000 |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run verify:visual` | Run Playwright canvas/layout smoke checks |
-
----
-
-## Workflow
-
-1. Open the builder at `/`
-2. Set carton dimensions (width × depth × height in mm)
-3. Upload artwork — PNG, JPG, or PDF
-4. Assign artwork to faces via the flat dieline
-5. Crop and transform each face's artwork
-6. Toggle print guides (cut, fold, bleed, safe) on the dieline
-7. Rotate and inspect the 3D carton preview
-8. Save the project as draft
-9. When ready, publish and share the `/view/:id` link with your client
-
-Draft projects are blocked from the public viewer. Published projects are unlisted, view-only, and require no login.
-
----
+Cut paths can use `id="cut-..."`, `data-kind="cut"`, or a class containing `cut`.
 
 ## API Routes
 
 | Method | Route | Description |
 |---|---|---|
-| `GET` | `/api/projects` | List projects (with search, status filter, limit) |
-| `POST` | `/api/projects` | Create a new project |
-| `GET` | `/api/projects/:id` | Read a single project |
-| `PATCH` | `/api/projects/:id` | Update a project (smart patch — only changed fields) |
-| `DELETE` | `/api/projects/:id` | Delete a project and its stored assets |
-| `POST` | `/api/projects/:id/duplicate` | Duplicate a project as a new draft |
-| `GET` | `/api/project-faces/:id/:face` | Serve a rendered face image |
-| `GET` | `/api/project-assets/:id/:asset` | Serve a source artwork asset |
+| GET | `/api/projects` | List projects |
+| POST | `/api/projects` | Create project |
+| GET | `/api/projects/:id` | Read project |
+| PATCH | `/api/projects/:id` | Patch changed project fields |
+| DELETE | `/api/projects/:id` | Delete project and assets |
+| POST | `/api/projects/:id/duplicate` | Duplicate as draft |
+| GET | `/api/project-assets/:id/:asset` | Serve source artwork |
+| GET | `/api/project-faces/:id/:face` | Serve rendered face image |
+| GET | `/api/dielines` | List dieline templates |
+| POST | `/api/dielines` | Create dieline template |
+| GET | `/api/dielines/:id` | Read dieline template |
+| PATCH | `/api/dielines/:id` | Update dieline template |
+| DELETE | `/api/dielines/:id` | Delete dieline template |
 
----
+## Verification
 
-## State Management
+```bash
+npm run lint
+npm run build
+npm run verify:dieline
+npm run verify:visual
+```
 
-FoldView uses **Redux Toolkit** with three typed slices:
+Current verified state after the latest 3D lighting fix:
 
-| Slice | Responsibility | Key State |
-|---|---|---|
-| `builderSlice` | Project identity and persistence | `projectId`, `projectName`, `dimensions`, `saveStatus` |
-| `artworkSlice` | Artwork workspace | `sources[]`, `faces{}`, `busyFace`, `isRecropping` |
-| `uiSlice` | UI-only state | `cropModal`, `openSections`, `showDielineGuides`, `error` |
+- `npm run lint` passes.
+- `npm run build` passes.
+- `npm run verify:dieline` passes for the default carton and SVG fixture.
 
-All business logic lives in **custom hooks** that read from and dispatch to the store:
+`verify:visual` needs a running dev or production server at `PLAYWRIGHT_BASE_URL` or `http://127.0.0.1:3000`.
 
-| Hook | Responsibility |
-|---|---|
-| `useProjectPersistence` | Load, save, patch, hydrate projects from the API |
-| `useArtworkWorkspace` | Upload files, apply sources to faces, clear faces |
-| `useDimensionSync` | Debounced re-crop when dimensions change (300ms) |
-| `useShareLink` | Publish project and copy share URL to clipboard |
+## Known Problems
 
----
+### High Priority
 
-## Geometry Engine
+- Public viewer ignores custom dielines. `features/viewer/ProjectViewer.tsx` still renders the legacy `CartonStage`, so a published custom dieline can show as the default carton.
+- Artwork assignment is still six-face based. `DielineRenderer`, crop helpers, payloads, and Redux artwork state are based on `FaceKey`, so custom faces like `base`, `lid`, `wall-top`, `glue-tab`, or custom panel IDs cannot be filled properly.
+- Project save payload stores `templateId: "folding-carton"` even when the selected dieline is custom. The real selected graph is stored in `workspace.dieline`, but the top-level template contract is still legacy.
 
-The `domain/packaging/` module is a **560-line pure TypeScript geometry engine** with no framework dependencies. Given a `{ width, height, depth }` in millimeters, it computes:
+### 3D Problems
 
-| Function | Output |
-|---|---|
-| `getFaceSpecs()` | Pixel position and size of each face on the flat dieline |
-| `getDielinePrintGuides()` | Cut lines, fold lines, bleed rectangles, safe areas, dimension labels |
-| `getDielineSpec()` | Complete dieline specification (size + faces + guides) |
-| `getModelSpec()` | Normalized 3D positions, rotations, and sizes for Three.js rendering |
-| `getBoxGuideEdges()` | 12 edge segments for the 3D wire-frame overlay |
+- `DielineCartonStage` is experimental. It uses graph creases and a recursive pivot-group fold, but complex trees and creases that are not exactly on the parent edge can fold incorrectly.
+- The pure math file `domain/dieline/fold3d.ts` exists, but the 3D component currently has its own folding algorithm. These two paths can diverge.
+- Some generated seed templates need geometric validation. For example, a child flap can reference a crease line that is not actually on the parent face edge.
+- Generic custom 3D does not yet have strong visual tests. The existing visual verifier mostly protects the default folding-carton flow.
+- The old remote HDR environment crash is fixed by removing `<Environment preset="city" />`, but 3D lighting still needs design tuning.
 
-All guide offsets are responsive — they scale down for small faces to prevent visual overlap.
+### Dieline Builder Problems
 
----
+- Manual panel removal has a bug: removing a leaf panel can do nothing because `removePanel` exits before adding the selected face to the removal set.
+- Manual top/left panel creation can produce negative coordinates. The SVG preview and graph size calculations do not normalize the graph back to a positive origin.
+- Manual panel attachment uses parent bounds, not the actual selected polygon edge. This is fragile for trapezoids and non-rectangular panels.
+- Manual panel `width` can differ from the attachment edge length while the crease remains the full parent edge. That can create invalid geometry.
+- Some new files contain mojibake in comments or UI strings. Source text should be cleaned to UTF-8 or plain ASCII.
+
+### Persistence And Architecture
+
+- Dieline templates are local-only in `storage/dielines-db.json`; they do not yet use Supabase.
+- Seed dielines are injected only when the local dieline DB is empty. Updating seed definitions later will not update existing local libraries automatically.
+- Dieline status uses `draft` and `ready`, while projects use `draft` and `published`. This is correct conceptually, but UI labels and docs must keep the distinction clear.
+- `tsconfig.tsbuildinfo` is tracked and often changes after build. It should be removed from git tracking and ignored.
+
+### Test Coverage Gaps
+
+- No automated test currently verifies every seed template graph.
+- No automated test checks that custom dielines survive save, reload, publish, and public view.
+- No automated test checks manual DielineCreator add/remove/negative-coordinate behavior.
+- No automated pixel test verifies custom graph folding in `DielineCartonStage`.
+
+## Recommended Next Architecture Step
+
+Move artwork assignment from fixed `FaceKey` to graph `faceId`.
+
+That means updating:
+
+- `artworkSlice`
+- crop modal and crop helpers
+- `DielineRenderer`
+- project payloads
+- project storage DTOs
+- public viewer
+- 3D custom stage texture mapping
+
+Once that is done, custom dielines can become real production data instead of an experimental layer beside the stable six-face carton.
 
 ## License
 
-Private — all rights reserved.
+Private - all rights reserved.

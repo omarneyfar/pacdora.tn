@@ -5,6 +5,7 @@ import { useCallback, useMemo } from "react";
 import { LoaderCircle } from "lucide-react";
 
 import { FACE_KEYS, type FaceKey } from "@/domain/packaging";
+import { getDielineGraph } from "@/domain/packaging";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { useProjectPersistence } from "@/hooks/useProjectPersistence";
 import { useArtworkWorkspace } from "@/hooks/useArtworkWorkspace";
@@ -20,6 +21,14 @@ import { CropModal } from "./components/CropModal";
 
 const CartonStage = dynamic(
   () => import("@/features/builder/CartonStage").then((mod) => mod.CartonStage),
+  {
+    ssr: false,
+    loading: () => <div className="stage-loading">Preparing 3D preview</div>,
+  },
+);
+
+const DielineCartonStage = dynamic(
+  () => import("@/features/builder/DielineCartonStage").then((mod) => mod.DielineCartonStage),
   {
     ssr: false,
     loading: () => <div className="stage-loading">Preparing 3D preview</div>,
@@ -67,6 +76,13 @@ export function BuilderShell({ projectId: initialProjectId, initialDielineId }: 
       }, {}),
     [faces],
   );
+
+  /** Use DielineCartonStage for custom dielines, legacy CartonStage for default template */
+  const activeGraph = useMemo(
+    () => dielineGraph ?? getDielineGraph(dimensions),
+    [dielineGraph, dimensions],
+  );
+  const useCustom3D = Boolean(dielineGraph);
 
   /* ── Callbacks ──────────────────────────────────────────────────── */
 
@@ -126,10 +142,16 @@ export function BuilderShell({ projectId: initialProjectId, initialDielineId }: 
               <span className="viewer-hint">
                 {selectedSource
                   ? `Selected: ${selectedSource.fileName}`
-                  : "Drag to rotate"}
+                  : useCustom3D
+                    ? `Custom dieline · ${activeGraph.faces.length} faces`
+                    : "Drag to rotate"}
               </span>
             </div>
-            <CartonStage dimensions={dimensions} faces={previewFaces} />
+            {useCustom3D ? (
+              <DielineCartonStage graph={activeGraph} faces={previewFaces} />
+            ) : (
+              <CartonStage dimensions={dimensions} faces={previewFaces} />
+            )}
           </section>
         </section>
       )}
