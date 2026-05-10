@@ -9,7 +9,7 @@ import { openCropModal, setShowDielineGuides, toggleSection } from "@/store/uiSl
 
 import { CollapsibleSection } from "../components/CollapsibleSection";
 import { DielineGuideToolbar } from "../components/DielineGuideToolbar";
-import { DielineUploader } from "../components/DielineUploader";
+import { DielineRenderer } from "../components/DielineRenderer";
 
 /* ── Props ─────────────────────────────────────────────────────── */
 
@@ -91,7 +91,7 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
         onChange={handleGuideChange}
       />
 
-      <DielineUploader
+      <DielineRenderer
         busyFace={busyFace}
         dimensions={dimensions}
         faces={faces}

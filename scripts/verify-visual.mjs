@@ -16,8 +16,17 @@ const faceColors = {
   back: [47, 125, 107],
   left: [224, 184, 79],
   right: [60, 86, 150],
-  top: [255, 253, 247],
+  top: [126, 78, 173],
   bottom: [31, 42, 36]
+};
+const dielineSize = { width: 604, height: 372 };
+const dielineFaceBounds = {
+  back: { x: 70, y: 0, width: 232, height: 70 },
+  left: { x: 0, y: 70, width: 70, height: 232 },
+  top: { x: 70, y: 70, width: 232, height: 232 },
+  right: { x: 302, y: 70, width: 70, height: 232 },
+  front: { x: 70, y: 302, width: 232, height: 70 },
+  bottom: { x: 372, y: 70, width: 232, height: 232 }
 };
 const projectResponse = await api.post("/api/projects", {
   data: {
@@ -78,6 +87,11 @@ try {
     await page.goto(baseURL, { waitUntil: "networkidle" });
     await assertLayout(page, `home-${target.name}`);
     await assertCanvasPixels(page, `home-${target.name}`);
+
+    await page.goto(`${baseURL}/project/${project.id}/edit`, { waitUntil: "networkidle" });
+    await assertLayout(page, `edit-${target.name}`);
+    await assertDielinePixels(page, `edit-${target.name}`);
+    await assertCanvasPixels(page, `edit-${target.name}`);
 
     await page.goto(`${baseURL}/view/${project.id}`, { waitUntil: "networkidle" });
     await assertLayout(page, `view-${target.name}`);
@@ -141,6 +155,30 @@ async function assertCanvasPixels(page, name) {
   }
 }
 
+async function assertDielinePixels(page, name) {
+  const board = page.locator(".dieline-board").first();
+  await board.waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(900);
+
+  const box = await board.boundingBox();
+  if (!box || box.width < 260 || box.height < 150) {
+    throw new Error(`${name}: dieline board is too small or missing`);
+  }
+
+  const buffer = await board.screenshot({
+    path: path.join(outputDir, `${name}-dieline.png`)
+  });
+  const png = PNG.sync.read(buffer);
+
+  for (const face of faceKeys) {
+    const matchRatio = getFaceColorMatchRatio(png, dielineFaceBounds[face], faceColors[face]);
+
+    if (matchRatio < 0.08) {
+      throw new Error(`${name}: ${face} artwork is missing from the flat dieline (${(matchRatio * 100).toFixed(1)}% matching pixels)`);
+    }
+  }
+}
+
 function createPngDataUrl([r, g, b]) {
   const png = new PNG({ width: 96, height: 128 });
 
@@ -156,4 +194,37 @@ function createPngDataUrl([r, g, b]) {
   }
 
   return `data:image/png;base64,${PNG.sync.write(png).toString("base64")}`;
+}
+
+function getFaceColorMatchRatio(png, bounds, color) {
+  const left = Math.max(0, Math.floor((bounds.x / dielineSize.width) * png.width));
+  const top = Math.max(0, Math.floor((bounds.y / dielineSize.height) * png.height));
+  const right = Math.min(png.width, Math.ceil(((bounds.x + bounds.width) / dielineSize.width) * png.width));
+  const bottom = Math.min(png.height, Math.ceil(((bounds.y + bounds.height) / dielineSize.height) * png.height));
+  let matching = 0;
+  let total = 0;
+
+  for (let y = top; y < bottom; y += 2) {
+    for (let x = left; x < right; x += 2) {
+      const index = (png.width * y + x) << 2;
+      const pixel = [png.data[index], png.data[index + 1], png.data[index + 2]];
+
+      total += 1;
+
+      if (isCloseToStripedFaceColor(pixel, color)) {
+        matching += 1;
+      }
+    }
+  }
+
+  return total > 0 ? matching / total : 0;
+}
+
+function isCloseToStripedFaceColor(pixel, color) {
+  const stripedColor = color.map((channel) => Math.min(255, channel + 24));
+  return colorDistance(pixel, color) < 80 || colorDistance(pixel, stripedColor) < 80;
+}
+
+function colorDistance(a, b) {
+  return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
 }
