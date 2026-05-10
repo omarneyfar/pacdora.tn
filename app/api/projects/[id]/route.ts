@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { deleteProject, readProject, updateProject, type ProjectInput } from "@/lib/server/projects";
+import { deleteProject, readProject, updateProject, type ProjectInput } from "@/server/projects/service";
 
 export const runtime = "nodejs";
 

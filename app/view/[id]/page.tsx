@@ -1,4 +1,4 @@
-import { ProjectViewer } from "@/components/ProjectViewer";
+import { ProjectViewer } from "@/features/viewer/ProjectViewer";
 
 type ViewPageProps = {
   params: Promise<{ id: string }>;

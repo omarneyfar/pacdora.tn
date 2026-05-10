@@ -23,6 +23,7 @@ const projectResponse = await api.post("/api/projects", {
   data: {
     name: "Visual verification carton",
     status: "published",
+    templateId: "folding-carton",
     dimensions: { width: 232, depth: 232, height: 70 },
     workspace: {
       sources: faceKeys.map((face) => ({

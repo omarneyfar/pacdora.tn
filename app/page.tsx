@@ -1,5 +1,5 @@
-import { Builder } from "@/components/Builder";
+import { BuilderShell } from "@/features/builder/BuilderShell";
 
 export default function Home() {
-  return <Builder />;
+  return <BuilderShell />;
 }

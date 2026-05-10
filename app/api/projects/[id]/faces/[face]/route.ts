@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { readFaceImage } from "@/lib/server/projects";
+import { readFaceImage } from "@/server/projects/service";
 
 export const runtime = "nodejs";
 

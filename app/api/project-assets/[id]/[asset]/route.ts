@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { readProjectAssetImage } from "@/lib/server/projects";
+import { readProjectAssetImage } from "@/server/projects/service";
 
 export const runtime = "nodejs";
 

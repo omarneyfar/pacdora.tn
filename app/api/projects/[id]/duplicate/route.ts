@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { duplicateProject } from "@/lib/server/projects";
+import { duplicateProject } from "@/server/projects/service";
 
 export const runtime = "nodejs";
 
