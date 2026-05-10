@@ -1,4 +1,5 @@
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFace, DielineFaceNode, DielineGraph, Point } from "../types";
 
 type FoldingCartonDimensions = {
@@ -56,6 +57,35 @@ export function generateFoldingCartonGraph(dimensions: FoldingCartonDimensions):
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree: getFoldingCartonFaceTree(),
+    metadata: createTemplateMetadata({
+      category: "folding-box",
+      family: "folding-carton",
+      familyLabel: "Folding Carton",
+      parts: [
+        {
+          id: "body-panels",
+          label: "Body panels",
+          role: "body",
+          faceIds: ["front", "back", "left", "right"],
+          creaseIds: ["crease-left-top", "crease-top-right", "crease-top-front", "crease-back-top"],
+        },
+        {
+          id: "top-panel",
+          label: "Top panel",
+          role: "top-closure",
+          faceIds: ["top"],
+          creaseIds: ["crease-back-top", "crease-left-top", "crease-top-right", "crease-top-front"],
+        },
+        {
+          id: "bottom-panel",
+          label: "Bottom panel",
+          role: "bottom-closure",
+          faceIds: ["bottom"],
+          creaseIds: ["crease-right-bottom"],
+        },
+      ],
+      parameters: createDimensionParameters(width, height, depth),
+    }),
     source: {
       type: "template",
       templateId: FOLDING_CARTON_TEMPLATE_ID

@@ -6,6 +6,7 @@
  */
 
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFaceNode, DielineGraph, Point } from "../types";
 
 const RIGHT_ANGLE = Math.PI / 2;
@@ -114,6 +115,47 @@ export function generateReverseTuckEnd(dims: {
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree,
+    metadata: createTemplateMetadata({
+      category: "folding-box",
+      family: "reverse-tuck-end",
+      familyLabel: "Reverse Tuck End",
+      parts: [
+        {
+          id: "body-panels",
+          label: "Body panels",
+          role: "body",
+          faceIds: ["front", "back", "left", "right"],
+          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back"],
+        },
+        {
+          id: "top-closure",
+          label: "Top closure",
+          role: "top-closure",
+          faceIds: ["top-tuck", "top-panel", "top-dust-left", "top-dust-right"],
+          creaseIds: ["cr-front-toptuck", "cr-back-toppanel", "cr-left-topdust", "cr-right-topdust"],
+        },
+        {
+          id: "bottom-closure",
+          label: "Bottom closure",
+          role: "bottom-closure",
+          faceIds: ["bottom-tuck", "bottom-panel", "bottom-dust-left", "bottom-dust-right"],
+          creaseIds: ["cr-back-bottomtuck", "cr-front-bottompanel", "cr-left-bottomdust", "cr-right-bottomdust"],
+        },
+        {
+          id: "glue-tab",
+          label: "Glue tab",
+          role: "glue-flap",
+          faceIds: ["glue-tab"],
+          creaseIds: ["cr-glue-left"],
+        },
+      ],
+      parameters: [
+        ...createDimensionParameters(W, H, D),
+        { id: "dust-flap-depth", label: "Dust flap depth", kind: "closure", value: flapH, unit: "mm" },
+        { id: "tuck-flap-depth", label: "Tuck flap depth", kind: "closure", value: tuckH, unit: "mm" },
+        { id: "glue-tab-width", label: "Glue tab width", kind: "closure", value: glueW, unit: "mm" },
+      ],
+    }),
     source: { type: "template", templateId: "reverse-tuck-end" },
   };
 }

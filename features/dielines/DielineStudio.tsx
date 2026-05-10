@@ -4,6 +4,12 @@ import Link from "next/link";
 import { Box, FileUp, LoaderCircle, Pen, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  getDielineCategory,
+  getDielineCategoryLabel,
+  getDielineFamilyLabel,
+  getDielineParts,
+} from "@/domain/dieline/structure";
 import { importSvgDieline } from "@/domain/dieline/svgImporter";
 import type { DielineFace, DielineGraph } from "@/domain/dieline/types";
 import type { DielineTemplate, DielineTemplateStatus } from "@/domain/dielines";
@@ -34,6 +40,7 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
 
 
   const artworkFaceCount = useMemo(() => graph?.faces.filter((face) => face.artworkEnabled).length ?? 0, [graph]);
+  const structureParts = useMemo(() => graph ? getDielineParts(graph) : [], [graph]);
 
   const hydrateTemplate = useCallback((template: DielineTemplate) => {
     setTemplateId(template.id);
@@ -231,6 +238,9 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
             <span className="eyebrow">Structure</span>
             {graph ? (
               <div className="project-row-meta">
+                <span>{getDielineCategoryLabel(getDielineCategory(graph))}</span>
+                <span>{getDielineFamilyLabel(graph)}</span>
+                <span>{structureParts.length} parts</span>
                 <span>{graph.faces.length} faces</span>
                 <span>{artworkFaceCount} artwork zones</span>
                 <span>{graph.creases.length} creases</span>
@@ -283,27 +293,34 @@ export function DielineStudio({ dielineId }: DielineStudioProps) {
               <div className="dieline-studio-card">
                 <span className="eyebrow">Detected parts</span>
                 {graph ? (
-                  <div className="dieline-face-list">
-                    {graph.faces.map((face) => (
-                      <article className="dieline-face-editor-row" key={face.id}>
-                        <div>
-                          <strong>{face.id}</strong>
-                          <span>{Math.round(face.bounds.width)} x {Math.round(face.bounds.height)} mm</span>
-                        </div>
-                        <input aria-label={`Label for ${face.id}`} value={face.label} onChange={(event) => updateFace(face.id, { label: event.currentTarget.value })} />
-                        <select aria-label={`Role for ${face.id}`} value={face.role} onChange={(event) => updateFace(face.id, { role: event.currentTarget.value as DielineFace["role"] })}>
-                          <option value="panel">Panel</option>
-                          <option value="flap">Flap</option>
-                          <option value="glue">Glue</option>
-                          <option value="unknown">Unknown</option>
-                        </select>
-                        <label className="toggle-row compact-toggle-row">
-                          <input checked={face.artworkEnabled} type="checkbox" onChange={(event) => updateFace(face.id, { artworkEnabled: event.currentTarget.checked })} />
-                          Artwork
-                        </label>
-                      </article>
-                    ))}
-                  </div>
+                  <>
+                    <div className="project-row-meta">
+                      {structureParts.map((part) => (
+                        <span key={part.id}>{part.label}: {part.faceIds.length}</span>
+                      ))}
+                    </div>
+                    <div className="dieline-face-list">
+                      {graph.faces.map((face) => (
+                        <article className="dieline-face-editor-row" key={face.id}>
+                          <div>
+                            <strong>{face.id}</strong>
+                            <span>{Math.round(face.bounds.width)} x {Math.round(face.bounds.height)} mm</span>
+                          </div>
+                          <input aria-label={`Label for ${face.id}`} value={face.label} onChange={(event) => updateFace(face.id, { label: event.currentTarget.value })} />
+                          <select aria-label={`Role for ${face.id}`} value={face.role} onChange={(event) => updateFace(face.id, { role: event.currentTarget.value as DielineFace["role"] })}>
+                            <option value="panel">Panel</option>
+                            <option value="flap">Flap</option>
+                            <option value="glue">Glue</option>
+                            <option value="unknown">Unknown</option>
+                          </select>
+                          <label className="toggle-row compact-toggle-row">
+                            <input checked={face.artworkEnabled} type="checkbox" onChange={(event) => updateFace(face.id, { artworkEnabled: event.currentTarget.checked })} />
+                            Artwork
+                          </label>
+                        </article>
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <p className="helper-text">Detected faces will appear here after import.</p>
                 )}

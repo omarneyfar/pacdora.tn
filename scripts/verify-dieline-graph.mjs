@@ -12,6 +12,8 @@ const moduleCache = new Map();
 const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"));
 const geometry = loadTs(path.join(projectRoot, "domain", "dieline", "geometry"));
 const { buildFoldedModel, getFoldErrors } = loadTs(path.join(projectRoot, "domain", "dieline", "fold3d"));
+const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
+const { normalizeDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
 const { getSeedDielines } = loadTs(path.join(projectRoot, "server", "dielines", "seedDielines"));
 const dimensions = { width: 232, height: 70, depth: 232 };
@@ -66,12 +68,14 @@ assert(imported.creases.length === 5, `Expected 5 imported creases, got ${import
 assert(imported.cutPaths.length > 0, "Imported SVG should have generated cut paths");
 
 assertFoldedModel(graph, "default folding carton");
+assertTemplateStructure(graph, "default folding carton");
 assertFoldedModel(imported, "SVG fixture");
 assertTwoPanelFold();
 assertNestedFold();
 
 for (const seed of getSeedDielines()) {
   assertFoldedModel(seed.graph, `seed ${seed.id}`);
+  assertTemplateStructure(seed.graph, `seed ${seed.id}`);
 }
 
 console.log("Dieline graph verification passed.");
@@ -240,6 +244,50 @@ function assertFoldedModel(testGraph, label) {
   assertCreaseCoincidence(testGraph, model, label);
 
   return model;
+}
+
+function assertTemplateStructure(testGraph, label) {
+  assert(testGraph.metadata, `${label}: missing template metadata`);
+  assert(testGraph.metadata.category, `${label}: missing category`);
+  assert(testGraph.metadata.family, `${label}: missing family`);
+  assert(testGraph.metadata.familyLabel, `${label}: missing family label`);
+
+  const normalized = normalizeDielineGraph(testGraph);
+  assert(normalized?.metadata, `${label}: metadata was not preserved by normalization`);
+
+  const graphFaceIds = new Set(testGraph.faces.map((face) => face.id));
+  const graphCreaseIds = new Set(testGraph.creases.map((crease) => crease.id));
+  const partFaceCounts = new Map();
+  const parts = getDielineParts(testGraph);
+
+  assert(parts.length > 0, `${label}: expected structural parts`);
+
+  for (const part of parts) {
+    assert(part.id, `${label}: part is missing id`);
+    assert(part.label, `${label}: part ${part.id} is missing label`);
+    assert(part.faceIds.length > 0, `${label}: part ${part.id} has no faces`);
+
+    for (const faceId of part.faceIds) {
+      assert(graphFaceIds.has(faceId), `${label}: part ${part.id} references missing face ${faceId}`);
+      partFaceCounts.set(faceId, (partFaceCounts.get(faceId) ?? 0) + 1);
+    }
+
+    for (const creaseId of part.creaseIds ?? []) {
+      assert(graphCreaseIds.has(creaseId), `${label}: part ${part.id} references missing crease ${creaseId}`);
+    }
+  }
+
+  for (const faceId of graphFaceIds) {
+    assert(partFaceCounts.get(faceId) === 1, `${label}: face ${faceId} should appear in exactly one part`);
+  }
+
+  for (const parameter of testGraph.metadata.parameters ?? []) {
+    assert(parameter.id, `${label}: parameter is missing id`);
+    assert(parameter.label, `${label}: parameter ${parameter.id} is missing label`);
+    if (typeof parameter.value === "number") {
+      assert(Number.isFinite(parameter.value), `${label}: parameter ${parameter.id} is not finite`);
+    }
+  }
 }
 
 function assertCreaseCoincidence(testGraph, model, label) {

@@ -6,6 +6,7 @@
  */
 
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFaceNode, DielineGraph, Point } from "../types";
 
 const RIGHT_ANGLE = Math.PI / 2;
@@ -112,6 +113,46 @@ export function generateFullSealEnd(dims: {
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree,
+    metadata: createTemplateMetadata({
+      category: "folding-box",
+      family: "full-seal-end",
+      familyLabel: "Full Seal End",
+      parts: [
+        {
+          id: "body-panels",
+          label: "Body panels",
+          role: "body",
+          faceIds: ["front", "back", "left", "right"],
+          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back"],
+        },
+        {
+          id: "top-seal",
+          label: "Top seal flaps",
+          role: "top-closure",
+          faceIds: ["top-front", "top-back", "top-left", "top-right"],
+          creaseIds: ["cr-front-topf", "cr-back-topb", "cr-left-topl", "cr-right-topr"],
+        },
+        {
+          id: "bottom-seal",
+          label: "Bottom seal flaps",
+          role: "bottom-closure",
+          faceIds: ["bottom-front", "bottom-back", "bottom-left", "bottom-right"],
+          creaseIds: ["cr-front-botf", "cr-back-botb", "cr-left-botl", "cr-right-botr"],
+        },
+        {
+          id: "glue-tab",
+          label: "Glue tab",
+          role: "glue-flap",
+          faceIds: ["glue-tab"],
+          creaseIds: ["cr-glue-left"],
+        },
+      ],
+      parameters: [
+        ...createDimensionParameters(W, H, D),
+        { id: "seal-flap-depth", label: "Seal flap depth", kind: "closure", value: flapH, unit: "mm" },
+        { id: "glue-tab-width", label: "Glue tab width", kind: "closure", value: glueW, unit: "mm" },
+      ],
+    }),
     source: { type: "template", templateId: "full-seal-end" },
   };
 }

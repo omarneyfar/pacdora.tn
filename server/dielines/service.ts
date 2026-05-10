@@ -4,6 +4,12 @@ import path from "path";
 
 import { normalizeDielineGraph } from "@/domain/dieline/validation";
 import {
+  getDielineCategory,
+  getDielineCategoryLabel,
+  getDielineFamilyLabel,
+  getDielineParts,
+} from "@/domain/dieline/structure";
+import {
   normalizeDielineTemplateSource,
   normalizeDielineTemplateStatus,
   type DielineTemplate,
@@ -237,11 +243,20 @@ function filterDielineList(
       return (
         template.name.toLowerCase().includes(normalizedQuery) ||
         template.id.toLowerCase().includes(normalizedQuery) ||
-        template.fileName?.toLowerCase().includes(normalizedQuery)
+        template.fileName?.toLowerCase().includes(normalizedQuery) ||
+        getDielineStructureSearchText(template).includes(normalizedQuery)
       );
     })
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, Math.min(200, Math.max(1, limit)));
+}
+
+function getDielineStructureSearchText(template: DielineTemplate): string {
+  return [
+    getDielineCategoryLabel(getDielineCategory(template.graph)),
+    getDielineFamilyLabel(template.graph),
+    ...getDielineParts(template.graph).map((part) => part.label),
+  ].join(" ").toLowerCase();
 }
 
 async function createUniqueId(): Promise<string> {

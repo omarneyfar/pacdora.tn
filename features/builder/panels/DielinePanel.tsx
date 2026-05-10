@@ -1,9 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Library, LoaderCircle, RotateCcw } from "lucide-react";
 
+import {
+  DIELINE_CATEGORY_ORDER,
+  getDielineCategory,
+  getDielineCategoryLabel,
+  getDielineFamilyLabel,
+  getDielineParts,
+} from "@/domain/dieline/structure";
+import type { DielineCategory } from "@/domain/dieline/types";
 import type { FaceKey } from "@/domain/packaging";
 import type { DielineTemplate } from "@/domain/dielines";
 import { DEFAULT_CROP_SETTINGS } from "@/features/artwork/artwork";
@@ -51,6 +59,11 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   const [templates, setTemplates] = useState<DielineTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templateError, setTemplateError] = useState("");
+  const groupedTemplates = useMemo(() => groupTemplatesByCategory(templates), [templates]);
+  const selectedTemplate = useMemo(
+    () => templates.find((template) => template.id === dielineTemplateId),
+    [dielineTemplateId, templates],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -160,10 +173,14 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
           <span>Prepared dieline</span>
           <select value={dielineSource === "library" ? dielineTemplateId : ""} onChange={(event) => handleTemplateChange(event.currentTarget.value)}>
             <option value="">Default folding carton</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
+            {groupedTemplates.map((group) => (
+              <optgroup key={group.category} label={group.label}>
+                {group.templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
@@ -189,9 +206,16 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
       {templateError ? <p className="dieline-source-note error-state">{templateError}</p> : null}
 
       {dielineSource === "library" ? (
-        <p className="dieline-source-note">
-          Using: <strong>{dielineTemplateName || dielineFileName || "library dieline"}</strong>
-        </p>
+        <>
+          <p className="dieline-source-note">
+            Using: <strong>{dielineTemplateName || dielineFileName || "library dieline"}</strong>
+          </p>
+          {selectedTemplate ? (
+            <p className="dieline-source-note">
+              {getDielineFamilyLabel(selectedTemplate.graph)} / {getDielineParts(selectedTemplate.graph).length} structural parts
+            </p>
+          ) : null}
+        </>
       ) : dielineSource === "svg-upload" ? (
         <p className="dieline-source-note">
           Imported: <strong>{dielineFileName || "custom dieline"}</strong>
@@ -217,4 +241,25 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
       </p>
     </CollapsibleSection>
   );
+}
+
+function groupTemplatesByCategory(templates: DielineTemplate[]): Array<{
+  category: DielineCategory;
+  label: string;
+  templates: DielineTemplate[];
+}> {
+  const groups = new Map<DielineCategory, DielineTemplate[]>();
+
+  for (const template of templates) {
+    const category = getDielineCategory(template.graph);
+    groups.set(category, [...(groups.get(category) ?? []), template]);
+  }
+
+  return DIELINE_CATEGORY_ORDER
+    .filter((category) => groups.has(category))
+    .map((category) => ({
+      category,
+      label: getDielineCategoryLabel(category),
+      templates: groups.get(category) ?? [],
+    }));
 }

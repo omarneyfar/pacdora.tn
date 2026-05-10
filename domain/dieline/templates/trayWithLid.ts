@@ -6,6 +6,7 @@
  */
 
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFaceNode, DielineGraph, Point } from "../types";
 
 const RIGHT_ANGLE = Math.PI / 2;
@@ -70,6 +71,38 @@ export function generateTrayWithLid(dims: {
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree,
+    metadata: createTemplateMetadata({
+      category: "tray-and-cover",
+      family: "tray-with-lid",
+      familyLabel: "Tray with Lid",
+      parts: [
+        {
+          id: "base",
+          label: "Tray base",
+          role: "base",
+          faceIds: ["base"],
+          creaseIds: ["cr-base-top", "cr-base-bottom", "cr-base-left", "cr-base-right"],
+        },
+        {
+          id: "walls",
+          label: "Tray walls",
+          role: "wall",
+          faceIds: ["wall-top", "wall-bottom", "wall-left", "wall-right"],
+          creaseIds: ["cr-base-top", "cr-base-bottom", "cr-base-left", "cr-base-right"],
+        },
+        {
+          id: "lid",
+          label: "Hinged lid",
+          role: "lid",
+          faceIds: ["lid"],
+          creaseIds: ["cr-bottom-lid"],
+        },
+      ],
+      parameters: [
+        ...createDimensionParameters(W, H, D),
+        { id: "wall-height", label: "Wall height", kind: "dimension", value: wallH, unit: "mm" },
+      ],
+    }),
     source: { type: "template", templateId: "tray-with-lid" },
   };
 }

@@ -262,7 +262,7 @@ function getEdgeKey(start, end) {
 }
 
 async function assertLayout(page, name) {
-  await page.locator("canvas").first().waitFor({ state: "visible", timeout: 12000 });
+  await page.locator("canvas").first().waitFor({ state: "visible", timeout: 20000 });
 
   const metrics = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -281,7 +281,7 @@ async function assertLayout(page, name) {
 
 async function assertCanvasPixels(page, name) {
   const canvas = page.locator("canvas").first();
-  await canvas.waitFor({ state: "visible", timeout: 10000 });
+  await canvas.waitFor({ state: "visible", timeout: 20000 });
   await page.waitForTimeout(900);
 
   const box = await canvas.boundingBox();

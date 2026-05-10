@@ -7,6 +7,7 @@
  */
 
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFaceNode, DielineGraph, Point } from "../types";
 
 const RIGHT_ANGLE = Math.PI / 2;
@@ -71,6 +72,31 @@ export function generateSleeve(dims: {
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree,
+    metadata: createTemplateMetadata({
+      category: "sleeve",
+      family: "standard-sleeve",
+      familyLabel: "Standard Sleeve",
+      parts: [
+        {
+          id: "body-panels",
+          label: "Open-end body panels",
+          role: "body",
+          faceIds: ["front", "back", "left", "right"],
+          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back"],
+        },
+        {
+          id: "glue-tab",
+          label: "Glue tab",
+          role: "glue-flap",
+          faceIds: ["glue-tab"],
+          creaseIds: ["cr-glue-left"],
+        },
+      ],
+      parameters: [
+        ...createDimensionParameters(W, H, D),
+        { id: "glue-tab-width", label: "Glue tab width", kind: "closure", value: glueW, unit: "mm" },
+      ],
+    }),
     source: { type: "template", templateId: "sleeve" },
   };
 }

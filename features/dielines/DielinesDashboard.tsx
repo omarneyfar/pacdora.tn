@@ -2,19 +2,29 @@
 
 import Link from "next/link";
 import { Box, Edit3, FileUp, LoaderCircle, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  DIELINE_CATEGORY_ORDER,
+  getDielineCategory,
+  getDielineCategoryLabel,
+  getDielineFamilyLabel,
+  getDielineParts,
+} from "@/domain/dieline/structure";
+import type { DielineCategory } from "@/domain/dieline/types";
 import type { DielineTemplate, DielineTemplateStatus } from "@/domain/dielines";
 import { deleteDieline, listDielines, updateDieline } from "./dielineClient";
 import { DielinePreview } from "./DielinePreview";
 
 type StatusFilter = "all" | DielineTemplateStatus;
+type CategoryFilter = "all" | DielineCategory;
 
 export function DielinesDashboard() {
   const [templates, setTemplates] = useState<DielineTemplate[]>([]);
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState("");
   const [error, setError] = useState("");
@@ -45,6 +55,12 @@ export function DielinesDashboard() {
     }
   }, []);
 
+  const visibleTemplates = useMemo(
+    () => templates.filter((template) => matchesFilters(template, query, statusFilter, categoryFilter)),
+    [categoryFilter, query, statusFilter, templates],
+  );
+  const categoryCounts = useMemo(() => getCategoryCounts(templates), [templates]);
+
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
@@ -70,7 +86,7 @@ export function DielinesDashboard() {
             return [candidate];
           }
 
-          return matchesFilters(updated, query, statusFilter) ? [updated] : [];
+          return matchesFilters(updated, query, statusFilter, categoryFilter) ? [updated] : [];
         }),
       );
       setNameDrafts((current) => ({ ...current, [updated.id]: updated.name }));
@@ -159,6 +175,16 @@ export function DielinesDashboard() {
               </button>
             ))}
           </div>
+          <div className="project-status-filter" aria-label="Filter dielines by category">
+            <button className={categoryFilter === "all" ? "is-active" : ""} type="button" onClick={() => setCategoryFilter("all")}>
+              All categories
+            </button>
+            {DIELINE_CATEGORY_ORDER.filter((category) => categoryCounts.get(category)).map((category) => (
+              <button className={categoryFilter === category ? "is-active" : ""} key={category} type="button" onClick={() => setCategoryFilter(category)}>
+                {getDielineCategoryLabel(category)}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error ? <div className="error-banner projects-message">{error}</div> : null}
@@ -169,10 +195,10 @@ export function DielinesDashboard() {
             <LoaderCircle aria-hidden className="spin" size={26} />
             Loading dielines
           </div>
-        ) : templates.length === 0 ? (
+        ) : visibleTemplates.length === 0 ? (
           <div className="projects-empty">
             <strong>No dielines yet</strong>
-            <span>Import an SVG, fix the faces, then use it in new projects.</span>
+            <span>Import an SVG, adjust the filters, or prepare a category-backed template.</span>
             <Link className="primary-button projects-empty-action" href="/dielines/new">
               <Plus aria-hidden size={18} />
               Import dieline
@@ -180,7 +206,7 @@ export function DielinesDashboard() {
           </div>
         ) : (
           <div className="dieline-template-list">
-            {templates.map((template) => (
+            {visibleTemplates.map((template) => (
               <article className="dieline-template-row" key={template.id}>
                 <DielinePreview className="dieline-template-thumb" graph={template.graph} />
                 <div className="project-row-main">
@@ -204,7 +230,10 @@ export function DielinesDashboard() {
                     <span>{template.id}</span>
                   </div>
                   <div className="project-row-meta">
+                    <span>{getDielineCategoryLabel(getDielineCategory(template.graph))}</span>
+                    <span>{getDielineFamilyLabel(template.graph)}</span>
                     <span>{template.graph.faces.length} faces</span>
+                    <span>{getDielineParts(template.graph).length} parts</span>
                     <span>{template.graph.faces.filter((face) => face.artworkEnabled).length} artwork zones</span>
                     <span>{template.fileName ?? template.source}</span>
                     <span>Updated {formatDate(template.updatedAt)}</span>
@@ -256,10 +285,40 @@ function getStatusLabel(status: StatusFilter): string {
   return status === "ready" ? "Ready" : "Draft";
 }
 
-function matchesFilters(template: DielineTemplate, query: string, statusFilter: StatusFilter): boolean {
+function matchesFilters(
+  template: DielineTemplate,
+  query: string,
+  statusFilter: StatusFilter,
+  categoryFilter: CategoryFilter,
+): boolean {
   const normalizedQuery = query.trim().toLowerCase();
   if (statusFilter !== "all" && template.status !== statusFilter) return false;
-  return !normalizedQuery || template.name.toLowerCase().includes(normalizedQuery) || template.id.toLowerCase().includes(normalizedQuery);
+  if (categoryFilter !== "all" && getDielineCategory(template.graph) !== categoryFilter) return false;
+
+  if (!normalizedQuery) return true;
+
+  const structureText = [
+    getDielineCategoryLabel(getDielineCategory(template.graph)),
+    getDielineFamilyLabel(template.graph),
+    ...getDielineParts(template.graph).map((part) => part.label),
+  ].join(" ").toLowerCase();
+
+  return (
+    template.name.toLowerCase().includes(normalizedQuery) ||
+    template.id.toLowerCase().includes(normalizedQuery) ||
+    structureText.includes(normalizedQuery)
+  );
+}
+
+function getCategoryCounts(templates: DielineTemplate[]): Map<DielineCategory, number> {
+  const counts = new Map<DielineCategory, number>();
+
+  for (const template of templates) {
+    const category = getDielineCategory(template.graph);
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+  }
+
+  return counts;
 }
 
 function formatDate(value: string): string {

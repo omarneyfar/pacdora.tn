@@ -11,6 +11,7 @@
  */
 
 import { createDielineFace, createExteriorCutPaths } from "../geometry";
+import { createDimensionParameters, createTemplateMetadata } from "../structure";
 import type { DielineCrease, DielineFaceNode, DielineGraph, Point } from "../types";
 
 const RIGHT_ANGLE = Math.PI / 2;
@@ -112,6 +113,46 @@ export function generateMailerBox(dims: {
     creases,
     cutPaths: createExteriorCutPaths(faces),
     faceTree,
+    metadata: createTemplateMetadata({
+      category: "mailer-box",
+      family: "roll-end-front-tuck",
+      familyLabel: "Roll End Front Tuck Mailer",
+      parts: [
+        {
+          id: "body-panels",
+          label: "Body panels",
+          role: "body",
+          faceIds: ["front", "back", "left", "right"],
+          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back"],
+        },
+        {
+          id: "lid",
+          label: "Hinged lid",
+          role: "lid",
+          faceIds: ["lid"],
+          creaseIds: ["cr-back-lid"],
+        },
+        {
+          id: "bottom-lock",
+          label: "Auto-lock bottom",
+          role: "bottom-closure",
+          faceIds: ["bottom-front", "bottom-back", "bottom-left", "bottom-right"],
+          creaseIds: ["cr-front-bf", "cr-back-bf", "cr-left-bf", "cr-right-bf"],
+        },
+        {
+          id: "glue-tab",
+          label: "Glue tab",
+          role: "glue-flap",
+          faceIds: ["glue-tab"],
+          creaseIds: ["cr-glue-left"],
+        },
+      ],
+      parameters: [
+        ...createDimensionParameters(W, H, D),
+        { id: "bottom-flap-depth", label: "Bottom flap depth", kind: "closure", value: bfH, unit: "mm" },
+        { id: "glue-tab-width", label: "Glue tab width", kind: "closure", value: glueW, unit: "mm" },
+      ],
+    }),
     source: { type: "template", templateId: "mailer-box" },
   };
 }
