@@ -1,9 +1,8 @@
 export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as const;
+export const PROJECT_STATUSES = ["draft", "published"] as const;
 
 export type FaceKey = (typeof FACE_KEYS)[number];
-
-
-
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export type CartonDimensions = {
   width: number;
@@ -53,6 +52,7 @@ export type ProjectWorkspace = {
 export type Project = {
   id: string;
   name: string;
+  status: ProjectStatus;
   dimensions: CartonDimensions;
   faces: Partial<Record<FaceKey, string>>;
   createdAt: string;
@@ -183,6 +183,15 @@ export function normalizeDimensions(
 
 export function isFaceKey(value: string): value is FaceKey {
   return FACE_KEYS.includes(value as FaceKey);
+}
+
+export function normalizeProjectStatus(
+  value: unknown,
+  fallback: ProjectStatus = "draft",
+): ProjectStatus {
+  return PROJECT_STATUSES.includes(value as ProjectStatus)
+    ? (value as ProjectStatus)
+    : fallback;
 }
 
 function normalizeDimensionValue(value: unknown, fallback: number): number {

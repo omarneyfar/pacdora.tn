@@ -54,7 +54,8 @@ import {
   normalizeDimensions,
   type CartonDimensions,
   type FaceKey,
-  type Project
+  type Project,
+  type ProjectStatus
 } from "@/lib/carton";
 
 const CartonStage = dynamic(() => import("@/components/CartonStage").then((mod) => mod.CartonStage), {
@@ -105,6 +106,7 @@ type FacePayload = {
 
 type ProjectSavePayload = {
   name: string;
+  status: ProjectStatus;
   dimensions: CartonDimensions;
   workspace: {
     sources: SourcePayload[];
@@ -115,6 +117,7 @@ type ProjectSavePayload = {
 
 type ProjectPatchPayload = {
   name?: string;
+  status?: ProjectStatus;
   dimensions?: CartonDimensions;
   workspace?: {
     sources?: SourcePayload[];
@@ -126,6 +129,7 @@ type ProjectPatchPayload = {
 export function Builder({ projectId: initialProjectId }: { projectId?: string } = {}) {
   const [projectId, setProjectId] = useState(initialProjectId ?? "");
   const [projectName, setProjectName] = useState("Untitled carton");
+  const [projectStatus, setProjectStatus] = useState<ProjectStatus>("draft");
   const [dimensions, setDimensions] = useState<CartonDimensions>(DEFAULT_CARTON_DIMENSIONS);
   const [sources, setSources] = useState<ArtworkSource[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState("");
@@ -181,7 +185,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
         const project = (await response.json()) as Project;
         if (isMounted) {
           await hydrateProject(project);
-          setSaveStatus("Saved");
+          setSaveStatus(project.status === "published" ? "Published" : "Saved");
         }
       } catch (loadError) {
         if (isMounted) {
@@ -294,6 +298,17 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
 
   function markProjectChanged() {
     setShareUrl("");
+    setProjectStatus("draft");
+    setSaveStatus(projectId ? "Unsaved changes" : "");
+  }
+
+  function handleStatusChange(status: ProjectStatus) {
+    if (status === projectStatus) {
+      return;
+    }
+
+    setShareUrl("");
+    setProjectStatus(status);
     setSaveStatus(projectId ? "Unsaved changes" : "");
   }
 
@@ -386,14 +401,14 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     });
   }
 
-  async function saveProject() {
+  async function saveProject(nextStatus = projectStatus) {
     setIsProjectSaving(true);
     setError("");
 
     try {
-      const payload = projectId ? createProjectPatchPayload() : createFullProjectPayload();
+      const payload = projectId ? createProjectPatchPayload(nextStatus) : createFullProjectPayload(nextStatus);
       if (projectId && isEmptyPatchPayload(payload)) {
-        setSaveStatus("Saved");
+        setSaveStatus(lastSavedProjectRef.current?.status === "published" ? "Published" : "Saved");
         return lastSavedProjectRef.current;
       }
 
@@ -412,7 +427,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
 
       const project = (await response.json()) as Project;
       await hydrateProject(project);
-      setSaveStatus("Saved");
+      setSaveStatus(project.status === "published" ? "Published" : "Saved");
 
       if (!projectId) {
         window.history.replaceState(null, "", `/project/${project.id}/edit`);
@@ -432,7 +447,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     setError("");
 
     try {
-      const project = await saveProject();
+      const project = await saveProject("published");
       if (!project) {
         return;
       }
@@ -447,9 +462,10 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     }
   }
 
-  function createFullProjectPayload(): ProjectSavePayload {
+  function createFullProjectPayload(status = projectStatus): ProjectSavePayload {
     return {
       name: projectName,
+      status,
       dimensions,
       workspace: {
         sources: sources.map((source) => ({
@@ -484,8 +500,8 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
     };
   }
 
-  function createProjectPatchPayload(): ProjectPatchPayload {
-    const current = createFullProjectPayload();
+  function createProjectPatchPayload(status = projectStatus): ProjectPatchPayload {
+    const current = createFullProjectPayload(status);
     const saved = lastSavedPayloadRef.current;
 
     if (!saved) {
@@ -496,6 +512,10 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
 
     if (current.name !== saved.name) {
       patch.name = current.name;
+    }
+
+    if (current.status !== saved.status) {
+      patch.status = current.status;
     }
 
     if (!sameJson(current.dimensions, saved.dimensions)) {
@@ -578,6 +598,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
 
     setProjectId(project.id);
     setProjectName(project.name);
+    setProjectStatus(project.status);
     setDimensions(normalizeDimensions(project.dimensions));
     setSources(workspaceSources);
     setSelectedSourceId(project.workspace?.selectedSourceId ?? workspaceSources[0]?.id ?? "");
@@ -625,18 +646,19 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
           <div className="dimension-pill">
             {dimensions.width} x {dimensions.depth} x {dimensions.height} mm
           </div>
+          <StatusControl disabled={!canSave} value={projectStatus} onChange={handleStatusChange} />
           <a className="secondary-button header-projects-button" href="/projects">
             <FolderOpen aria-hidden size={18} />
             Projects
           </a>
           {saveStatus ? <span className="save-status">{saveStatus}</span> : null}
-          <button className="secondary-button header-save-button" disabled={!canSave} type="button" onClick={saveProject}>
+          <button className="secondary-button header-save-button" disabled={!canSave} type="button" onClick={() => saveProject()}>
             {isProjectSaving ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Save aria-hidden size={18} />}
             {projectId ? "Save" : "Save project"}
           </button>
           <button className="primary-button header-share-button" disabled={!canShare} type="button" onClick={createShareLink}>
             {isSharing ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Link aria-hidden size={18} />}
-            Share
+            Publish
           </button>
           {shareUrl ? (
             <div className="header-share-result">
@@ -760,6 +782,33 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
         />
       ) : null}
     </main>
+  );
+}
+
+function StatusControl({
+  disabled,
+  value,
+  onChange
+}: {
+  disabled: boolean;
+  value: ProjectStatus;
+  onChange: (status: ProjectStatus) => void;
+}) {
+  return (
+    <div className="status-control" aria-label="Project status">
+      {(["draft", "published"] as const).map((status) => (
+        <button
+          aria-pressed={value === status}
+          className={value === status ? `is-active status-${status}` : ""}
+          disabled={disabled}
+          key={status}
+          type="button"
+          onClick={() => onChange(status)}
+        >
+          {status === "published" ? "Published" : "Draft"}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -1250,6 +1299,7 @@ function createSavedPayloadFromProject(project: Project): ProjectSavePayload {
 
   return {
     name: project.name,
+    status: project.status,
     dimensions: normalizeDimensions(project.dimensions),
     workspace: {
       sources,

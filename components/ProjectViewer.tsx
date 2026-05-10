@@ -30,6 +30,10 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
         }
 
         const nextProject = (await response.json()) as Project;
+        if (nextProject.status !== "published") {
+          throw new Error("This carton is still a draft. Publish it before sharing with a client.");
+        }
+
         const nextFaces = await renderProjectFaces(nextProject);
         if (isMounted) {
           setProject(nextProject);

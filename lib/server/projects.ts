@@ -7,6 +7,7 @@ import {
   FACE_KEYS,
   isFaceKey,
   normalizeDimensions,
+  normalizeProjectStatus,
   type ArtworkSourceType,
   type CartonDimensions,
   type FaceKey,
@@ -14,6 +15,7 @@ import {
   type ProjectArtworkSource,
   type ProjectCropSettings,
   type ProjectFaceAsset,
+  type ProjectStatus,
   type ProjectWorkspace
 } from "@/lib/carton";
 
@@ -32,6 +34,7 @@ let localDbWriteQueue = Promise.resolve();
 
 export type ProjectInput = {
   name?: string;
+  status?: ProjectStatus;
   dimensions?: Partial<CartonDimensions>;
   faces?: Partial<Record<FaceKey, string | null>>;
   workspace?: ProjectWorkspaceInput;
@@ -40,6 +43,7 @@ export type ProjectInput = {
 export type ProjectListOptions = {
   limit?: number;
   query?: string;
+  status?: ProjectStatus | "all";
 };
 
 export type ProjectImage = {
@@ -74,6 +78,7 @@ type ProjectFaceAssetInput = {
 type ProjectRow = {
   id: string;
   name?: string | null;
+  status?: string | null;
   dimensions: Partial<CartonDimensions>;
   faces: Partial<Record<FaceKey, string>>;
   workspace?: unknown;
@@ -231,6 +236,7 @@ async function writeFileProjectSnapshot(id: string, input: ProjectInput, existin
   const project: Project = {
     id,
     name: normalizeProjectName(input.name, existing?.name),
+    status: normalizeProjectStatus(input.status, existing?.status),
     dimensions: normalizeDimensions(input.dimensions ?? existing?.dimensions),
     faces,
     createdAt,
@@ -340,12 +346,17 @@ async function listSupabaseProjects(options: ProjectListOptions): Promise<Projec
   const query = normalizeSearchQuery(options.query);
   let request = supabase
     .from(SUPABASE_TABLE)
-    .select("id, name, dimensions, faces, workspace, created_at, updated_at")
+    .select("id, name, status, dimensions, faces, workspace, created_at, updated_at")
     .order("updated_at", { ascending: false })
     .limit(limit);
 
   if (query) {
     request = request.ilike("name", `%${query}%`);
+  }
+
+  const status = normalizeListStatus(options.status);
+  if (status) {
+    request = request.eq("status", status);
   }
 
   const { data, error } = await request.returns<ProjectRow[]>();
@@ -433,6 +444,7 @@ async function writeSupabaseProjectSnapshot(id: string, input: ProjectInput, exi
   const project: Project = {
     id,
     name: normalizeProjectName(input.name, existing?.name),
+    status: normalizeProjectStatus(input.status, existing?.status),
     dimensions: normalizeDimensions(input.dimensions ?? existing?.dimensions),
     faces,
     createdAt,
@@ -453,6 +465,7 @@ async function writeSupabaseProject(project: Project): Promise<void> {
       faces: project.faces,
       id: project.id,
       name: project.name,
+      status: project.status,
       updated_at: project.updatedAt,
       workspace: project.workspace ?? null
     },
@@ -480,7 +493,7 @@ async function readSupabaseProject(id: string): Promise<Project | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from(SUPABASE_TABLE)
-    .select("id, name, dimensions, faces, workspace, created_at, updated_at")
+    .select("id, name, status, dimensions, faces, workspace, created_at, updated_at")
     .eq("id", id)
     .maybeSingle<ProjectRow>();
 
@@ -583,6 +596,7 @@ async function createDuplicateProjectInput(project: Project): Promise<ProjectInp
 
   return {
     name: `${project.name} copy`,
+    status: "draft",
     dimensions: project.dimensions,
     ...(Object.keys(faces).length > 0 ? { faces } : {}),
     ...(sources.length > 0
@@ -837,6 +851,7 @@ function projectFromRow(row: ProjectRow): Project | null {
       faces: row.faces,
       id: row.id,
       name: row.name ?? undefined,
+      status: row.status ?? undefined,
       updatedAt: row.updated_at ?? undefined,
       workspace: row.workspace
     },
@@ -862,6 +877,7 @@ function normalizeProjectRecord(value: unknown, fallbackId?: string): Project | 
   return {
     id,
     name: normalizeProjectName(candidate.name),
+    status: normalizeProjectStatus(candidate.status),
     dimensions: normalizeDimensions(candidate.dimensions),
     faces,
     createdAt,
@@ -1145,6 +1161,15 @@ function normalizeSearchQuery(value: unknown): string {
   return typeof value === "string" ? value.trim().slice(0, 80) : "";
 }
 
+function normalizeListStatus(value: unknown): ProjectStatus | undefined {
+  if (value === "all" || value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  const status = normalizeProjectStatus(value, "draft");
+  return status === value ? status : undefined;
+}
+
 function normalizeFileName(value: unknown, fallback: string): string {
   const candidate = typeof value === "string" ? value.trim() : "";
   return (candidate || fallback).slice(0, 140);
@@ -1228,9 +1253,16 @@ function isSupabaseStorageFolder(item: { id?: string | null; metadata?: unknown 
 function filterProjectList(projects: Project[], options: ProjectListOptions): Project[] {
   const query = normalizeSearchQuery(options.query).toLowerCase();
   const limit = normalizeListLimit(options.limit);
+  const status = normalizeListStatus(options.status);
 
   return projects
-    .filter((project) => !query || project.name.toLowerCase().includes(query) || project.id.toLowerCase().includes(query))
+    .filter((project) => {
+      if (status && project.status !== status) {
+        return false;
+      }
+
+      return !query || project.name.toLowerCase().includes(query) || project.id.toLowerCase().includes(query);
+    })
     .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))
     .slice(0, limit);
 }

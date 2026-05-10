@@ -9,7 +9,8 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const projects = await listProjects({
       limit: Number(url.searchParams.get("limit") ?? 50),
-      query: url.searchParams.get("q") ?? ""
+      query: url.searchParams.get("q") ?? "",
+      status: normalizeStatusFilter(url.searchParams.get("status"))
     });
 
     return NextResponse.json({ projects });
@@ -19,6 +20,10 @@ export async function GET(request: Request) {
       { status: 400 }
     );
   }
+}
+
+function normalizeStatusFilter(value: string | null) {
+  return value === "draft" || value === "published" ? value : "all";
 }
 
 export async function POST(request: Request) {
