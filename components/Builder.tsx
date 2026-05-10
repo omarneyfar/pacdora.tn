@@ -49,6 +49,7 @@ import {
   DEFAULT_CARTON_DIMENSIONS,
   DIMENSION_LIMITS,
   FACE_KEYS,
+  getDielinePrintGuides,
   getDielineSize,
   getFaceSpecs,
   normalizeDimensions,
@@ -144,6 +145,7 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
   const [error, setError] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDielineGuides, setShowDielineGuides] = useState(true);
   const [openSections, setOpenSections] = useState<Record<ParameterSectionKey, boolean>>({
     dimensions: true,
     dieline: true,
@@ -729,11 +731,13 @@ export function Builder({ projectId: initialProjectId }: { projectId?: string } 
             trailing={`${uploadedCount}/6`}
             onToggle={() => toggleSection("dieline")}
           >
+            <DielineGuideToolbar checked={showDielineGuides} onChange={setShowDielineGuides} />
             <DielineUploader
               busyFace={busyFace}
               dimensions={dimensions}
               faces={faces}
               selectedSourceId={selectedSourceId}
+              showPrintGuides={showDielineGuides}
               onApplySelected={(face) => {
                 if (selectedSourceId) {
                   setCropModal({ face, sourceId: selectedSourceId, settings: DEFAULT_CROP_SETTINGS });
@@ -884,6 +888,7 @@ function DielineUploader({
   dimensions,
   faces,
   selectedSourceId,
+  showPrintGuides,
   onApplySelected,
   onClear,
   onCrop,
@@ -893,6 +898,7 @@ function DielineUploader({
   dimensions: CartonDimensions;
   faces: FaceAssets;
   selectedSourceId: string;
+  showPrintGuides: boolean;
   onApplySelected: (face: FaceKey) => void;
   onClear: (face: FaceKey) => void;
   onCrop: (face: FaceKey) => void;
@@ -995,8 +1001,78 @@ function DielineUploader({
             </div>
           );
         })}
+        {showPrintGuides ? <DielineGuideOverlay dimensions={dimensions} /> : null}
       </div>
     </div>
+  );
+}
+
+function DielineGuideToolbar({
+  checked,
+  onChange
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="dieline-guide-toolbar">
+      <label className="toggle-row">
+        <input checked={checked} type="checkbox" onChange={(event) => onChange(event.currentTarget.checked)} />
+        <span>Print guides</span>
+      </label>
+      <div className="dieline-guide-legend" aria-hidden>
+        <span className="legend-cut">Cut</span>
+        <span className="legend-fold">Fold</span>
+        <span className="legend-bleed">Bleed</span>
+        <span className="legend-safe">Safe</span>
+      </div>
+    </div>
+  );
+}
+
+function DielineGuideOverlay({ dimensions }: { dimensions: CartonDimensions }) {
+  const dielineSize = getDielineSize(dimensions);
+  const guides = getDielinePrintGuides(dimensions);
+
+  return (
+    <svg
+      aria-hidden
+      className="dieline-guide-overlay"
+      preserveAspectRatio="none"
+      viewBox={`0 0 ${dielineSize.width} ${dielineSize.height}`}
+    >
+      <g>
+        {guides.rectangles.map((rect) => (
+          <rect
+            className={`dieline-guide-rect dieline-guide-${rect.kind}`}
+            height={rect.height}
+            key={`${rect.kind}-${rect.face}`}
+            width={rect.width}
+            x={rect.x}
+            y={rect.y}
+          />
+        ))}
+      </g>
+      <g>
+        {guides.segments.map((segment, index) => (
+          <line
+            className={`dieline-guide-line dieline-guide-${segment.kind}`}
+            key={`${segment.kind}-${index}-${segment.x1}-${segment.y1}`}
+            x1={segment.x1}
+            x2={segment.x2}
+            y1={segment.y1}
+            y2={segment.y2}
+          />
+        ))}
+      </g>
+      <g>
+        {guides.labels.map((label) => (
+          <text className="dieline-guide-label" key={label.face} x={label.x} y={label.y}>
+            {label.text}
+          </text>
+        ))}
+      </g>
+    </svg>
   );
 }
 

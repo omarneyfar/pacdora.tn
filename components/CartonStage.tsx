@@ -1,13 +1,19 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { ContactShadows, Edges, Environment, OrbitControls, useTexture } from "@react-three/drei";
+import { ContactShadows, Edges, Environment, Line, OrbitControls, useTexture } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Maximize2, Minimize2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Maximize2, Minimize2, RotateCcw, Ruler, ZoomIn, ZoomOut } from "lucide-react";
 import { DoubleSide, SRGBColorSpace, Vector3, type Texture } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-import { DEFAULT_CARTON_DIMENSIONS, type CartonDimensions, type FaceKey, normalizeDimensions } from "@/lib/carton";
+import {
+  DEFAULT_CARTON_DIMENSIONS,
+  PRINT_GUIDE_OFFSETS,
+  type CartonDimensions,
+  type FaceKey,
+  normalizeDimensions
+} from "@/lib/carton";
 
 type CartonStageProps = {
   dimensions?: CartonDimensions;
@@ -34,6 +40,7 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
   const [zoomPercent, setZoomPercent] = useState(100);
   const [resetSignal, setResetSignal] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showGuides, setShowGuides] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const unit = 3.35 / Math.max(safeDimensions.width, safeDimensions.height, safeDimensions.depth);
   const shadowY = -(safeDimensions.height * unit) / 2 - 0.08;
@@ -77,7 +84,7 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
         <directionalLight castShadow intensity={1.8} position={[3.5, 4.5, 4.5]} />
         <directionalLight intensity={0.6} position={[-4, 2, -2]} />
         <Suspense fallback={null}>
-          <CartonModel dimensions={safeDimensions} faces={faces} />
+          <CartonModel dimensions={safeDimensions} faces={faces} showGuides={showGuides} />
           <Environment preset="city" />
         </Suspense>
         <ContactShadows blur={2.8} far={6} opacity={0.28} position={[0, shadowY, 0]} scale={6} />
@@ -93,6 +100,15 @@ export function CartonStage({ dimensions = DEFAULT_CARTON_DIMENSIONS, faces, cla
         </button>
         <button className="stage-tool" title="Reset view" type="button" onClick={resetView}>
           <RotateCcw aria-hidden size={17} />
+        </button>
+        <button
+          aria-pressed={showGuides}
+          className={`stage-tool ${showGuides ? "is-active" : ""}`}
+          title="3D print guides"
+          type="button"
+          onClick={() => setShowGuides((current) => !current)}
+        >
+          <Ruler aria-hidden size={17} />
         </button>
         <button className="stage-tool" title={isFullscreen ? "Exit fullscreen" : "Fullscreen"} type="button" onClick={toggleFullscreen}>
           {isFullscreen ? <Minimize2 aria-hidden size={17} /> : <Maximize2 aria-hidden size={17} />}
@@ -120,10 +136,12 @@ function zoomPercentFromDistance(distance: number): number {
 
 function CartonModel({
   dimensions,
-  faces
+  faces,
+  showGuides
 }: {
   dimensions: CartonDimensions;
   faces: Partial<Record<FaceKey, string>>;
+  showGuides: boolean;
 }) {
   const unit = 3.35 / Math.max(dimensions.width, dimensions.height, dimensions.depth);
   const width = dimensions.width * unit;
@@ -174,8 +192,132 @@ function CartonModel({
         <meshBasicMaterial color="#ffffff" opacity={0} transparent />
         <Edges color="#223028" lineWidth={1.4} />
       </mesh>
+      {showGuides ? <CartonGuideOverlay depth={depth} height={height} lift={lift} unit={unit} width={width} /> : null}
     </group>
   );
+}
+
+function CartonGuideOverlay({
+  depth,
+  height,
+  lift,
+  unit,
+  width
+}: {
+  depth: number;
+  height: number;
+  lift: number;
+  unit: number;
+  width: number;
+}) {
+  const safeInset = Math.min(width, height, depth) > 0 ? Math.min(PRINT_GUIDE_OFFSETS.safe * unit, Math.min(width, height, depth) * 0.18) : 0;
+  const guideLift = lift * 4;
+
+  return (
+    <group>
+      <BoxFoldGuides depth={depth} height={height} width={width} />
+      <GuideFace
+        position={[0, 0, depth / 2 + guideLift]}
+        rotation={[0, 0, 0]}
+        safeInset={safeInset}
+        size={[width, height]}
+      />
+      <GuideFace
+        position={[0, 0, -depth / 2 - guideLift]}
+        rotation={[0, Math.PI, 0]}
+        safeInset={safeInset}
+        size={[width, height]}
+      />
+      <GuideFace
+        position={[-width / 2 - guideLift, 0, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
+        safeInset={safeInset}
+        size={[depth, height]}
+      />
+      <GuideFace
+        position={[width / 2 + guideLift, 0, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+        safeInset={safeInset}
+        size={[depth, height]}
+      />
+      <GuideFace
+        position={[0, height / 2 + guideLift, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        safeInset={safeInset}
+        size={[width, depth]}
+      />
+      <GuideFace
+        position={[0, -height / 2 - guideLift, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        safeInset={safeInset}
+        size={[width, depth]}
+      />
+    </group>
+  );
+}
+
+function BoxFoldGuides({ depth, height, width }: { depth: number; height: number; width: number }) {
+  const x = width / 2;
+  const y = height / 2;
+  const z = depth / 2;
+  const edges: Array<[[number, number, number], [number, number, number]]> = [
+    [[-x, -y, z], [x, -y, z]],
+    [[x, -y, z], [x, y, z]],
+    [[x, y, z], [-x, y, z]],
+    [[-x, y, z], [-x, -y, z]],
+    [[-x, -y, -z], [x, -y, -z]],
+    [[x, -y, -z], [x, y, -z]],
+    [[x, y, -z], [-x, y, -z]],
+    [[-x, y, -z], [-x, -y, -z]],
+    [[-x, -y, -z], [-x, -y, z]],
+    [[x, -y, -z], [x, -y, z]],
+    [[x, y, -z], [x, y, z]],
+    [[-x, y, -z], [-x, y, z]]
+  ];
+
+  return (
+    <group>
+      {edges.map((points, index) => (
+        <Line color="#1677ff" key={index} lineWidth={1.25} opacity={0.88} points={points} transparent />
+      ))}
+    </group>
+  );
+}
+
+function GuideFace({
+  position,
+  rotation,
+  safeInset,
+  size
+}: {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  safeInset: number;
+  size: [number, number];
+}) {
+  const [width, height] = size;
+  const safeWidth = Math.max(0.01, width - safeInset * 2);
+  const safeHeight = Math.max(0.01, height - safeInset * 2);
+
+  return (
+    <group position={position} rotation={rotation}>
+      <Line color="#d94f30" lineWidth={1.1} opacity={0.78} points={getRectPoints(width, height)} transparent />
+      <Line color="#8f9a93" lineWidth={0.9} opacity={0.72} points={getRectPoints(safeWidth, safeHeight)} transparent />
+    </group>
+  );
+}
+
+function getRectPoints(width: number, height: number): Array<[number, number, number]> {
+  const x = width / 2;
+  const y = height / 2;
+
+  return [
+    [-x, -y, 0],
+    [x, -y, 0],
+    [x, y, 0],
+    [-x, y, 0],
+    [-x, -y, 0]
+  ];
 }
 
 function FacePlane({ size, position, rotation, textureUrl }: FacePlaneProps) {

@@ -439,6 +439,92 @@ a {
   min-height: 0;
 }
 
+.dieline-guide-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.toggle-row {
+  align-items: center;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.toggle-row input {
+  accent-color: var(--accent);
+  height: 15px;
+  width: 15px;
+}
+
+.toggle-row span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dieline-guide-legend {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.dieline-guide-legend span {
+  align-items: center;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.dieline-guide-legend span::before {
+  border-top: 2px solid currentColor;
+  content: "";
+  display: inline-block;
+  width: 18px;
+}
+
+.dieline-guide-legend .legend-cut {
+  color: var(--warm);
+}
+
+.dieline-guide-legend .legend-fold {
+  color: #1677ff;
+}
+
+.dieline-guide-legend .legend-fold::before {
+  border-top-style: dashed;
+}
+
+.dieline-guide-legend .legend-bleed {
+  color: #2f8a53;
+}
+
+.dieline-guide-legend .legend-bleed::before {
+  border-top-style: dotted;
+}
+
+.dieline-guide-legend .legend-safe {
+  color: #7c8790;
+}
+
 .dimension-grid {
   display: grid;
   gap: 8px;
@@ -495,6 +581,58 @@ a {
   max-width: 640px;
   position: relative;
   width: 100%;
+}
+
+.dieline-guide-overlay {
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  z-index: 3;
+}
+
+.dieline-guide-line,
+.dieline-guide-rect {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.dieline-guide-cut {
+  stroke: var(--warm);
+  stroke-width: 1.4;
+}
+
+.dieline-guide-fold {
+  stroke: #1677ff;
+  stroke-dasharray: 8 5;
+  stroke-linecap: round;
+  stroke-width: 1.45;
+}
+
+.dieline-guide-bleed {
+  stroke: #2f8a53;
+  stroke-dasharray: 2 4;
+  stroke-width: 1.1;
+}
+
+.dieline-guide-safe {
+  stroke: #7c8790;
+  stroke-width: 0.95;
+}
+
+.dieline-guide-label {
+  fill: rgba(31, 42, 36, 0.82);
+  font-size: 9px;
+  font-weight: 800;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgba(255, 253, 247, 0.86);
+  stroke-linejoin: round;
+  stroke-width: 4px;
+  text-anchor: middle;
+  text-transform: uppercase;
 }
 
 .dieline-face {
@@ -597,7 +735,7 @@ a {
   right: 0;
   top: 0;
   transition: opacity 140ms ease;
-  z-index: 2;
+  z-index: 4;
 }
 
 .dieline-face:hover .face-actions,
@@ -814,6 +952,12 @@ a {
 }
 
 .stage-tool:hover {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.stage-tool.is-active {
+  background: rgba(47, 125, 107, 0.12);
   border-color: var(--accent);
   color: var(--accent-dark);
 }
@@ -1530,6 +1674,26 @@ a {
   .dieline-board {
     flex: 0 0 max(340px, 100%);
     max-width: none;
+  }
+
+  .dieline-guide-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toggle-row {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .dieline-guide-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .dieline-guide-legend span {
+    justify-content: center;
   }
 
   .face-actions {
