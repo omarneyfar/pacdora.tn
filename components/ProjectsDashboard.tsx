@@ -125,8 +125,8 @@ export function ProjectsDashboard() {
     }
   }
 
-  function saveProjectName(project: Project) {
-    const nextName = (nameDrafts[project.id] ?? project.name).trim();
+  function saveProjectName(project: Project, rawName = nameDrafts[project.id] ?? project.name) {
+    const nextName = rawName.trim();
 
     if (!nextName) {
       setNameDrafts((current) => ({
@@ -290,13 +290,14 @@ export function ProjectsDashboard() {
                       className="project-name-editor"
                       disabled={Boolean(actionProjectId)}
                       value={nameDrafts[project.id] ?? project.name}
-                      onBlur={() => saveProjectName(project)}
-                      onChange={(event) =>
+                      onBlur={(event) => saveProjectName(project, event.currentTarget.value)}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
                         setNameDrafts((current) => ({
                           ...current,
-                          [project.id]: event.currentTarget.value
-                        }))
-                      }
+                          [project.id]: value
+                        }));
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
                           event.currentTarget.blur();
