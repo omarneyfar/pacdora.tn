@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
-import { FileUp, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { Library, LoaderCircle, RotateCcw } from "lucide-react";
 
 import type { FaceKey } from "@/domain/packaging";
+import type { DielineTemplate } from "@/domain/dielines";
 import { DEFAULT_CROP_SETTINGS } from "@/features/artwork/artwork";
-import { useDielineImport } from "@/hooks/useDielineImport";
+import { listDielines } from "@/features/dielines/dielineClient";
 import { useAppDispatch, useAppSelector } from "@/store";
+import { markChanged, resetDieline, setLibraryDieline } from "@/store/builderSlice";
 import { openCropModal, setShowDielineGuides, toggleSection } from "@/store/uiSlice";
 
 import { CollapsibleSection } from "../components/CollapsibleSection";
@@ -29,10 +32,11 @@ type DielinePanelProps = {
  */
 export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   const dispatch = useAppDispatch();
-  const { importDielineFile, useTemplateDieline } = useDielineImport();
 
   const dimensions = useAppSelector((s) => s.builder.dimensions);
   const dielineSource = useAppSelector((s) => s.builder.dielineSource);
+  const dielineTemplateId = useAppSelector((s) => s.builder.dielineTemplateId);
+  const dielineTemplateName = useAppSelector((s) => s.builder.dielineTemplateName);
   const dielineFileName = useAppSelector((s) => s.builder.dielineFileName);
   const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
   const faces = useAppSelector((s) => s.artwork.faces);
@@ -44,6 +48,34 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   const showDielineGuides = useAppSelector((s) => s.ui.showDielineGuides);
 
   const uploadedCount = Object.keys(faces).length;
+  const [templates, setTemplates] = useState<DielineTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [templateError, setTemplateError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    listDielines({ limit: 24, status: "ready" })
+      .then((nextTemplates) => {
+        if (isMounted) {
+          setTemplates(nextTemplates);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setTemplateError(error instanceof Error ? error.message : "Could not load dielines.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingTemplates(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   /* ── Stable callbacks ────────────────────────────────────────── */
 
@@ -83,6 +115,32 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
     [dispatch],
   );
 
+  const handleTemplateChange = useCallback(
+    (templateId: string) => {
+      if (!templateId) {
+        dispatch(resetDieline());
+        dispatch(markChanged());
+        return;
+      }
+
+      const template = templates.find((candidate) => candidate.id === templateId);
+      if (!template) {
+        return;
+      }
+
+      dispatch(
+        setLibraryDieline({
+          templateId: template.id,
+          name: template.name,
+          fileName: template.fileName,
+          graph: template.graph,
+        }),
+      );
+      dispatch(markChanged());
+    },
+    [dispatch, templates],
+  );
+
   return (
     <CollapsibleSection
       className="dieline-section"
@@ -97,32 +155,44 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
         onChange={handleGuideChange}
       />
 
-      <div className="dieline-import-row">
-        <label className="secondary-button dieline-import-button" title="Import SVG dieline">
-          <FileUp aria-hidden size={16} />
-          Import SVG
-          <input
-            accept=".svg,image/svg+xml"
-            type="file"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) {
-                void importDielineFile(file);
-              }
-            }}
-          />
+      <div className="dieline-library-picker">
+        <label>
+          <span>Prepared dieline</span>
+          <select value={dielineSource === "library" ? dielineTemplateId : ""} onChange={(event) => handleTemplateChange(event.currentTarget.value)}>
+            <option value="">Default folding carton</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
         </label>
-
-        {dielineSource === "svg-upload" ? (
-          <button className="secondary-button dieline-template-button" type="button" onClick={useTemplateDieline}>
-            <RotateCcw aria-hidden size={16} />
-            Template
-          </button>
-        ) : null}
+        <div className="dieline-library-actions">
+          <Link className="secondary-button dieline-library-link" href="/dielines">
+            <Library aria-hidden size={16} />
+            Library
+          </Link>
+          {dielineSource !== "template" ? (
+            <button className="secondary-button dieline-template-button" type="button" onClick={() => handleTemplateChange("")}>
+              <RotateCcw aria-hidden size={16} />
+              Default
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      {dielineSource === "svg-upload" ? (
+      {isLoadingTemplates ? (
+        <p className="dieline-source-note">
+          <LoaderCircle aria-hidden className="spin" size={13} /> Loading dielines
+        </p>
+      ) : null}
+      {templateError ? <p className="dieline-source-note error-state">{templateError}</p> : null}
+
+      {dielineSource === "library" ? (
+        <p className="dieline-source-note">
+          Using: <strong>{dielineTemplateName || dielineFileName || "library dieline"}</strong>
+        </p>
+      ) : dielineSource === "svg-upload" ? (
         <p className="dieline-source-note">
           Imported: <strong>{dielineFileName || "custom dieline"}</strong>
         </p>

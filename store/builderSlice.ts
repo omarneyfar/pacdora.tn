@@ -10,7 +10,7 @@ import {
 import type { DielineGraph } from "@/domain/dieline/types";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "published" | "unsaved";
-export type DielineSource = "template" | "svg-upload";
+export type DielineSource = "template" | "svg-upload" | "library";
 
 export type BuilderState = {
   projectId: string;
@@ -18,6 +18,8 @@ export type BuilderState = {
   projectStatus: ProjectStatus;
   dimensions: CartonDimensions;
   dielineSource: DielineSource;
+  dielineTemplateId: string;
+  dielineTemplateName: string;
   dielineFileName: string;
   dielineGraph: DielineGraph | null;
   saveStatus: SaveStatus;
@@ -32,6 +34,8 @@ const initialState: BuilderState = {
   projectStatus: "draft",
   dimensions: DEFAULT_CARTON_DIMENSIONS,
   dielineSource: "template",
+  dielineTemplateId: "",
+  dielineTemplateName: "",
   dielineFileName: "",
   dielineGraph: null,
   saveStatus: "idle",
@@ -66,12 +70,24 @@ export const builderSlice = createSlice({
 
     setImportedDieline(state, action: PayloadAction<{ fileName: string; graph: DielineGraph }>) {
       state.dielineSource = "svg-upload";
+      state.dielineTemplateId = "";
+      state.dielineTemplateName = "";
       state.dielineFileName = action.payload.fileName;
+      state.dielineGraph = action.payload.graph;
+    },
+
+    setLibraryDieline(state, action: PayloadAction<{ templateId: string; name: string; fileName?: string; graph: DielineGraph }>) {
+      state.dielineSource = "library";
+      state.dielineTemplateId = action.payload.templateId;
+      state.dielineTemplateName = action.payload.name;
+      state.dielineFileName = action.payload.fileName ?? "";
       state.dielineGraph = action.payload.graph;
     },
 
     resetDieline(state) {
       state.dielineSource = "template";
+      state.dielineTemplateId = "";
+      state.dielineTemplateName = "";
       state.dielineFileName = "";
       state.dielineGraph = null;
     },
@@ -125,8 +141,10 @@ export const builderSlice = createSlice({
       state.projectStatus = status;
       state.dimensions = normalizeDimensions(dimensions);
       state.dielineSource = dieline?.source ?? "template";
+      state.dielineTemplateId = dieline?.templateId ?? "";
+      state.dielineTemplateName = dieline?.name ?? "";
       state.dielineFileName = dieline?.fileName ?? "";
-      state.dielineGraph = dieline?.source === "svg-upload" ? (dieline.graph ?? null) : null;
+      state.dielineGraph = dieline?.source === "svg-upload" || dieline?.source === "library" ? (dieline.graph ?? null) : null;
       state.saveStatus = status === "published" ? "published" : "saved";
       state.isProjectLoading = false;
       state.isProjectSaving = false;
@@ -145,6 +163,7 @@ export const {
   setProjectStatus,
   setDimensions,
   setImportedDieline,
+  setLibraryDieline,
   resetDieline,
   setSaveStatus,
   setIsProjectLoading,

@@ -525,37 +525,61 @@ a {
   color: #7c8790;
 }
 
-.dieline-import-row {
-  display: flex;
-  gap: 8px;
-}
-
-.dieline-import-button,
-.dieline-template-button {
-  align-items: center;
-  display: inline-flex;
-  flex: 1 1 0;
-  gap: 7px;
-  justify-content: center;
-}
-
-.dieline-import-button input {
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  width: 1px;
-}
-
 .dieline-source-note {
+  align-items: center;
   color: var(--muted);
+  display: flex;
   font-size: 12px;
+  gap: 6px;
   line-height: 1.35;
   margin: -2px 0 0;
 }
 
 .dieline-source-note strong {
   color: var(--ink);
+}
+
+.dieline-library-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.dieline-library-picker label {
+  color: var(--muted);
+  display: grid;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 5px;
+  text-transform: uppercase;
+}
+
+.dieline-library-picker select {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 38px;
+  outline: none;
+  padding: 0 10px;
+  text-transform: none;
+}
+
+.dieline-library-picker select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 125, 107, 0.12);
+}
+
+.dieline-library-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dieline-library-link,
+.dieline-template-button {
+  gap: 7px;
 }
 
 .dimension-grid {
@@ -1010,6 +1034,24 @@ a {
   padding: 10px;
 }
 
+.warning-banner {
+  background: rgba(224, 184, 79, 0.16);
+  border: 1px solid rgba(159, 120, 31, 0.26);
+  border-radius: 8px;
+  color: #765510;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 10px;
+}
+
+.warning-banner p {
+  margin: 0;
+}
+
+.warning-banner p + p {
+  margin-top: 6px;
+}
+
 .sidebar-error {
   flex: 0 0 auto;
   margin: 12px;
@@ -1354,6 +1396,11 @@ a {
   color: var(--accent-dark);
 }
 
+.project-row-status-control button.is-active.status-ready {
+  background: rgba(47, 125, 107, 0.15);
+  color: var(--accent-dark);
+}
+
 .project-row-status-control button:not(:disabled):hover {
   color: var(--accent-dark);
 }
@@ -1380,6 +1427,51 @@ a {
   display: flex;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.dieline-template-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dieline-template-row {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(44, 38, 24, 0.07);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  min-width: 0;
+  padding: 10px;
+}
+
+.dieline-preview {
+  background:
+    linear-gradient(90deg, rgba(31, 42, 36, 0.045) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(31, 42, 36, 0.045) 1px, transparent 1px),
+    #eee8d9;
+  background-size: 20px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  min-height: 180px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.dieline-template-thumb {
+  height: 74px;
+  min-height: 0;
+  width: 92px;
+}
+
+.dieline-preview-svg {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
 }
 
 .project-action-button {
@@ -1414,6 +1506,156 @@ a {
 .projects-empty-action {
   margin-top: 8px;
   width: auto;
+}
+
+.dieline-studio-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+}
+
+.dieline-studio-grid {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 12px;
+  grid-template-columns: 300px minmax(0, 1fr) 340px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.dieline-studio-sidebar,
+.dieline-face-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dieline-studio-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(44, 38, 24, 0.07);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.studio-field {
+  color: var(--muted);
+  display: grid;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 5px;
+  text-transform: uppercase;
+}
+
+.studio-field input,
+.dieline-face-editor-row input,
+.dieline-face-editor-row select {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  min-height: 36px;
+  outline: none;
+  padding: 0 9px;
+}
+
+.studio-field input:focus,
+.dieline-face-editor-row input:focus,
+.dieline-face-editor-row select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 125, 107, 0.12);
+}
+
+.studio-status-control {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4px;
+}
+
+.studio-status-control button {
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 31px;
+}
+
+.studio-status-control button.is-active {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.dieline-studio-import {
+  position: relative;
+}
+
+.dieline-studio-import input {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+.dieline-studio-preview {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.dieline-studio-preview .dieline-preview {
+  min-height: min(760px, calc(100dvh - 150px));
+}
+
+.dieline-face-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dieline-face-editor-row {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+}
+
+.dieline-face-editor-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.dieline-face-editor-row strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.dieline-face-editor-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.compact-toggle-row {
+  justify-content: flex-start;
+  min-height: 34px;
 }
 
 .error-state {
@@ -1928,9 +2170,18 @@ a {
     grid-template-columns: 44px minmax(0, 1fr);
   }
 
+  .dieline-template-row {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+
   .project-row-preview {
     height: 44px;
     width: 44px;
+  }
+
+  .dieline-template-thumb {
+    height: 58px;
+    width: 74px;
   }
 
   .project-row-actions {
@@ -1958,6 +2209,20 @@ a {
 
   .project-action-button {
     flex: 1 1 auto;
+  }
+
+  .dieline-studio-grid {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .dieline-studio-sidebar,
+  .dieline-face-editor {
+    overflow: visible;
+  }
+
+  .dieline-studio-preview .dieline-preview {
+    min-height: 460px;
   }
 }
 

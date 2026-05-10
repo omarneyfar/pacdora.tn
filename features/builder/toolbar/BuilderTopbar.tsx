@@ -100,6 +100,10 @@ export function BuilderTopbar({ onSave, onPublish, copyShareUrl }: BuilderTopbar
           Projects
         </a>
 
+        <a className="secondary-button header-projects-button" href="/dielines">
+          Dielines
+        </a>
+
         {saveStatusLabel ? <span className="save-status">{saveStatusLabel}</span> : null}
 
         <button

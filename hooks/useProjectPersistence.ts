@@ -47,6 +47,8 @@ export function useProjectPersistence(initialProjectId?: string) {
   const projectStatus = useAppSelector((s) => s.builder.projectStatus);
   const dimensions = useAppSelector((s) => s.builder.dimensions);
   const dielineSource = useAppSelector((s) => s.builder.dielineSource);
+  const dielineTemplateId = useAppSelector((s) => s.builder.dielineTemplateId);
+  const dielineTemplateName = useAppSelector((s) => s.builder.dielineTemplateName);
   const dielineFileName = useAppSelector((s) => s.builder.dielineFileName);
   const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
   const sources = useAppSelector((s) => s.artwork.sources);
@@ -191,6 +193,8 @@ export function useProjectPersistence(initialProjectId?: string) {
             projectStatus: statusToSave,
             dimensions,
             dielineSource,
+            dielineTemplateId,
+            dielineTemplateName,
             dielineFileName,
             dielineGraph,
             sources: sources.map((source) => ({
@@ -239,6 +243,8 @@ export function useProjectPersistence(initialProjectId?: string) {
       dielineFileName,
       dielineGraph,
       dielineSource,
+      dielineTemplateId,
+      dielineTemplateName,
       dispatch,
       faces,
       hydrateProject,

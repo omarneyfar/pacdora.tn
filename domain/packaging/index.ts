@@ -61,7 +61,9 @@ export type ProjectFaceAsset = {
 };
 
 export type ProjectDieline = {
-  source: "template" | "svg-upload";
+  source: "template" | "svg-upload" | "library";
+  templateId?: string;
+  name?: string;
   fileName?: string;
   importedAt?: string;
   graph?: PackagingDielineGraph;

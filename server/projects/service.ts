@@ -1013,7 +1013,7 @@ function normalizeWorkspaceDieline(value: unknown, strict: boolean): ProjectDiel
   }
 
   const candidate = value as Partial<ProjectDieline>;
-  if (candidate.source !== "svg-upload") {
+  if (candidate.source !== "svg-upload" && candidate.source !== "library") {
     return undefined;
   }
 
@@ -1027,8 +1027,10 @@ function normalizeWorkspaceDieline(value: unknown, strict: boolean): ProjectDiel
   }
 
   return {
-    source: "svg-upload",
-    fileName: normalizeFileName(candidate.fileName, "custom-dieline.svg"),
+    source: candidate.source,
+    ...(typeof candidate.templateId === "string" ? { templateId: candidate.templateId.slice(0, 80) } : {}),
+    ...(typeof candidate.name === "string" ? { name: normalizeFileName(candidate.name, "Custom dieline") } : {}),
+    ...(candidate.fileName ? { fileName: normalizeFileName(candidate.fileName, "custom-dieline.svg") } : {}),
     ...(typeof candidate.importedAt === "string" ? { importedAt: candidate.importedAt } : {}),
     graph
   };

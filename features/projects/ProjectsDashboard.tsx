@@ -183,6 +183,9 @@ export function ProjectsDashboard() {
           </div>
         </div>
         <div className="header-actions">
+          <Link className="secondary-button dashboard-header-button" href="/dielines">
+            Dielines
+          </Link>
           <Link className="secondary-button dashboard-header-button" href="/">
             <Plus aria-hidden size={18} />
             New project

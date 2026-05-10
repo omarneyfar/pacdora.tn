@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { useProjectPersistence } from "@/hooks/useProjectPersistence";
 import { useArtworkWorkspace } from "@/hooks/useArtworkWorkspace";
 import { useDimensionSync } from "@/hooks/useDimensionSync";
+import { useInitialDieline } from "@/hooks/useInitialDieline";
 import { useShareLink } from "@/hooks/useShareLink";
 import { closeCropModal } from "@/store/uiSlice";
 
@@ -31,7 +32,7 @@ const CartonStage = dynamic(
  * Root builder shell — pure layout orchestration.
  * All business logic lives in hooks; all rendering lives in child components.
  */
-export function BuilderShell({ projectId: initialProjectId }: { projectId?: string } = {}) {
+export function BuilderShell({ projectId: initialProjectId, initialDielineId }: { projectId?: string; initialDielineId?: string } = {}) {
   /* ── Hooks ─────────────────────────────────────────────────────── */
 
   const dispatch = useAppDispatch();
@@ -40,6 +41,7 @@ export function BuilderShell({ projectId: initialProjectId }: { projectId?: stri
   const { createShareLink, copyShareUrl } = useShareLink(saveProject);
 
   useDimensionSync(suppressDimSyncRef);
+  useInitialDieline(initialDielineId);
 
   /* ── State from Redux ──────────────────────────────────────────── */
 

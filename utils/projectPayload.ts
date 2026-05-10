@@ -64,7 +64,9 @@ export type LiveProjectState = {
   sources: SourcePayload[];
   selectedSourceId: string;
   faces: Partial<Record<FaceKey, { sourceId: string; fileName: string; sourceType: "image" | "pdf"; crop: CropSettings } | undefined>>;
-  dielineSource: "template" | "svg-upload";
+  dielineSource: "template" | "svg-upload" | "library";
+  dielineTemplateId?: string;
+  dielineTemplateName?: string;
   dielineFileName: string;
   dielineGraph: ProjectDieline["graph"] | null;
 };
@@ -90,9 +92,11 @@ export function createFullProjectPayload(
       })),
       selectedSourceId: state.selectedSourceId,
       dieline:
-        state.dielineSource === "svg-upload" && state.dielineGraph
+        (state.dielineSource === "svg-upload" || state.dielineSource === "library") && state.dielineGraph
           ? {
-              source: "svg-upload",
+              source: state.dielineSource,
+              ...(state.dielineTemplateId ? { templateId: state.dielineTemplateId } : {}),
+              ...(state.dielineTemplateName ? { name: state.dielineTemplateName } : {}),
               ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
               graph: state.dielineGraph,
             }
