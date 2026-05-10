@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next.js React Redux"
+  short_description: "FoldView frontend architecture rules"
+  default_prompt: "Use $nextjs-react-redux to implement a FoldView frontend change."

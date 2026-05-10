@@ -1,0 +1,4 @@
+interface:
+  display_name: "Three.js Geometry Math"
+  short_description: "3D carton and geometry guidance"
+  default_prompt: "Use $threejs-geometry-math to update FoldView 3D or geometry code."

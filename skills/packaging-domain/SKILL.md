@@ -1,0 +1,35 @@
+---
+name: packaging-domain
+description: Print house and packaging domain guidance for FoldView, including carton templates, dielines, cut/fold/bleed/safe guides, box dimensions, project lifecycle, artwork assignment rules, and future FEFCO/ECMA packaging workflows. Use when designing packaging behavior, template data, print guides, export rules, or product decisions for printing-house users.
+---
+
+# Packaging Domain
+
+Use this skill when a change depends on printing-house workflow, packaging structure, dielines, project lifecycle, or client approval behavior.
+
+## Product Rules
+
+- Treat dimensions as millimeters.
+- Keep artwork face assignment separate from original artwork sources.
+- Keep cut, fold, bleed, and safe guides explicit in domain data.
+- Preserve the draft/published lifecycle: published projects are viewable; draft projects are blocked from public view.
+- Visible carton content edits should demote published projects back to draft and clear share links.
+- Metadata-only edits, such as project name changes, should not change the packaging status by themselves.
+
+## Dieline Rules
+
+- Cut lines define physical trim boundaries.
+- Fold/crease lines define assembly hinges.
+- Bleed extends artwork beyond cut lines; safe zones keep important content away from trim.
+- Template-generated dielines should be deterministic from dimensions.
+- Future custom dielines should preserve named cut/fold/bleed/safe layers for production export.
+
+## Template Decisions
+
+- Use packaging terminology consistently: faces, panels, flaps, tabs, locks, creases, bleed, safe area.
+- Add new templates through template/domain adapters rather than one-off UI math.
+- Prefer common print-house structures and FEFCO/ECMA naming when possible.
+
+## Reference
+
+Read `references/foldview-packaging-domain.md` for printing workflow context, carton anatomy, FEFCO/ECMA examples, and future feature priorities.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SVG Computational Geometry"
+  short_description: "SVG dieline import geometry guide"
+  default_prompt: "Use $svg-computational-geometry to build or debug SVG dieline import."

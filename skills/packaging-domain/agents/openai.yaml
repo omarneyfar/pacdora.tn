@@ -1,0 +1,4 @@
+interface:
+  display_name: "Packaging Domain"
+  short_description: "Print house packaging domain rules"
+  default_prompt: "Use $packaging-domain to design packaging workflows or dielines."
