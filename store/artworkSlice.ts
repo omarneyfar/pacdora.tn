@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { FACE_KEYS, type FaceKey } from "@/domain/packaging";
 import type { CropSettings } from "@/features/artwork/artwork";
 
 /* ── Types ─────────────────────────────────────────────────────── */
@@ -21,7 +20,7 @@ export type FaceAsset = {
   crop: CropSettings;
 };
 
-export type FaceAssets = Partial<Record<FaceKey, FaceAsset>>;
+export type FaceAssets = Record<string, FaceAsset>;
 
 /* ── State shape ───────────────────────────────────────────────── */
 
@@ -29,7 +28,7 @@ export type ArtworkState = {
   sources: ArtworkSource[];
   selectedSourceId: string;
   faces: FaceAssets;
-  busyFace: FaceKey | null;
+  busyFace: string | null;
   isRecropping: boolean;
 };
 
@@ -62,12 +61,12 @@ export const artworkSlice = createSlice({
     },
 
     /** Assign a rendered artwork asset to a specific face. */
-    setFace(state, action: PayloadAction<{ face: FaceKey; asset: FaceAsset }>) {
+    setFace(state, action: PayloadAction<{ face: string; asset: FaceAsset }>) {
       state.faces[action.payload.face] = action.payload.asset;
     },
 
     /** Batch-update multiple faces at once (used after dimension recrop). */
-    batchUpdateFaces(state, action: PayloadAction<Array<{ face: FaceKey; asset: FaceAsset }>>) {
+    batchUpdateFaces(state, action: PayloadAction<Array<{ face: string; asset: FaceAsset }>>) {
       for (const { face, asset } of action.payload) {
         // Only update if the source hasn't changed in the meantime.
         if (state.faces[face]?.sourceId === asset.sourceId) {
@@ -77,11 +76,11 @@ export const artworkSlice = createSlice({
     },
 
     /** Remove artwork from a specific face. */
-    clearFace(state, action: PayloadAction<FaceKey>) {
+    clearFace(state, action: PayloadAction<string>) {
       delete state.faces[action.payload];
     },
 
-    setBusyFace(state, action: PayloadAction<FaceKey | null>) {
+    setBusyFace(state, action: PayloadAction<string | null>) {
       state.busyFace = action.payload;
     },
 
@@ -112,9 +111,8 @@ export const artworkSlice = createSlice({
   },
   selectors: {
     /** Derive face DataURL map used by the 3D preview (no crop settings, just the rendered image). */
-    selectPreviewFaces(state): Partial<Record<FaceKey, string>> {
-      return FACE_KEYS.reduce<Partial<Record<FaceKey, string>>>((acc, face) => {
-        const asset = state.faces[face];
+    selectPreviewFaces(state): Record<string, string> {
+      return Object.entries(state.faces).reduce<Record<string, string>>((acc, [face, asset]) => {
         if (asset) acc[face] = asset.dataUrl;
         return acc;
       }, {});

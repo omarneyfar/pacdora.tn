@@ -1,11 +1,11 @@
-import type { CartonDimensions, FaceKey, Project, ProjectStatus, TemplateId } from "@/domain/packaging";
+import type { CartonDimensions, Project, ProjectStatus, TemplateId } from "@/domain/packaging";
 
 export type ProjectMutationPayload = {
   name?: string;
   status?: ProjectStatus;
   templateId?: TemplateId;
   dimensions?: Partial<CartonDimensions>;
-  faces?: Partial<Record<FaceKey, string | null>>;
+  faces?: Record<string, string | null>;
   workspace?: unknown;
 };
 

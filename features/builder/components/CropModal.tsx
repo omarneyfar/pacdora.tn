@@ -12,7 +12,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 
-import type { CartonDimensions, FaceKey } from "@/domain/packaging";
+import type { CartonDimensions } from "@/domain/packaging";
 import type { DielineGraph } from "@/domain/dieline/types";
 import { getFaceArtworkSize, normalizeCropSettings, type CropSettings } from "@/features/artwork/artwork";
 import type { ArtworkSource } from "@/store/artworkSlice";
@@ -22,7 +22,7 @@ import type { ArtworkSource } from "@/store/artworkSlice";
 type CropModalProps = {
   dimensions: CartonDimensions;
   dielineGraph?: DielineGraph | null;
-  face: FaceKey;
+  face: string;
   initialSettings: CropSettings;
   source: ArtworkSource | undefined;
   onApply: (settings: CropSettings) => void;

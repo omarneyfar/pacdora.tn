@@ -1,12 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { FaceKey } from "@/domain/packaging";
 import type { CropSettings } from "@/features/artwork/artwork";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
 export type CropModalState = {
-  face: FaceKey;
+  face: string;
   sourceId: string;
   settings: CropSettings;
 };

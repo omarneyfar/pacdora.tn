@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { FACE_KEYS } from "@/domain/packaging";
 import { cropArtworkToFace } from "@/features/artwork/artwork";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { batchUpdateFaces, setIsRecropping } from "@/store/artworkSlice";
@@ -21,11 +20,13 @@ export function useDimensionSync(suppressRef: React.RefObject<boolean>) {
   const dimensions = useAppSelector((s) => s.builder.dimensions);
   const faces = useAppSelector((s) => s.artwork.faces);
   const sources = useAppSelector((s) => s.artwork.sources);
+  const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
 
   // Snapshot refs so the effect closure always has the latest data
   // without adding faces/sources as dependencies (which would retrigger on every crop).
   const facesRef = useRef(faces);
   const sourcesRef = useRef(sources);
+  const dielineGraphRef = useRef(dielineGraph);
 
   useEffect(() => {
     facesRef.current = faces;
@@ -34,6 +35,10 @@ export function useDimensionSync(suppressRef: React.RefObject<boolean>) {
   useEffect(() => {
     sourcesRef.current = sources;
   }, [sources]);
+
+  useEffect(() => {
+    dielineGraphRef.current = dielineGraph;
+  }, [dielineGraph]);
 
   const isFirstRender = useRef(true);
 
@@ -55,7 +60,8 @@ export function useDimensionSync(suppressRef: React.RefObject<boolean>) {
     const timeout = window.setTimeout(async () => {
       const currentFaces = facesRef.current;
       const sourceMap = new Map(sourcesRef.current.map((s) => [s.id, s]));
-      const assignedFaces = FACE_KEYS.filter((f) => currentFaces[f]);
+      const assignedFaces = Object.keys(currentFaces);
+      const graph = dielineGraphRef.current;
 
       if (assignedFaces.length === 0) return;
 
@@ -73,6 +79,7 @@ export function useDimensionSync(suppressRef: React.RefObject<boolean>) {
               face,
               dimensions,
               assignment.crop,
+              graph
             );
 
             return { face, asset: { ...assignment, dataUrl } };
@@ -82,8 +89,8 @@ export function useDimensionSync(suppressRef: React.RefObject<boolean>) {
         if (cancelled) return;
 
         const validUpdates = updates.filter(Boolean) as Array<{
-          face: (typeof FACE_KEYS)[number];
-          asset: (typeof currentFaces)[keyof typeof currentFaces] & { dataUrl: string };
+          face: string;
+          asset: (typeof currentFaces)[string] & { dataUrl: string };
         }>;
 
         dispatch(batchUpdateFaces(validUpdates));

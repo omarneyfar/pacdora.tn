@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useCallback, useMemo } from "react";
 import { LoaderCircle } from "lucide-react";
 
-import { FACE_KEYS, type FaceKey } from "@/domain/packaging";
 import { getDielineGraph } from "@/domain/packaging";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { useProjectPersistence } from "@/hooks/useProjectPersistence";
@@ -69,8 +68,7 @@ export function BuilderShell({ projectId: initialProjectId, initialDielineId }: 
 
   const previewFaces = useMemo(
     () =>
-      FACE_KEYS.reduce<Partial<Record<FaceKey, string>>>((acc, face) => {
-        const asset = faces[face];
+      Object.entries(faces).reduce<Record<string, string>>((acc, [face, asset]) => {
         if (asset) acc[face] = asset.dataUrl;
         return acc;
       }, {}),

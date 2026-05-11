@@ -1,6 +1,5 @@
 import type {
   CartonDimensions,
-  FaceKey,
   Project,
   ProjectStatus,
   ProjectWorkspace,
@@ -27,7 +26,7 @@ export type ProjectPatch = Partial<{
   status: ProjectStatus;
   templateId: TemplateId;
   dimensions: Partial<CartonDimensions>;
-  faces: Partial<Record<FaceKey, string | null>>;
+  faces: Record<string, string | null>;
   workspace: ProjectWorkspace;
 }>;
 

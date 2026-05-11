@@ -1,9 +1,7 @@
 import {
-  FACE_KEYS,
   FOLDING_CARTON_TEMPLATE_ID,
   normalizeDimensions,
   type CartonDimensions,
-  type FaceKey,
   type Project,
   type ProjectDieline,
   type ProjectStatus,
@@ -37,7 +35,7 @@ export type ProjectSavePayload = {
   workspace: {
     sources: SourcePayload[];
     selectedSourceId: string;
-    faceAssets: Partial<Record<FaceKey, FacePayload>>;
+    faceAssets: Record<string, FacePayload>;
     dieline: ProjectDieline | null;
   };
 };
@@ -50,7 +48,7 @@ export type ProjectPatchPayload = {
   workspace?: {
     sources?: SourcePayload[];
     selectedSourceId?: string | null;
-    faceAssets?: Partial<Record<FaceKey, FacePayload | null>>;
+    faceAssets?: Record<string, FacePayload | null>;
     dieline?: ProjectDieline | null;
   };
 };
@@ -63,7 +61,7 @@ export type LiveProjectState = {
   dimensions: CartonDimensions;
   sources: SourcePayload[];
   selectedSourceId: string;
-  faces: Partial<Record<FaceKey, { sourceId: string; fileName: string; sourceType: "image" | "pdf"; crop: CropSettings } | undefined>>;
+  faces: Record<string, { sourceId: string; fileName: string; sourceType: "image" | "pdf"; crop: CropSettings } | undefined>;
   dielineSource: "template" | "svg-upload" | "library";
   dielineTemplateId?: string;
   dielineTemplateName?: string;
@@ -94,16 +92,15 @@ export function createFullProjectPayload(
       dieline:
         (state.dielineSource === "svg-upload" || state.dielineSource === "library") && state.dielineGraph
           ? {
-              source: state.dielineSource,
-              ...(state.dielineTemplateId ? { templateId: state.dielineTemplateId } : {}),
-              ...(state.dielineTemplateName ? { name: state.dielineTemplateName } : {}),
-              ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
-              graph: state.dielineGraph,
-            }
+            source: state.dielineSource,
+            ...(state.dielineTemplateId ? { templateId: state.dielineTemplateId } : {}),
+            ...(state.dielineTemplateName ? { name: state.dielineTemplateName } : {}),
+            ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
+            graph: state.dielineGraph,
+          }
           : null,
       faceAssets: Object.fromEntries(
-        FACE_KEYS.flatMap((face) => {
-          const asset = state.faces[face];
+        Object.entries(state.faces).flatMap(([face, asset]) => {
           if (!asset?.sourceId) return [];
 
           return [[
@@ -148,8 +145,13 @@ export function createProjectPatchPayload(
     workspacePatch.selectedSourceId = current.workspace.selectedSourceId || null;
   }
 
-  const changedFaceAssets: Partial<Record<FaceKey, FacePayload | null>> = {};
-  for (const face of FACE_KEYS) {
+  const changedFaceAssets: Record<string, FacePayload | null> = {};
+  const allFaces = new Set([
+    ...Object.keys(current.workspace.faceAssets),
+    ...Object.keys(saved.workspace.faceAssets),
+  ]);
+
+  for (const face of allFaces) {
     const currentAsset = current.workspace.faceAssets[face];
     const savedAsset = saved.workspace.faceAssets[face];
     if (!sameJson(currentAsset ?? null, savedAsset ?? null)) {
@@ -188,8 +190,8 @@ export function createSavedPayloadFromProject(project: Project): ProjectSavePayl
       selectedSourceId: project.workspace?.selectedSourceId ?? sources[0]?.id ?? "",
       dieline: project.workspace?.dieline ?? null,
       faceAssets: Object.fromEntries(
-        FACE_KEYS.flatMap((face) => {
-          const asset = project.workspace?.faceAssets[face];
+        Object.keys(project.workspace?.faceAssets || {}).flatMap((face) => {
+          const asset = project.workspace?.faceAssets?.[face];
           if (!asset) return [];
 
           return [[

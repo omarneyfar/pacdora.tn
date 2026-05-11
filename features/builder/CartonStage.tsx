@@ -10,7 +10,6 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
   DEFAULT_CARTON_DIMENSIONS,
   type CartonDimensions,
-  type FaceKey,
   type ModelFaceSpec,
   type ModelSpec,
   getPackagingTemplate,
@@ -19,7 +18,7 @@ import {
 
 type CartonStageProps = {
   dimensions?: CartonDimensions;
-  faces: Partial<Record<FaceKey, string>>;
+  faces: Record<string, string>;
   className?: string;
 };
 
@@ -140,7 +139,7 @@ function CartonModel({
   modelSpec,
   showGuides
 }: {
-  faces: Partial<Record<FaceKey, string>>;
+  faces: Record<string, string>;
   modelSpec: ModelSpec;
   showGuides: boolean;
 }) {

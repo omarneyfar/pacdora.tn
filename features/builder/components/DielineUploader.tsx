@@ -12,12 +12,9 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-
 import {
-  FACE_KEYS,
   getPackagingTemplate,
   type CartonDimensions,
-  type FaceKey,
 } from "@/domain/packaging";
 import type { FaceAssets } from "@/store/artworkSlice";
 import { DielineGuideOverlay } from "./DielineGuideOverlay";
@@ -25,15 +22,15 @@ import { DielineGuideOverlay } from "./DielineGuideOverlay";
 /* ── Props ─────────────────────────────────────────────────────── */
 
 type DielineUploaderProps = {
-  busyFace: FaceKey | null;
+  busyFace: string | null;
   dimensions: CartonDimensions;
   faces: FaceAssets;
   selectedSourceId: string;
   showPrintGuides: boolean;
-  onApplySelected: (face: FaceKey) => void;
-  onClear: (face: FaceKey) => void;
-  onCrop: (face: FaceKey) => void;
-  onUpload: (face: FaceKey, file: File) => void;
+  onApplySelected: (face: string) => void;
+  onClear: (face: string) => void;
+  onCrop: (face: string) => void;
+  onUpload: (face: string, file: File) => void;
 };
 
 /* ── Component ─────────────────────────────────────────────────── */
@@ -68,8 +65,8 @@ export const DielineUploader = memo(function DielineUploader({
         className="dieline-board"
         style={{ aspectRatio: `${dielineSize.width} / ${dielineSize.height}` }}
       >
-        {FACE_KEYS.map((face) => {
-          const spec = faceSpecs[face];
+        {Object.keys(faceSpecs).map((face) => {
+          const spec = faceSpecs[face as keyof typeof faceSpecs];
           const asset = faces[face];
           const isBusy = busyFace === face;
           const inputId = `face-upload-${face}`;

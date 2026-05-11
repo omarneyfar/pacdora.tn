@@ -17,7 +17,9 @@ export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as 
 export const PROJECT_STATUSES = ["draft", "published"] as const;
 export const TEMPLATE_IDS = ["folding-carton"] as const;
 
-export type FaceKey = (typeof FACE_KEYS)[number];
+export type FaceKey = (typeof FACE_KEYS)[number]; // Legacy, for migration only
+export type FaceId = string;
+
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
@@ -72,7 +74,7 @@ export type ProjectDieline = {
 export type ProjectWorkspace = {
   sources: ProjectArtworkSource[];
   selectedSourceId?: string;
-  faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>>;
+  faceAssets: Record<FaceId, ProjectFaceAsset>;
   dieline?: ProjectDieline;
 };
 
@@ -82,14 +84,14 @@ export type Project = {
   status: ProjectStatus;
   templateId: TemplateId;
   dimensions: CartonDimensions;
-  faces: Partial<Record<FaceKey, string>>;
+  faces: Record<FaceId, string>;
   createdAt: string;
   updatedAt: string;
   workspace?: ProjectWorkspace;
 };
 
 export type FaceSpec = {
-  key: FaceKey;
+  key: string;
   label: string;
   width: number;
   height: number;
@@ -111,7 +113,7 @@ export type DielineSegment = {
 
 export type DielineRectGuide = {
   kind: "bleed" | "safe";
-  face: FaceKey;
+  face: string;
   x: number;
   y: number;
   width: number;
@@ -119,7 +121,7 @@ export type DielineRectGuide = {
 };
 
 export type DielineLabel = {
-  face: FaceKey;
+  face: string;
   text: string;
   x: number;
   y: number;
@@ -135,14 +137,14 @@ export type DielinePrintGuides = {
 
 export type DielineSpec = {
   size: ReturnType<typeof getDielineSize>;
-  faces: Record<FaceKey, FaceSpec>;
+  faces: Record<string, FaceSpec>;
   guides: DielinePrintGuides;
 };
 
 export type ModelPoint = [number, number, number];
 
 export type ModelFaceSpec = {
-  key: FaceKey;
+  key: string;
   size: [number, number];
   position: ModelPoint;
   rotation: ModelPoint;
@@ -156,7 +158,7 @@ export type ModelSpec = {
   depth: number;
   lift: number;
   shadowY: number;
-  faces: Record<FaceKey, ModelFaceSpec>;
+  faces: Record<string, ModelFaceSpec>;
   guideEdges: Array<[ModelPoint, ModelPoint]>;
 };
 
@@ -164,7 +166,7 @@ export type PackagingTemplate = {
   id: TemplateId;
   label: string;
   defaultDimensions: CartonDimensions;
-  getFaceSpecs(dimensions: CartonDimensions): Record<FaceKey, FaceSpec>;
+  getFaceSpecs(dimensions: CartonDimensions): Record<string, FaceSpec>;
   getDielineSpec(dimensions: CartonDimensions): DielineSpec;
   getDielineGraph(dimensions: CartonDimensions): PackagingDielineGraph;
   getModelSpec(dimensions: CartonDimensions): ModelSpec;
@@ -287,7 +289,7 @@ export function getDielineGraph(dimensions: CartonDimensions): PackagingDielineG
 
 export function getFaceSpecs(
   dimensions: CartonDimensions,
-): Record<FaceKey, FaceSpec> {
+): Record<string, FaceSpec> {
   const { width, height, depth } = dimensions;
 
   return {

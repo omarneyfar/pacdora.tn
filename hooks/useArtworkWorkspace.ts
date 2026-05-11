@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 
-import type { FaceKey } from "@/domain/packaging";
 import {
   cropArtworkToFace,
   DEFAULT_CROP_SETTINGS,
@@ -29,7 +28,7 @@ export function useArtworkWorkspace() {
   const dielineGraph = useAppSelector((s) => s.builder.dielineGraph);
 
   const handleUpload = useCallback(
-    async (face: FaceKey, file: File) => {
+    async (face: string, file: File) => {
       dispatch(setBusyFace(face));
       dispatch(setError(""));
       dispatch(clearShareUrl());
@@ -56,7 +55,7 @@ export function useArtworkWorkspace() {
   );
 
   const applySourceToFace = useCallback(
-    async (face: FaceKey, sourceId: string, crop: CropSettings = DEFAULT_CROP_SETTINGS) => {
+    async (face: string, sourceId: string, crop: CropSettings = DEFAULT_CROP_SETTINGS) => {
       const source = sources.find((candidate) => candidate.id === sourceId);
       if (!source) {
         return;
@@ -93,7 +92,7 @@ export function useArtworkWorkspace() {
   );
 
   const clearFace = useCallback(
-    (face: FaceKey) => {
+    (face: string) => {
       dispatch(clearShareUrl());
       dispatch(markChanged());
       dispatch(clearFaceAction(face));

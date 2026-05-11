@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import {
-  FACE_KEYS,
   normalizeDimensions,
-  type FaceKey,
   type Project,
   type ProjectStatus,
 } from "@/domain/packaging";
@@ -38,6 +36,7 @@ import {
   isEmptyPatchPayload,
   type ProjectSavePayload,
 } from "@/utils/projectPayload";
+import { migrateProject } from "@/utils/migrateProject";
 
 export function useProjectPersistence(initialProjectId?: string) {
   const dispatch = useAppDispatch();
@@ -76,8 +75,10 @@ export function useProjectPersistence(initialProjectId?: string) {
     async (project: Project) => {
       suppressDimSyncRef.current = true;
 
+      const migratedProject = migrateProject(project);
+
       const workspaceSources: ArtworkSource[] =
-        project.workspace?.sources.map((source) => ({
+        migratedProject.workspace?.sources.map((source) => ({
           id: source.id,
           dataUrl: source.url,
           fileName: source.fileName,
@@ -85,43 +86,44 @@ export function useProjectPersistence(initialProjectId?: string) {
           sourceType: source.sourceType,
         })) ?? [];
 
-      const renderedFaces = await renderProjectFaces(project);
-      const hasEditableWorkspace = Boolean(project.workspace?.sources.length);
+      const renderedFaces = await renderProjectFaces(migratedProject);
+      const hasEditableWorkspace = Boolean(migratedProject.workspace?.sources.length);
 
-      const nextFaces = FACE_KEYS.reduce<Partial<Record<FaceKey, FaceAsset>>>((acc, face) => {
-        const asset = project.workspace?.faceAssets[face];
+      const nextFaces: Record<string, FaceAsset> = {};
+      const allFaceIds = new Set([
+        ...Object.keys(migratedProject.workspace?.faceAssets || {}),
+        ...Object.keys(migratedProject.faces || {})
+      ]);
+
+      for (const face of allFaceIds) {
+        const asset = migratedProject.workspace?.faceAssets?.[face];
 
         if (asset) {
-          acc[face] = {
+          nextFaces[face] = {
             sourceId: asset.sourceId,
             dataUrl: renderedFaces[face] ?? "",
             fileName: asset.fileName,
             sourceType: asset.sourceType,
             crop: normalizeCropSettings(asset.crop),
           };
-          return acc;
-        }
-
-        if (!hasEditableWorkspace && project.faces[face]) {
-          acc[face] = {
+        } else if (!hasEditableWorkspace && migratedProject.faces[face]) {
+          nextFaces[face] = {
             sourceId: "",
-            dataUrl: project.faces[face],
+            dataUrl: migratedProject.faces[face],
             fileName: `${face}.png`,
             sourceType: "image",
             crop: DEFAULT_CROP_SETTINGS,
           };
         }
-
-        return acc;
-      }, {});
+      }
 
       dispatch(
         hydrateBuilder({
-          projectId: project.id,
-          name: project.name,
-          status: project.status,
-          dimensions: normalizeDimensions(project.dimensions),
-          dieline: project.workspace?.dieline,
+          projectId: migratedProject.id,
+          name: migratedProject.name,
+          status: migratedProject.status,
+          dimensions: normalizeDimensions(migratedProject.dimensions),
+          dieline: migratedProject.workspace?.dieline,
         }),
       );
 
@@ -129,15 +131,15 @@ export function useProjectPersistence(initialProjectId?: string) {
         hydrateArtwork({
           sources: workspaceSources,
           selectedSourceId:
-            project.workspace?.selectedSourceId ?? workspaceSources[0]?.id ?? "",
+            migratedProject.workspace?.selectedSourceId ?? workspaceSources[0]?.id ?? "",
           faces: nextFaces,
         }),
       );
 
       dispatch(clearShareUrl());
 
-      lastSavedProjectRef.current = project;
-      lastSavedPayloadRef.current = createSavedPayloadFromProject(project);
+      lastSavedProjectRef.current = migratedProject;
+      lastSavedPayloadRef.current = createSavedPayloadFromProject(migratedProject);
     },
     [dispatch],
   );

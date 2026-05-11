@@ -6,16 +6,17 @@ import { useEffect, useState } from "react";
 
 import { renderProjectFaces } from "@/features/artwork/artwork";
 import { readProject } from "@/features/projects/projectClient";
-import type { FaceKey, Project } from "@/domain/packaging";
+import type { Project } from "@/domain/packaging";
+import { migrateProject } from "@/utils/migrateProject";
 
-const CartonStage = dynamic(() => import("@/features/builder/CartonStage").then((mod) => mod.CartonStage), {
+const DielineCartonStage = dynamic(() => import("@/features/builder/DielineCartonStage").then((mod) => mod.DielineCartonStage), {
   ssr: false,
   loading: () => <div className="stage-loading">Loading shared preview</div>
 });
 
 export function ProjectViewer({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null>(null);
-  const [faces, setFaces] = useState<Partial<Record<FaceKey, string>>>({});
+  const [faces, setFaces] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,9 +30,10 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
           throw new Error("This carton is still a draft. Publish it before sharing with a client.");
         }
 
-        const nextFaces = await renderProjectFaces(nextProject);
+        const migratedProject = migrateProject(nextProject);
+        const nextFaces = await renderProjectFaces(migratedProject);
         if (isMounted) {
-          setProject(nextProject);
+          setProject(migratedProject);
           setFaces(nextFaces);
         }
       } catch (loadError) {
@@ -74,8 +76,8 @@ export function ProjectViewer({ projectId }: { projectId: string }) {
           </div>
         ) : error ? (
           <div className="empty-state error-state">{error}</div>
-        ) : project ? (
-          <CartonStage className="shared-stage" dimensions={project.dimensions} faces={faces} />
+        ) : project && project.workspace?.dieline?.graph ? (
+          <DielineCartonStage className="shared-stage" graph={project.workspace.dieline.graph} faces={faces} />
         ) : null}
       </section>
     </main>

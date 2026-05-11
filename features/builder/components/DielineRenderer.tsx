@@ -12,33 +12,31 @@ import {
 } from "lucide-react";
 
 import {
+  CartonDimensions,
   PRINT_GUIDE_OFFSETS,
   getPackagingTemplate,
-  type CartonDimensions,
-  type FaceKey,
 } from "@/domain/packaging";
 import { primitiveToSvgPath } from "@/domain/dieline/canonicalGeometry";
 import type { DielineFace, DielineGraph, GeometryPrimitive } from "@/domain/dieline/types";
-import { getFaceKeyFromGraphFaceId } from "@/domain/dieline/compat";
-import type { FaceAssets } from "@/store/artworkSlice";
+import type { FaceAsset, FaceAssets } from "@/store/artworkSlice";
 
 type DielineRendererProps = {
-  busyFace: FaceKey | null;
+  busyFace: string | null;
   dimensions: CartonDimensions;
   graph?: DielineGraph | null;
   faces: FaceAssets;
   selectedSourceId: string;
   showPrintGuides: boolean;
-  onApplySelected: (face: FaceKey) => void;
-  onClear: (face: FaceKey) => void;
-  onCrop: (face: FaceKey) => void;
-  onUpload: (face: FaceKey, file: File) => void;
+  onApplySelected: (face: string) => void;
+  onClear: (face: string) => void;
+  onCrop: (face: string) => void;
+  onUpload: (face: string, file: File) => void;
 };
 
 type RenderableFace = {
-  asset: FaceAssets[FaceKey];
+  asset: FaceAsset | undefined;
   face: DielineFace;
-  faceKey: FaceKey;
+  faceId: string;
   inputId: string;
   isBusy: boolean;
   isRotated: boolean;
@@ -67,24 +65,22 @@ export const DielineRenderer = memo(function DielineRenderer({
   const renderableFaces = useMemo(
     () =>
       graph.faces.flatMap<RenderableFace>((face) => {
-        const faceKey = getFaceKeyFromGraphFaceId(face.id);
-
-        if (!faceKey || !face.artworkEnabled) {
+        if (!face.artworkEnabled) {
           return [];
         }
 
-        const spec = faceSpecs[faceKey];
-        const outputWidth = isImportedGraph ? face.bounds.width : spec.artworkWidth;
-        const outputHeight = isImportedGraph ? face.bounds.height : spec.artworkHeight;
+        const spec = faceSpecs[face.id as keyof typeof faceSpecs];
+        const outputWidth = isImportedGraph || !spec ? face.bounds.width : spec.artworkWidth;
+        const outputHeight = isImportedGraph || !spec ? face.bounds.height : spec.artworkHeight;
 
         return [
           {
-            asset: faces[faceKey],
+            asset: faces[face.id],
             face,
-            faceKey,
-            inputId: `${idPrefix}-face-upload-${faceKey}`,
-            isBusy: busyFace === faceKey,
-            isRotated: !isImportedGraph && (spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight),
+            faceId: face.id,
+            inputId: `${idPrefix}-face-upload-${face.id}`,
+            isBusy: busyFace === face.id,
+            isRotated: !isImportedGraph && spec && (spec.width !== spec.artworkWidth || spec.height !== spec.artworkHeight),
             outputHeight,
             outputWidth,
           },
@@ -116,8 +112,7 @@ export const DielineRenderer = memo(function DielineRenderer({
 
           <g className="dieline-face-fill-layer">
             {graph.faces.map((face) => {
-              const faceKey = getFaceKeyFromGraphFaceId(face.id);
-              const hasAsset = faceKey ? Boolean(faces[faceKey]) : false;
+              const hasAsset = Boolean(faces[face.id]);
 
               return (
                 <polygon
@@ -146,7 +141,7 @@ export const DielineRenderer = memo(function DielineRenderer({
           {showPrintGuides ? <GraphGuideLayer graph={graph} /> : null}
         </svg>
 
-        {renderableFaces.map(({ asset, face, faceKey, inputId, isBusy, outputHeight, outputWidth }) => (
+        {renderableFaces.map(({ asset, face, faceId, inputId, isBusy, outputHeight, outputWidth }) => (
           <div
             className={`dieline-face-hotspot ${asset ? "is-filled" : ""}`}
             key={face.id}
@@ -161,7 +156,7 @@ export const DielineRenderer = memo(function DielineRenderer({
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 event.currentTarget.value = "";
-                if (file) onUpload(faceKey, file);
+                if (file) onUpload(faceId, file);
               }}
             />
 
@@ -187,7 +182,7 @@ export const DielineRenderer = memo(function DielineRenderer({
                 disabled={!selectedSourceId || Boolean(busyFace)}
                 title="Use selected artwork"
                 type="button"
-                onClick={() => onApplySelected(faceKey)}
+                onClick={() => onApplySelected(faceId)}
               >
                 <Paintbrush aria-hidden size={15} />
               </button>
@@ -207,7 +202,7 @@ export const DielineRenderer = memo(function DielineRenderer({
                     disabled={Boolean(busyFace)}
                     title="Crop this side"
                     type="button"
-                    onClick={() => onCrop(faceKey)}
+                    onClick={() => onCrop(faceId)}
                   >
                     <Crop aria-hidden size={15} />
                   </button>
@@ -216,7 +211,7 @@ export const DielineRenderer = memo(function DielineRenderer({
                     disabled={Boolean(busyFace)}
                     title="Delete this side image"
                     type="button"
-                    onClick={() => onClear(faceKey)}
+                    onClick={() => onClear(faceId)}
                   >
                     <Trash2 aria-hidden size={15} />
                   </button>

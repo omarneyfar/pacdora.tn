@@ -12,7 +12,6 @@ import {
   getDielineParts,
 } from "@/domain/dieline/structure";
 import type { DielineCategory } from "@/domain/dieline/types";
-import type { FaceKey } from "@/domain/packaging";
 import type { DielineTemplate } from "@/domain/dielines";
 import { DEFAULT_CROP_SETTINGS } from "@/features/artwork/artwork";
 import { listDielines } from "@/features/dielines/dielineClient";
@@ -27,8 +26,8 @@ import { DielineRenderer } from "../components/DielineRenderer";
 /* ── Props ─────────────────────────────────────────────────────── */
 
 type DielinePanelProps = {
-  onUpload: (face: FaceKey, file: File) => void;
-  onClear: (face: FaceKey) => void;
+  onUpload: (face: string, file: File) => void;
+  onClear: (face: string) => void;
 };
 
 /* ── Component ─────────────────────────────────────────────────── */
@@ -93,7 +92,7 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   /* ── Stable callbacks ────────────────────────────────────────── */
 
   const handleApplySelected = useCallback(
-    (face: FaceKey) => {
+    (face: string) => {
       if (selectedSourceId) {
         dispatch(
           openCropModal({
@@ -108,7 +107,7 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   );
 
   const handleCrop = useCallback(
-    (face: FaceKey) => {
+    (face: string) => {
       const asset = faces[face];
       if (asset && sources.some((s) => s.id === asset.sourceId)) {
         dispatch(
@@ -160,7 +159,7 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
       eyebrow="Flat dieline"
       isOpen={openSections.dieline}
       title="Fill exterior faces"
-      trailing={`${uploadedCount}/6`}
+      trailing={`${uploadedCount}/${dielineGraph ? dielineGraph.faces.length : 6}`}
       onToggle={() => dispatch(toggleSection("dieline"))}
     >
       <DielineGuideToolbar

@@ -18,13 +18,10 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { buildFoldedModel, type FoldedFace3D, type FoldedModel3D } from "@/domain/dieline/fold3d";
 import type { DielineGraph } from "@/domain/dieline/types";
-import { getFaceKeyFromGraphFaceId } from "@/domain/dieline/compat";
-import type { FaceKey } from "@/domain/packaging";
 
 type DielineCartonStageProps = {
   graph: DielineGraph;
-  faces: Partial<Record<FaceKey, string>>;
-  artworkByFaceId?: Partial<Record<string, string>>;
+  faces: Record<string, string>;
   className?: string;
 };
 
@@ -39,7 +36,6 @@ const ZOOM_STEP = 1.16;
 export function DielineCartonStage({
   graph,
   faces,
-  artworkByFaceId,
   className = "",
 }: DielineCartonStageProps) {
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -94,7 +90,6 @@ export function DielineCartonStage({
         <directionalLight intensity={0.6} position={[-4, 2, -2]} />
         <Suspense fallback={null}>
           <DielineModel
-            artworkByFaceId={artworkByFaceId}
             faces={faces}
             model={model}
           />
@@ -134,12 +129,10 @@ export function DielineCartonStage({
 }
 
 function DielineModel({
-  artworkByFaceId,
   faces,
   model,
 }: {
-  artworkByFaceId?: Partial<Record<string, string>>;
-  faces: Partial<Record<FaceKey, string>>;
+  faces: Record<string, string>;
   model: FoldedModel3D;
 }) {
   return (
@@ -148,7 +141,7 @@ function DielineModel({
         <SolvedFaceMesh
           face={face}
           key={face.faceId}
-          textureUrl={getTextureUrl(face.faceId, faces, artworkByFaceId)}
+          textureUrl={faces[face.faceId]}
         />
       ))}
     </group>
@@ -292,17 +285,6 @@ function CameraSync({
   );
 }
 
-function getTextureUrl(
-  faceId: string,
-  faces: Partial<Record<FaceKey, string>>,
-  artworkByFaceId?: Partial<Record<string, string>>,
-): string | undefined {
-  const directArtwork = artworkByFaceId?.[faceId];
-  if (directArtwork) return directArtwork;
-
-  const faceKey = getFaceKeyFromGraphFaceId(faceId);
-  return faceKey ? faces[faceKey] : undefined;
-}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.round(Math.min(max, Math.max(min, Number.isFinite(value) ? value : 100)));

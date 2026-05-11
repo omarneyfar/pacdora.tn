@@ -2,7 +2,7 @@
 
 import { prepareSource, updateCanvas, type Coordinates, type Transforms } from "advanced-cropper";
 
-import { FACE_KEYS, getFaceSpecs, type CartonDimensions, type FaceKey, type Project } from "@/domain/packaging";
+import { getFaceSpecs, type CartonDimensions, type Project } from "@/domain/packaging";
 import type { DielineGraph } from "@/domain/dieline/types";
 
 const MAX_LONG_EDGE = 1400;
@@ -41,7 +41,7 @@ export async function importArtworkFile(file: File): Promise<ArtworkImport> {
 
 export async function cropArtworkToFace(
   sourceUrl: string,
-  face: FaceKey,
+  face: string,
   dimensions: CartonDimensions,
   settings: CropSettings = DEFAULT_CROP_SETTINGS,
   dielineGraph?: DielineGraph | null
@@ -50,16 +50,21 @@ export async function cropArtworkToFace(
   return cropToFace(image, face, dimensions, normalizeCropSettings(settings), dielineGraph);
 }
 
-export async function renderProjectFaces(project: Project): Promise<Partial<Record<FaceKey, string>>> {
+export async function renderProjectFaces(project: Project): Promise<Record<string, string>> {
   if (!project.workspace?.sources.length) {
     return project.faces;
   }
 
   const sourceById = new Map(project.workspace.sources.map((source) => [source.id, source]));
-  const renderedFaces: Partial<Record<FaceKey, string>> = {};
+  const renderedFaces: Record<string, string> = {};
+
+  const allFaceIds = new Set([
+    ...Object.keys(project.workspace?.faceAssets || {}),
+    ...Object.keys(project.faces || {})
+  ]);
 
   await Promise.all(
-    FACE_KEYS.map(async (face) => {
+    Array.from(allFaceIds).map(async (face) => {
       const assignment = project.workspace?.faceAssets[face];
       const source = assignment ? sourceById.get(assignment.sourceId) : undefined;
 
@@ -133,7 +138,7 @@ function loadImage(sourceUrl: string): Promise<HTMLImageElement> {
 
 function cropToFace(
   image: HTMLImageElement,
-  face: FaceKey,
+  face: string,
   dimensions: CartonDimensions,
   settings: CropSettings,
   dielineGraph?: DielineGraph | null
@@ -174,7 +179,7 @@ function cropToFace(
 }
 
 export function getFaceArtworkSize(
-  face: FaceKey,
+  face: string,
   dimensions: CartonDimensions,
   dielineGraph?: DielineGraph | null
 ): { label: string; width: number; height: number } {
@@ -188,11 +193,19 @@ export function getFaceArtworkSize(
     };
   }
 
-  const spec = getFaceSpecs(dimensions)[face];
+  const spec = getFaceSpecs(dimensions)[face as keyof ReturnType<typeof getFaceSpecs>];
+  if (spec) {
+    return {
+      label: spec.label,
+      width: spec.artworkWidth,
+      height: spec.artworkHeight
+    };
+  }
+
   return {
-    label: spec.label,
-    width: spec.artworkWidth,
-    height: spec.artworkHeight
+    label: face,
+    width: dimensions.width,
+    height: dimensions.height
   };
 }
 

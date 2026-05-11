@@ -4,14 +4,11 @@ import path from "path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  FACE_KEYS,
-  isFaceKey,
   normalizeDimensions,
   normalizeProjectStatus,
   normalizeTemplateId,
   type ArtworkSourceType,
   type CartonDimensions,
-  type FaceKey,
   type Project,
   type ProjectArtworkSource,
   type ProjectCropSettings,
@@ -43,7 +40,7 @@ export type ProjectInput = {
   status?: ProjectStatus;
   templateId?: TemplateId;
   dimensions?: Partial<CartonDimensions>;
-  faces?: Partial<Record<FaceKey, string | null>>;
+  faces?: Record<string, string | null>;
   workspace?: ProjectWorkspaceInput;
 };
 
@@ -61,7 +58,7 @@ export type ProjectImage = {
 type ProjectWorkspaceInput = {
   sources?: ProjectArtworkSourceInput[];
   selectedSourceId?: string | null;
-  faceAssets?: Partial<Record<FaceKey, ProjectFaceAssetInput | null>>;
+  faceAssets?: Record<string, ProjectFaceAssetInput | null>;
   dieline?: ProjectDielineInput | null;
 };
 
@@ -91,7 +88,7 @@ type ProjectRow = {
   status?: string | null;
   template_id?: string | null;
   dimensions: Partial<CartonDimensions>;
-  faces: Partial<Record<FaceKey, string>>;
+  faces: Record<string, string>;
   workspace?: unknown;
   created_at: string;
   updated_at?: string | null;
@@ -291,7 +288,7 @@ async function readFileProject(id: string): Promise<Project | null> {
 }
 
 async function readFileFaceImage(id: string, face: string): Promise<Buffer | null> {
-  if (!isValidProjectId(id) || !isFaceKey(face)) {
+  if (!isValidProjectId(id) || !face) {
     return null;
   }
 
@@ -573,7 +570,7 @@ async function readSupabaseProject(id: string): Promise<Project | null> {
 }
 
 async function readSupabaseFaceImage(id: string, face: string): Promise<Buffer | null> {
-  if (!isValidProjectId(id) || !isFaceKey(face)) {
+  if (!isValidProjectId(id) || !face) {
     return null;
   }
 
@@ -636,8 +633,8 @@ async function createDuplicateProjectInput(project: Project): Promise<ProjectInp
       };
     })
   );
-  const faceAssets = FACE_KEYS.reduce<Partial<Record<FaceKey, ProjectFaceAssetInput>>>((next, face) => {
-    const asset = project.workspace?.faceAssets[face];
+  const faceAssets = Object.keys(project.workspace?.faceAssets || {}).reduce<Record<string, ProjectFaceAssetInput>>((next, face) => {
+    const asset = project.workspace?.faceAssets?.[face];
 
     if (asset) {
       next[face] = {
@@ -671,11 +668,11 @@ async function createDuplicateProjectInput(project: Project): Promise<ProjectInp
   };
 }
 
-async function createDuplicateFaceInput(project: Project): Promise<Partial<Record<FaceKey, string>>> {
-  const faces: Partial<Record<FaceKey, string>> = {};
+async function createDuplicateFaceInput(project: Project): Promise<Record<string, string>> {
+  const faces: Record<string, string> = {};
 
   await Promise.all(
-    FACE_KEYS.map(async (face) => {
+    Object.keys(project.faces).map(async (face) => {
       if (!project.faces[face]) {
         return;
       }
@@ -694,13 +691,13 @@ async function createDuplicateFaceInput(project: Project): Promise<Partial<Recor
 
 async function writeFaceImages(
   id: string,
-  inputFaces: Partial<Record<FaceKey, string | null>>,
-  existingFaces: Partial<Record<FaceKey, string>>,
-  writeImage: (face: FaceKey, buffer: Buffer) => Promise<void>
-): Promise<Partial<Record<FaceKey, string>>> {
-  const faces: Partial<Record<FaceKey, string>> = { ...existingFaces };
+  inputFaces: Record<string, string | null>,
+  existingFaces: Record<string, string>,
+  writeImage: (face: string, buffer: Buffer) => Promise<void>
+): Promise<Record<string, string>> {
+  const faces: Record<string, string> = { ...existingFaces };
 
-  for (const face of FACE_KEYS) {
+  for (const face of Object.keys(inputFaces)) {
     if (!Object.prototype.hasOwnProperty.call(inputFaces, face)) {
       continue;
     }
@@ -760,9 +757,9 @@ async function prepareWorkspace(
   }
 
   const sources = Array.from(sourceMap.values());
-  const faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>> = { ...(existing?.faceAssets ?? {}) };
+  const faceAssets: Record<string, ProjectFaceAsset> = { ...(existing?.faceAssets ?? {}) };
 
-  for (const face of FACE_KEYS) {
+  for (const face of Object.keys(input.faceAssets ?? {})) {
     if (!Object.prototype.hasOwnProperty.call(input.faceAssets ?? {}, face)) {
       continue;
     }
@@ -968,13 +965,13 @@ function normalizeWorkspace(value: unknown, projectId: string): ProjectWorkspace
     typeof candidate.selectedSourceId === "string" && sourceIds.has(candidate.selectedSourceId)
       ? candidate.selectedSourceId
       : sources[0]?.id;
-  const faceAssets: Partial<Record<FaceKey, ProjectFaceAsset>> = {};
+  const faceAssets: Record<string, ProjectFaceAsset> = {};
   const storedFaceAssets =
     candidate.faceAssets && typeof candidate.faceAssets === "object"
-      ? (candidate.faceAssets as Partial<Record<FaceKey, Partial<ProjectFaceAsset>>>)
+      ? (candidate.faceAssets as Record<string, Partial<ProjectFaceAsset>>)
       : {};
 
-  for (const face of FACE_KEYS) {
+  for (const face of Object.keys(storedFaceAssets)) {
     const asset = storedFaceAssets[face];
     if (!asset?.sourceId || !sourceIds.has(asset.sourceId)) {
       continue;
@@ -1123,7 +1120,7 @@ function getProjectDir(id: string): string {
   return path.join(STORAGE_ROOT, id);
 }
 
-function getSupabaseFacePath(id: string, face: FaceKey): string {
+function getSupabaseFacePath(id: string, face: string): string {
   return `${id}/${face}.png`;
 }
 
@@ -1131,7 +1128,7 @@ function getSupabaseAssetPath(id: string, assetId: string): string {
   return `${id}/assets/${assetId}`;
 }
 
-function getFaceUrl(id: string, face: FaceKey): string {
+function getFaceUrl(id: string, face: string): string {
   return `/api/project-faces/${id}/${face}`;
 }
 
@@ -1231,15 +1228,15 @@ function normalizeAssetId(value: unknown): string | null {
   return typeof value === "string" && isValidAssetId(value) ? value : null;
 }
 
-function normalizeFaces(value: unknown): Partial<Record<FaceKey, string>> {
+function normalizeFaces(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object") {
     return {};
   }
 
-  const nextFaces: Partial<Record<FaceKey, string>> = {};
-  const candidate = value as Partial<Record<FaceKey, unknown>>;
+  const nextFaces: Record<string, string> = {};
+  const candidate = value as Record<string, unknown>;
 
-  for (const face of FACE_KEYS) {
+  for (const face of Object.keys(candidate)) {
     const faceUrl = candidate[face];
     if (typeof faceUrl === "string") {
       nextFaces[face] = faceUrl;
@@ -1295,7 +1292,7 @@ function isImageDataUrl(value: string): boolean {
   return IMAGE_DATA_PATTERN.test(value);
 }
 
-function isOwnFaceUrl(projectId: string, face: FaceKey, value: string): boolean {
+function isOwnFaceUrl(projectId: string, face: string, value: string): boolean {
   return getUrlPath(value) === getFaceUrl(projectId, face) || getUrlPath(value) === `/api/projects/${projectId}/faces/${face}`;
 }
 
