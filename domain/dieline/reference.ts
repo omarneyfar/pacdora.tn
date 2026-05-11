@@ -117,11 +117,48 @@ function parseDxfReference(content: string): ReferenceGeometry {
       const start = point(attrs["10"], attrs["20"]);
       const end = point(attrs["11"], attrs["21"]);
       if (start && end) primitives.push({ id: `ref-line-${index}`, layer: inferLayer(attrs["8"]), type: "line", start, end });
+    } else if (entity === "LWPOLYLINE") {
+      const polyline = readDxfPolyline(tokens, cursor + 2);
+      if (polyline.points.length >= 2) {
+        primitives.push({
+          id: `ref-polyline-${index}`,
+          layer: polyline.layer,
+          type: polyline.closed ? "polygon" : "polyline",
+          points: polyline.points,
+        });
+      }
     } else if (entity === "CIRCLE") {
       const attrs = readDxfEntity(tokens, cursor + 2);
       const center = point(attrs["10"], attrs["20"]);
       const radius = numeric(attrs["40"]);
       if (center && radius > 0) primitives.push({ id: `ref-circle-${index}`, layer: inferLayer(attrs["8"]), type: "circle", center, radius });
+    } else if (entity === "ARC") {
+      const attrs = readDxfEntity(tokens, cursor + 2);
+      const center = point(attrs["10"], attrs["20"]);
+      const radius = numeric(attrs["40"]);
+      if (center && radius > 0) {
+        primitives.push({
+          id: `ref-arc-${index}`,
+          layer: inferLayer(attrs["8"]),
+          type: "arc",
+          center,
+          radius,
+          startAngle: degToRad(numeric(attrs["50"])),
+          endAngle: degToRad(numeric(attrs["51"])),
+        });
+      }
+    } else if (entity === "TEXT") {
+      const attrs = readDxfEntity(tokens, cursor + 2);
+      const position = point(attrs["10"], attrs["20"]);
+      if (position) {
+        primitives.push({
+          id: `ref-text-${index}`,
+          layer: inferLayer(attrs["8"]),
+          type: "label",
+          position,
+          text: attrs["1"] ?? "",
+        });
+      }
     }
 
     index += 1;
@@ -161,6 +198,35 @@ function readDxfEntity(tokens: string[], start: number): Record<string, string> 
   return attrs;
 }
 
+function readDxfPolyline(tokens: string[], start: number): { closed: boolean; layer: DielineLayer; points: Point[] } {
+  let currentX: number | null = null;
+  let closed = false;
+  let layer: DielineLayer = "cut";
+  const points: Point[] = [];
+
+  for (let cursor = start; cursor < tokens.length - 1; cursor += 2) {
+    const code = tokens[cursor];
+    const value = tokens[cursor + 1];
+    if (code === "0") break;
+
+    if (code === "8") {
+      layer = inferLayer(value);
+    } else if (code === "70") {
+      closed = (Math.trunc(numeric(value)) & 1) === 1;
+    } else if (code === "10") {
+      currentX = numeric(value);
+    } else if (code === "20" && currentX !== null) {
+      const y = numeric(value);
+      if (Number.isFinite(currentX) && Number.isFinite(y)) {
+        points.push({ x: currentX, y });
+      }
+      currentX = null;
+    }
+  }
+
+  return { closed, layer, points };
+}
+
 function inferLayer(value: string | undefined): DielineLayer {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
   return LAYER_ALIASES[normalized] ?? "cut";
@@ -175,4 +241,8 @@ function point(x: string | undefined, y: string | undefined): Point | null {
 function numeric(value: string | undefined): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function degToRad(value: number): number {
+  return (value * Math.PI) / 180;
 }

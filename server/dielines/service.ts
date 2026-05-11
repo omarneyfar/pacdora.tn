@@ -125,8 +125,16 @@ export async function deleteDielineTemplate(id: string): Promise<boolean> {
 
 async function seedInitialDielines(db: LocalDielinesDb): Promise<void> {
   const seeds = getSeedDielines();
+  const activeSeedIds = new Set(seeds.map((seed) => seed.id));
   const now = new Date().toISOString();
   let inserted = false;
+
+  for (const id of Object.keys(db.dielines)) {
+    if (id.startsWith("seed-") && !activeSeedIds.has(id)) {
+      delete db.dielines[id];
+      inserted = true;
+    }
+  }
 
   for (const seed of seeds) {
     if (!db.dielines[seed.id]) {

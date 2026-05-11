@@ -13,11 +13,11 @@ import type {
 
 const RIGHT_ANGLE = Math.PI / 2;
 const DEFAULTS = {
-  L: 70,
-  W: 35,
-  H: 100,
+  L: 65,
+  W: 44,
+  H: 101,
   TFW: 27.3,
-  TFR: 5.6,
+  TFR: 3.5,
   GFW: 15,
   DFW: 17.5,
   materialThickness: 1.5,

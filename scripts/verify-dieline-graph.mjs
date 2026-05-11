@@ -88,8 +88,7 @@ for (const seed of seeds) {
   assertTemplateStructure(seed.graph, `seed ${seed.id}`);
 }
 
-assertStickerSeeds(seeds);
-assertCefBoxFoldingBoxSeeds(seeds);
+assertSeedPolicy(seeds);
 assertTemplateRegistry();
 assertReverseTuckEndExactScaffold();
 
@@ -305,38 +304,8 @@ function assertTemplateStructure(testGraph, label) {
   }
 }
 
-function assertCefBoxFoldingBoxSeeds(seeds) {
-  const expectedIds = new Set(CEFBOX_FOLDING_BOX_DEFINITIONS.map((definition) => definition.id));
-  const foldingBoxSeeds = seeds.filter((seed) => seed.id.startsWith("seed-foldingbox-"));
-
-  assert(foldingBoxSeeds.length === expectedIds.size, `Expected ${expectedIds.size} cefBox folding box seeds, got ${foldingBoxSeeds.length}`);
-
-  for (const seed of foldingBoxSeeds) {
-    const metadata = seed.graph.metadata;
-    assert(metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
-    assert(expectedIds.has(metadata.family), `${seed.id}: unexpected folding-box family ${metadata?.family ?? "missing"}`);
-    assert(seed.graph.faces.length >= 5, `${seed.id}: folding box seed should have a foldable carton body`);
-    assert(seed.graph.creases.length >= 4, `${seed.id}: folding box seed should have body creases`);
-
-    const definition = CEFBOX_FOLDING_BOX_DEFINITIONS.find((candidate) => candidate.id === metadata.family);
-    assert(definition, `${seed.id}: missing definition`);
-
-    for (const code of ["L", "W", "H", ...definition.parameters]) {
-      assert(metadata.parameters?.some((parameter) => parameter.id === code), `${seed.id}: missing parameter ${code}`);
-    }
-  }
-}
-
 function assertReverseTuckEndExactScaffold() {
-  const graph = generateReverseTuckEnd({
-    L: 70,
-    W: 35,
-    H: 100,
-    TFW: 27.3,
-    TFR: 5.6,
-    GFW: 15,
-    DFW: 17.5,
-  });
+  const graph = generateReverseTuckEnd();
   const values = graph.metadata?.parameterValues ?? {};
 
   assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Reverse Tuck End should include cut geometry primitives");
@@ -369,6 +338,18 @@ function assertReverseTuckEndExactScaffold() {
   }
 }
 
+function assertSeedPolicy(seeds) {
+  assert(seeds.length === 1, `Expected only exact registered template seeds, got ${seeds.length}`);
+
+  const seed = seeds[0];
+  assert(seed.id === "seed-foldingbox-reverse-tuck-end", `Unexpected seed id ${seed.id}`);
+  assert(seed.graph.metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
+  assert(seed.graph.metadata?.family === "reverse-tuck-end", `${seed.id}: expected reverse-tuck-end family`);
+  assert(seed.graph.metadata?.parameterSpecs?.length >= 13, `${seed.id}: expected grouped parameter-ready seed`);
+  assert(seed.graph.geometry?.some((primitive) => primitive.layer === "cut"), `${seed.id}: expected canonical cut geometry`);
+  assert(seed.graph.geometry?.some((primitive) => primitive.layer === "crease"), `${seed.id}: expected canonical crease geometry`);
+}
+
 function assertTemplateRegistry() {
   const reverseTuckEnd = getDielineTemplateByRoute("foldingBox", "reverseTuckEnd");
   assert(reverseTuckEnd, "Template registry should expose Reverse Tuck End by CefBox-style route");
@@ -382,31 +363,6 @@ function assertTemplateRegistry() {
   const summaries = listDielineTemplateSummaries("foldingBox");
   assert(summaries.length === CEFBOX_FOLDING_BOX_DEFINITIONS.length, "Folding Box catalog should expose every scaffolded family");
   assert(summaries.some((summary) => summary.slug === "reverseTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Reverse Tuck End generator");
-}
-
-function assertStickerSeeds(seeds) {
-  const stickerSeeds = seeds.filter((seed) => seed.graph.metadata?.category === "sticker");
-  const expectedFamilies = new Set(["sticker-rectangle", "sticker-rounded", "sticker-oval"]);
-
-  assert(stickerSeeds.length === 3, `Expected 3 sticker seeds, got ${stickerSeeds.length}`);
-
-  for (const seed of stickerSeeds) {
-    const family = seed.graph.metadata?.family;
-    assert(expectedFamilies.has(family), `Unexpected sticker family ${family ?? "missing"}`);
-    assert(seed.graph.faces.length === 1, `${seed.id}: sticker should have one artwork face`);
-    assert(seed.graph.creases.length === 0, `${seed.id}: sticker should not have creases`);
-    assert(seed.graph.faces[0].id === "front", `${seed.id}: sticker face should be legacy-compatible front`);
-    assert(seed.graph.faces[0].artworkEnabled, `${seed.id}: sticker face should accept artwork`);
-    assert(seed.graph.metadata.parameters?.some((parameter) => parameter.id === "length"), `${seed.id}: missing length parameter`);
-    assert(seed.graph.metadata.parameters?.some((parameter) => parameter.id === "width"), `${seed.id}: missing width parameter`);
-
-    if (family === "sticker-rounded") {
-      assert(
-        seed.graph.metadata.parameters?.some((parameter) => parameter.id === "corner-radius"),
-        `${seed.id}: rounded sticker missing corner-radius parameter`,
-      );
-    }
-  }
 }
 
 function assertCreaseCoincidence(testGraph, model, label) {
