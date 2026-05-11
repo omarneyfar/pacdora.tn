@@ -1,5 +1,6 @@
 "use client";
 
+import { primitiveToSvgPath } from "@/domain/dieline/canonicalGeometry";
 import type { DielineGraph } from "@/domain/dieline/types";
 
 type DielinePreviewProps = {
@@ -20,23 +21,37 @@ export function DielinePreview({ graph, className = "" }: DielinePreviewProps) {
             />
           ))}
         </g>
-        <g>
-          {graph.cutPaths.map((cutPath) => (
-            <path className="dieline-guide-line dieline-guide-cut" d={cutPath.d} key={cutPath.id} />
-          ))}
-        </g>
-        <g>
-          {graph.creases.map((crease) => (
-            <line
-              className="dieline-guide-line dieline-guide-fold"
-              key={crease.id}
-              x1={crease.edgeStart.x}
-              x2={crease.edgeEnd.x}
-              y1={crease.edgeStart.y}
-              y2={crease.edgeEnd.y}
-            />
-          ))}
-        </g>
+        {graph.geometry?.length ? (
+          <g>
+            {graph.geometry.filter((primitive) => primitive.layer !== "label").map((primitive) => (
+              <path
+                className={primitive.layer === "crease" ? "dieline-guide-line dieline-guide-fold" : primitive.layer === "window" || primitive.layer === "hole" ? "dieline-guide-line dieline-guide-window" : "dieline-guide-line dieline-guide-cut"}
+                d={primitiveToSvgPath(primitive)}
+                key={primitive.id}
+              />
+            ))}
+          </g>
+        ) : (
+          <>
+            <g>
+              {graph.cutPaths.map((cutPath) => (
+                <path className="dieline-guide-line dieline-guide-cut" d={cutPath.d} key={cutPath.id} />
+              ))}
+            </g>
+            <g>
+              {graph.creases.map((crease) => (
+                <line
+                  className="dieline-guide-line dieline-guide-fold"
+                  key={crease.id}
+                  x1={crease.edgeStart.x}
+                  x2={crease.edgeEnd.x}
+                  y1={crease.edgeStart.y}
+                  y2={crease.edgeEnd.y}
+                />
+              ))}
+            </g>
+          </>
+        )}
         <g>
           {graph.faces.map((face) => (
             <text className="dieline-guide-label" key={face.id} x={face.centroid.x} y={face.centroid.y}>

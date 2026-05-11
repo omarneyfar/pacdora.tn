@@ -8,7 +8,10 @@ import type {
   DielineFaceNode,
   DielineGraph,
   DielineGraphMetadata,
+  GeometryPrimitive,
   DielineParameter,
+  ParameterSpec,
+  ParameterValueMap,
   DielinePart,
   DielinePartRole,
   Point,
@@ -20,6 +23,7 @@ const MAX_PATH_LENGTH = 12000;
 const MAX_SOURCE_SVG_LENGTH = 700_000;
 const MAX_PARTS = 80;
 const MAX_PARAMETERS = 32;
+const MAX_GEOMETRY_PRIMITIVES = 600;
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,80}$/;
 const FAMILY_PATTERN = /^[a-zA-Z0-9_-]{1,120}$/;
 const PART_ROLES: DielinePartRole[] = [
@@ -69,6 +73,9 @@ export function normalizeDielineGraph(value: unknown): DielineGraph | null {
     ? candidate.cutPaths.flatMap((cutPath, index) => normalizeCutPath(cutPath, index))
     : createExteriorCutPaths(faces);
   const faceTree = normalizeFaceTree(candidate.faceTree, faceIds, creases);
+  const geometry = Array.isArray(candidate.geometry)
+    ? candidate.geometry.slice(0, MAX_GEOMETRY_PRIMITIVES).flatMap((primitive) => normalizeGeometryPrimitive(primitive))
+    : [];
   const metadata = normalizeGraphMetadata(candidate.metadata, faceIds, creaseIds);
   const sourceSvg =
     typeof candidate.sourceSvg === "string" && candidate.sourceSvg.length <= MAX_SOURCE_SVG_LENGTH
@@ -84,6 +91,7 @@ export function normalizeDielineGraph(value: unknown): DielineGraph | null {
     creases,
     cutPaths: cutPaths.length > 0 ? cutPaths : createExteriorCutPaths(faces),
     faceTree: faceTree.length > 0 ? faceTree : createFallbackFaceTree(faces, creases),
+    ...(geometry.length > 0 ? { geometry } : {}),
     ...(metadata ? { metadata } : {}),
     ...(candidate.source ? { source: candidate.source } : {}),
     ...(sourceSvg ? { sourceSvg } : {})
@@ -242,14 +250,86 @@ function normalizeGraphMetadata(
   const parameters = Array.isArray(candidate.parameters)
     ? candidate.parameters.slice(0, MAX_PARAMETERS).flatMap((parameter) => normalizeParameter(parameter))
     : [];
+  const parameterSpecs = Array.isArray(candidate.parameterSpecs)
+    ? candidate.parameterSpecs.slice(0, MAX_PARAMETERS).flatMap((parameter) => normalizeParameterSpec(parameter))
+    : [];
+  const parameterValues = normalizeParameterValues(candidate.parameterValues);
 
   return {
     category,
     family,
     familyLabel,
     parts,
-    ...(parameters.length > 0 ? { parameters } : {})
+    ...(parameters.length > 0 ? { parameters } : {}),
+    ...(parameterSpecs.length > 0 ? { parameterSpecs } : {}),
+    ...(Object.keys(parameterValues).length > 0 ? { parameterValues } : {})
   };
+}
+
+function normalizeGeometryPrimitive(value: unknown): GeometryPrimitive[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const candidate = value as Partial<GeometryPrimitive>;
+  if (!candidate.id || !ID_PATTERN.test(candidate.id) || !isLayer(candidate.layer) || !candidate.type) {
+    return [];
+  }
+
+  if (candidate.type === "line") {
+    const start = normalizePoint(candidate.start)[0];
+    const end = normalizePoint(candidate.end)[0];
+    return start && end ? [{ id: candidate.id, layer: candidate.layer, type: "line", start, end }] : [];
+  }
+
+  if (candidate.type === "polyline" || candidate.type === "polygon") {
+    const points = Array.isArray(candidate.points) ? candidate.points.flatMap((point) => normalizePoint(point)) : [];
+    return points.length >= 2 ? [{ id: candidate.id, layer: candidate.layer, type: candidate.type, points }] : [];
+  }
+
+  if (candidate.type === "arc") {
+    const center = normalizePoint(candidate.center)[0];
+    const radius = normalizePositiveNumber(candidate.radius, 0);
+    const startAngle = Number(candidate.startAngle);
+    const endAngle = Number(candidate.endAngle);
+    return center && radius > 0 && Number.isFinite(startAngle) && Number.isFinite(endAngle)
+      ? [{ id: candidate.id, layer: candidate.layer, type: "arc", center, radius, startAngle, endAngle }]
+      : [];
+  }
+
+  if (candidate.type === "circle") {
+    const center = normalizePoint(candidate.center)[0];
+    const radius = normalizePositiveNumber(candidate.radius, 0);
+    return center && radius > 0 ? [{ id: candidate.id, layer: candidate.layer, type: "circle", center, radius }] : [];
+  }
+
+  if (candidate.type === "ellipse") {
+    const center = normalizePoint(candidate.center)[0];
+    const radiusX = normalizePositiveNumber(candidate.radiusX, 0);
+    const radiusY = normalizePositiveNumber(candidate.radiusY, 0);
+    return center && radiusX > 0 && radiusY > 0
+      ? [{ id: candidate.id, layer: candidate.layer, type: "ellipse", center, radiusX, radiusY }]
+      : [];
+  }
+
+  if (candidate.type === "rounded-rect" || candidate.type === "slot") {
+    const x = Number(candidate.x);
+    const y = Number(candidate.y);
+    const width = normalizePositiveNumber(candidate.width, 0);
+    const height = normalizePositiveNumber(candidate.height, 0);
+    const radius = normalizePositiveNumber(candidate.radius, 0);
+    return Number.isFinite(x) && Number.isFinite(y) && width > 0 && height > 0
+      ? [{ id: candidate.id, layer: candidate.layer, type: candidate.type, x, y, width, height, radius }]
+      : [];
+  }
+
+  if (candidate.type === "label") {
+    const position = normalizePoint(candidate.position)[0];
+    const text = normalizeShortText(candidate.text, "");
+    return position && text ? [{ id: candidate.id, layer: candidate.layer, type: "label", position, text }] : [];
+  }
+
+  return [];
 }
 
 function normalizePart(value: unknown, faceIds: Set<string>, creaseIds: Set<string>): DielinePart[] {
@@ -312,6 +392,78 @@ function normalizeParameter(value: unknown): DielineParameter[] {
       ...(typeof candidate.unit === "string" && candidate.unit.trim() ? { unit: candidate.unit.trim().slice(0, 24) } : {})
     }
   ];
+}
+
+function normalizeParameterSpec(value: unknown): ParameterSpec[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const candidate = value as Partial<ParameterSpec>;
+  if (!candidate.id || !ID_PATTERN.test(candidate.id)) {
+    return [];
+  }
+
+  const defaultValue = candidate.defaultValue;
+  if (
+    typeof defaultValue !== "string" &&
+    typeof defaultValue !== "number" &&
+    typeof defaultValue !== "boolean"
+  ) {
+    return [];
+  }
+
+  return [
+    {
+      id: candidate.id,
+      label: normalizeShortText(candidate.label, candidate.id),
+      kind: PARAMETER_KINDS.includes(candidate.kind as DielineParameter["kind"]) ? (candidate.kind as DielineParameter["kind"]) : "other",
+      input: candidate.input === "select" || candidate.input === "boolean" ? candidate.input : "number",
+      defaultValue,
+      ...(typeof candidate.unit === "string" && candidate.unit.trim() ? { unit: candidate.unit.trim().slice(0, 24) } : {}),
+      ...(Number.isFinite(Number(candidate.min)) ? { min: Number(candidate.min) } : {}),
+      ...(Number.isFinite(Number(candidate.max)) ? { max: Number(candidate.max) } : {}),
+      ...(Number.isFinite(Number(candidate.step)) ? { step: Number(candidate.step) } : {}),
+      ...(Array.isArray(candidate.options) ? { options: candidate.options.slice(0, 20).flatMap((option) => normalizeParameterOption(option)) } : {})
+    }
+  ];
+}
+
+function normalizeParameterOption(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const candidate = value as { label?: unknown; value?: unknown };
+  const optionValue = candidate.value;
+
+  if (typeof optionValue !== "string" && typeof optionValue !== "number" && typeof optionValue !== "boolean") {
+    return [];
+  }
+
+  return [{
+    label: normalizeShortText(candidate.label, String(optionValue)),
+    value: optionValue
+  }];
+}
+
+function normalizeParameterValues(value: unknown): ParameterValueMap {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const values: ParameterValueMap = {};
+
+  for (const [key, rawValue] of Object.entries(value as Record<string, unknown>)) {
+    if (!ID_PATTERN.test(key)) continue;
+    if (typeof rawValue === "string" || typeof rawValue === "boolean") {
+      values[key] = rawValue;
+    } else if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+      values[key] = rawValue;
+    }
+  }
+
+  return values;
 }
 
 function createFallbackFaceTree(faces: DielineFace[], creases: DielineCrease[]): DielineFaceNode[] {
@@ -384,4 +536,17 @@ function uniqueStrings(value: unknown): string[] {
   }
 
   return ids;
+}
+
+function isLayer(value: unknown): value is GeometryPrimitive["layer"] {
+  return (
+    value === "cut" ||
+    value === "crease" ||
+    value === "perf" ||
+    value === "window" ||
+    value === "hole" ||
+    value === "bleed" ||
+    value === "safe" ||
+    value === "label"
+  );
 }

@@ -11,7 +11,7 @@ export type CropModalState = {
   settings: CropSettings;
 };
 
-export type ParameterSectionKey = "dimensions" | "dieline" | "library";
+export type ParameterSectionKey = "dimensions" | "templateParameters" | "dieline" | "library";
 
 /* ── State shape ───────────────────────────────────────────────── */
 
@@ -33,6 +33,7 @@ export type UiState = {
 const initialState: UiState = {
   openSections: {
     dimensions: true,
+    templateParameters: true,
     dieline: true,
     library: true,
   },

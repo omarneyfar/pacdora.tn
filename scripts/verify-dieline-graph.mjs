@@ -12,7 +12,10 @@ const moduleCache = new Map();
 const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"));
 const geometry = loadTs(path.join(projectRoot, "domain", "dieline", "geometry"));
 const { buildFoldedModel, getFoldErrors } = loadTs(path.join(projectRoot, "domain", "dieline", "fold3d"));
+const { graphToDxf, graphToPdf, graphToSvg } = loadTs(path.join(projectRoot, "domain", "dieline", "canonicalGeometry"));
 const { CEFBOX_FOLDING_BOX_DEFINITIONS } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "foldingBoxVariants"));
+const { generateReverseTuckEnd } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "reverseTuckEnd"));
+const { parseReferenceGeometry, compareGraphToReference } = loadTs(path.join(projectRoot, "domain", "dieline", "reference"));
 const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
 const { normalizeDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
@@ -83,6 +86,7 @@ for (const seed of seeds) {
 
 assertStickerSeeds(seeds);
 assertCefBoxFoldingBoxSeeds(seeds);
+assertReverseTuckEndExactScaffold();
 
 console.log("Dieline graph verification passed.");
 
@@ -315,6 +319,48 @@ function assertCefBoxFoldingBoxSeeds(seeds) {
     for (const code of ["L", "W", "H", ...definition.parameters]) {
       assert(metadata.parameters?.some((parameter) => parameter.id === code), `${seed.id}: missing parameter ${code}`);
     }
+  }
+}
+
+function assertReverseTuckEndExactScaffold() {
+  const graph = generateReverseTuckEnd({
+    L: 70,
+    W: 35,
+    H: 100,
+    TFW: 27.3,
+    TFR: 5.6,
+    GFW: 15,
+    DFW: 17.5,
+  });
+  const values = graph.metadata?.parameterValues ?? {};
+
+  assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Reverse Tuck End should include cut geometry primitives");
+  assert(graph.geometry?.some((primitive) => primitive.layer === "crease"), "Reverse Tuck End should include crease geometry primitives");
+  assert(graph.metadata?.parameterSpecs?.length >= 13, "Reverse Tuck End should expose template parameter specs");
+  for (const id of ["L", "W", "H", "TFW", "TFR", "GFW", "DFW", "materialThickness", "outputSizeMode"]) {
+    assert(Object.hasOwn(values, id), `Reverse Tuck End missing parameter value ${id}`);
+  }
+
+  const changed = generateReverseTuckEnd({ L: 90, W: 45, H: 120, TFW: 35, TFR: 9, GFW: 20, DFW: 22 });
+  assert(changed.size.width > graph.size.width, "Reverse Tuck End L/GFW changes should increase width");
+  assert(changed.size.height > graph.size.height, "Reverse Tuck End H/TFW/DFW changes should increase height");
+
+  const svg = graphToSvg(graph);
+  const dxf = graphToDxf(graph);
+  const pdf = graphToPdf(graph);
+  assert(svg.includes('data-layer="cut"') && svg.includes('data-layer="crease"'), "SVG export should preserve cut and crease layers");
+  assert(dxf.includes("CUT") && dxf.includes("CREASE"), "DXF export should preserve cut and crease layers");
+  assert(pdf.startsWith("%PDF-1.4"), "PDF export should be a PDF document");
+
+  const referencePath = [
+    path.join(projectRoot, "fixtures", "dielines", "references", "reverse-tuck-end.svg"),
+    path.join(projectRoot, "fixtures", "dielines", "references", "reverse-tuck-end.dxf"),
+  ].find((candidate) => fs.existsSync(candidate));
+
+  if (referencePath) {
+    const reference = parseReferenceGeometry(fs.readFileSync(referencePath, "utf8"), referencePath);
+    const comparison = compareGraphToReference(graph, reference);
+    assert(comparison.ok, `Reverse Tuck End reference mismatch: ${comparison.messages.join("; ")}`);
   }
 }
 

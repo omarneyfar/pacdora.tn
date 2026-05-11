@@ -244,6 +244,12 @@ export function DielinesDashboard() {
                     <Edit3 aria-hidden size={17} />
                     Edit
                   </Link>
+                  <a className="secondary-button project-action-button" href={`/api/dielines/${template.id}/export?format=svg`}>
+                    SVG
+                  </a>
+                  <a className="secondary-button project-action-button" href={`/api/dielines/${template.id}/export?format=dxf`}>
+                    DXF
+                  </a>
                   {template.status === "ready" ? (
                     <Link className="primary-button project-action-button" href={`/?dielineId=${template.id}`}>
                       <Plus aria-hidden size={17} />

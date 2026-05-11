@@ -17,7 +17,8 @@ import {
   type CartonDimensions,
   type FaceKey,
 } from "@/domain/packaging";
-import type { DielineFace, DielineGraph } from "@/domain/dieline/types";
+import { primitiveToSvgPath } from "@/domain/dieline/canonicalGeometry";
+import type { DielineFace, DielineGraph, GeometryPrimitive } from "@/domain/dieline/types";
 import { getFaceKeyFromGraphFaceId } from "@/domain/dieline/compat";
 import type { FaceAssets } from "@/store/artworkSlice";
 
@@ -280,6 +281,9 @@ function ArtworkImage({
 }
 
 function GraphGuideLayer({ graph }: { graph: DielineGraph }) {
+  const geometricGuides = graph.geometry?.filter((primitive) => primitive.layer !== "label") ?? [];
+  const labels = graph.geometry?.filter((primitive): primitive is Extract<GeometryPrimitive, { type: "label" }> => primitive.type === "label") ?? [];
+
   return (
     <g className="dieline-graph-guides">
       <g>
@@ -308,34 +312,52 @@ function GraphGuideLayer({ graph }: { graph: DielineGraph }) {
         })}
       </g>
 
-      <g>
-        {graph.cutPaths.map((cutPath) => (
-          <path className="dieline-guide-line dieline-guide-cut" d={cutPath.d} key={cutPath.id} />
-        ))}
-      </g>
+      {geometricGuides.length > 0 ? (
+        <g>
+          {geometricGuides.map((primitive) => (
+            <path className={getGuideClassName(primitive)} d={primitiveToSvgPath(primitive)} key={primitive.id} />
+          ))}
+        </g>
+      ) : (
+        <>
+          <g>
+            {graph.cutPaths.map((cutPath) => (
+              <path className="dieline-guide-line dieline-guide-cut" d={cutPath.d} key={cutPath.id} />
+            ))}
+          </g>
+
+          <g>
+            {graph.creases.map((crease) => (
+              <line
+                className="dieline-guide-line dieline-guide-fold"
+                key={crease.id}
+                x1={crease.edgeStart.x}
+                x2={crease.edgeEnd.x}
+                y1={crease.edgeStart.y}
+                y2={crease.edgeEnd.y}
+              />
+            ))}
+          </g>
+        </>
+      )}
 
       <g>
-        {graph.creases.map((crease) => (
-          <line
-            className="dieline-guide-line dieline-guide-fold"
-            key={crease.id}
-            x1={crease.edgeStart.x}
-            x2={crease.edgeEnd.x}
-            y1={crease.edgeStart.y}
-            y2={crease.edgeEnd.y}
-          />
-        ))}
-      </g>
-
-      <g>
-        {graph.faces.map((face) => (
-          <text className="dieline-guide-label" key={face.id} x={face.centroid.x} y={face.centroid.y}>
-            {face.label} {Math.round(face.bounds.width)} x {Math.round(face.bounds.height)} mm
+        {(labels.length > 0 ? labels : graph.faces.map((face) => ({ id: `label-${face.id}`, position: face.centroid, text: `${face.label} ${Math.round(face.bounds.width)} x ${Math.round(face.bounds.height)} mm` }))).map((label) => (
+          <text className="dieline-guide-label" key={label.id} x={label.position.x} y={label.position.y}>
+            {label.text}
           </text>
         ))}
       </g>
     </g>
   );
+}
+
+function getGuideClassName(primitive: GeometryPrimitive): string {
+  if (primitive.layer === "crease") return "dieline-guide-line dieline-guide-fold";
+  if (primitive.layer === "bleed") return "dieline-guide-line dieline-guide-bleed";
+  if (primitive.layer === "safe") return "dieline-guide-line dieline-guide-safe";
+  if (primitive.layer === "window" || primitive.layer === "hole") return "dieline-guide-line dieline-guide-window";
+  return "dieline-guide-line dieline-guide-cut";
 }
 
 function getClipPathId(idPrefix: string, faceId: string): string {

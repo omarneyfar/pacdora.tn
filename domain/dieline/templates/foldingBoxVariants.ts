@@ -1,5 +1,6 @@
 import { createDielineFace, createExteriorCutPaths, getGraphBounds, pointsToPath } from "../geometry";
 import { createTemplateMetadata } from "../structure";
+import { generateReverseTuckEnd } from "./reverseTuckEnd";
 import type {
   DielineCrease,
   DielineFace,
@@ -399,6 +400,14 @@ export const CEFBOX_FOLDING_BOX_DEFINITIONS: FoldingBoxVariantDefinition[] = [
 ];
 
 export function generateCefBoxFoldingBoxGraph(definition: FoldingBoxVariantDefinition): DielineGraph {
+  if (definition.id === "reverse-tuck-end") {
+    return generateReverseTuckEnd({
+      L: definition.length,
+      W: definition.width,
+      H: definition.height,
+    });
+  }
+
   const L = definition.length;
   const W = definition.width;
   const H = definition.height;

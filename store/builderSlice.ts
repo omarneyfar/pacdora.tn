@@ -84,6 +84,10 @@ export const builderSlice = createSlice({
       state.dielineGraph = action.payload.graph;
     },
 
+    setDielineGraph(state, action: PayloadAction<DielineGraph>) {
+      state.dielineGraph = action.payload;
+    },
+
     resetDieline(state) {
       state.dielineSource = "template";
       state.dielineTemplateId = "";
@@ -164,6 +168,7 @@ export const {
   setDimensions,
   setImportedDieline,
   setLibraryDieline,
+  setDielineGraph,
   resetDieline,
   setSaveStatus,
   setIsProjectLoading,

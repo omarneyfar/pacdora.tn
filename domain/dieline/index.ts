@@ -7,3 +7,5 @@ export * from "./compat";
 export * from "./fold3d";
 export * from "./manualBuilder";
 export * from "./structure";
+export * from "./canonicalGeometry";
+export * from "./reference";

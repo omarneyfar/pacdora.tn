@@ -68,7 +68,7 @@ export function DielinePanel({ onUpload, onClear }: DielinePanelProps) {
   useEffect(() => {
     let isMounted = true;
 
-    listDielines({ limit: 24, status: "ready" })
+    listDielines({ limit: 120, status: "ready" })
       .then((nextTemplates) => {
         if (isMounted) {
           setTemplates(nextTemplates);
