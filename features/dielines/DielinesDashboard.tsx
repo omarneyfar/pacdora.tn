@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Box, Edit3, FileUp, LoaderCircle, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Box, Boxes, Edit3, FileUp, LoaderCircle, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -146,6 +146,10 @@ export function DielinesDashboard() {
         <div className="header-actions">
           <Link className="secondary-button dashboard-header-button" href="/projects">
             Projects
+          </Link>
+          <Link className="secondary-button dashboard-header-button" href="/dielines/foldingBox">
+            <Boxes aria-hidden size={18} />
+            Template generators
           </Link>
           <Link className="primary-button dashboard-header-button" href="/dielines/new">
             <FileUp aria-hidden size={18} />

@@ -13,6 +13,10 @@ const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"))
 const geometry = loadTs(path.join(projectRoot, "domain", "dieline", "geometry"));
 const { buildFoldedModel, getFoldErrors } = loadTs(path.join(projectRoot, "domain", "dieline", "fold3d"));
 const { graphToDxf, graphToPdf, graphToSvg } = loadTs(path.join(projectRoot, "domain", "dieline", "canonicalGeometry"));
+const {
+  getDielineTemplateByRoute,
+  listDielineTemplateSummaries,
+} = loadTs(path.join(projectRoot, "domain", "dieline", "templateRegistry"));
 const { CEFBOX_FOLDING_BOX_DEFINITIONS } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "foldingBoxVariants"));
 const { generateReverseTuckEnd } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "reverseTuckEnd"));
 const { parseReferenceGeometry, compareGraphToReference } = loadTs(path.join(projectRoot, "domain", "dieline", "reference"));
@@ -86,6 +90,7 @@ for (const seed of seeds) {
 
 assertStickerSeeds(seeds);
 assertCefBoxFoldingBoxSeeds(seeds);
+assertTemplateRegistry();
 assertReverseTuckEndExactScaffold();
 
 console.log("Dieline graph verification passed.");
@@ -362,6 +367,21 @@ function assertReverseTuckEndExactScaffold() {
     const comparison = compareGraphToReference(graph, reference);
     assert(comparison.ok, `Reverse Tuck End reference mismatch: ${comparison.messages.join("; ")}`);
   }
+}
+
+function assertTemplateRegistry() {
+  const reverseTuckEnd = getDielineTemplateByRoute("foldingBox", "reverseTuckEnd");
+  assert(reverseTuckEnd, "Template registry should expose Reverse Tuck End by CefBox-style route");
+  assert(reverseTuckEnd.parameterGroups?.length >= 4, "Reverse Tuck End should expose grouped builder parameters");
+  assert(reverseTuckEnd.exportFormats.includes("dxf") && reverseTuckEnd.exportFormats.includes("pdf"), "Reverse Tuck End should expose downloadable formats");
+
+  const graph = reverseTuckEnd.generate({ L: 72, W: 36, H: 104, TFW: 28, TFR: 6, GFW: 16, DFW: 18 });
+  assert(graph.metadata?.family === "reverse-tuck-end", "Registered Reverse Tuck End should generate the canonical family graph");
+  assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Registered Reverse Tuck End should generate canonical cut geometry");
+
+  const summaries = listDielineTemplateSummaries("foldingBox");
+  assert(summaries.length === CEFBOX_FOLDING_BOX_DEFINITIONS.length, "Folding Box catalog should expose every scaffolded family");
+  assert(summaries.some((summary) => summary.slug === "reverseTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Reverse Tuck End generator");
 }
 
 function assertStickerSeeds(seeds) {

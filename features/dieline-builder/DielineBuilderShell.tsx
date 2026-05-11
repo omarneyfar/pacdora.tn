@@ -1,0 +1,200 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { Box, Boxes, ChevronRight, FileDown, Maximize2, PenTool, Rotate3D } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+
+import {
+  getDielineTemplateByRoute,
+  mergeTemplateParameterValues,
+  type RegisteredDielineTemplate,
+} from "@/domain/dieline/templateRegistry";
+import type { DielineLayer, DielineTemplateExportFormat, ParameterSpec, ParameterValueMap } from "@/domain/dieline/types";
+
+import { ExportActions } from "./ExportActions";
+import { createDefaultVisibleLayers, LayerControls } from "./LayerControls";
+import { DielineViewport, getLayerPrimitiveCounts } from "./DielineViewport";
+import { TemplateParameterPanel, type BuilderUnitMode } from "./TemplateParameterPanel";
+
+const DielineCartonStage = dynamic(
+  () => import("@/features/builder/DielineCartonStage").then((mod) => mod.DielineCartonStage),
+  {
+    ssr: false,
+    loading: () => <div className="template-mockup-loading">Preparing mockup</div>,
+  },
+);
+
+type DielineBuilderShellProps = {
+  categorySlug: string;
+  templateSlug: string;
+};
+
+type BuilderView = "dieline" | "mockup";
+
+export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuilderShellProps) {
+  const template = useMemo(() => getDielineTemplateByRoute(categorySlug, templateSlug), [categorySlug, templateSlug]);
+  const [parameterValues, setParameterValues] = useState<ParameterValueMap>(() => template?.defaultValues ?? {});
+  const [unitMode, setUnitMode] = useState<BuilderUnitMode>("mm");
+  const [visibleLayers, setVisibleLayers] = useState<Record<DielineLayer, boolean>>(() => createDefaultVisibleLayers());
+  const [view, setView] = useState<BuilderView>("dieline");
+  const stageRef = useRef<HTMLElement>(null);
+
+  const mergedValues = useMemo(
+    () => template ? mergeTemplateParameterValues(template, parameterValues) : {},
+    [parameterValues, template],
+  );
+  const graph = useMemo(() => template?.generate(mergedValues), [mergedValues, template]);
+  const layerCounts = useMemo(() => graph ? getLayerPrimitiveCounts(graph) : null, [graph]);
+  const enabledFormats = useMemo(() => getEnabledFormats(template, mergedValues), [mergedValues, template]);
+
+  if (!template || !graph || !layerCounts) {
+    return (
+      <main className="template-builder-page">
+        <TemplateBuilderTopbar />
+        <section className="template-builder-missing">
+          <strong>Template not found</strong>
+          <Link className="secondary-button" href="/dielines/foldingBox">
+            Back to Folding Box
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  function setParameterValue(spec: ParameterSpec, value: string | number | boolean) {
+    setParameterValues((current) => ({
+      ...current,
+      [spec.id]: value,
+    }));
+  }
+
+  function toggleLayer(layer: DielineLayer) {
+    setVisibleLayers((current) => ({
+      ...current,
+      [layer]: !current[layer],
+    }));
+  }
+
+  return (
+    <main className="template-builder-page">
+      <TemplateBuilderTopbar template={template} />
+
+      <section className="template-builder-grid">
+        <nav className="template-builder-catalog-rail" aria-label="Template navigation">
+          <Link href="/dielines">Dielines</Link>
+          <ChevronRight aria-hidden size={15} />
+          <Link href="/dielines/foldingBox">Folding Box</Link>
+          <ChevronRight aria-hidden size={15} />
+          <span>{template.label}</span>
+        </nav>
+
+        <section className="template-builder-stage" ref={stageRef} aria-label="Dieline generator">
+          <div className="template-stage-toolbar">
+            <div>
+              <span className="eyebrow">Packaging Box Design Template</span>
+              <h1>{template.label}</h1>
+            </div>
+            <div className="template-stage-tabs" aria-label="Preview mode">
+              <button className={view === "dieline" ? "is-active" : ""} type="button" onClick={() => setView("dieline")}>
+                <FileDown aria-hidden size={16} />
+                Dieline
+              </button>
+              <button className={view === "mockup" ? "is-active" : ""} type="button" onClick={() => setView("mockup")}>
+                <Rotate3D aria-hidden size={16} />
+                Mockup
+              </button>
+            </div>
+          </div>
+
+          <div className="template-stage-body">
+            {view === "dieline" ? (
+              <DielineViewport graph={graph} visibleLayers={visibleLayers} />
+            ) : (
+              <div className="template-mockup-shell">
+                <DielineCartonStage graph={graph} faces={{}} />
+              </div>
+            )}
+          </div>
+
+          <div className="template-stage-footer">
+            <LayerControls counts={layerCounts} visibleLayers={visibleLayers} onToggle={toggleLayer} />
+            <div className="template-derived-stats" aria-label="Template stats">
+              <span>{formatMetric(graph.size.width)} x {formatMetric(graph.size.height)} mm</span>
+              <span>{graph.faces.length} faces</span>
+              <span>{graph.creases.length} creases</span>
+            </div>
+          </div>
+        </section>
+
+        <TemplateParameterPanel
+          template={template}
+          unitMode={unitMode}
+          values={mergedValues}
+          onChange={setParameterValue}
+          onUnitModeChange={setUnitMode}
+        />
+
+        <aside className="template-builder-actions" aria-label="Template actions">
+          <div className="template-action-block">
+            <span className="eyebrow">Download the Dieline</span>
+            <ExportActions enabledFormats={enabledFormats} fileName={template.id} graph={graph} />
+          </div>
+          <div className="template-action-grid">
+            <button className="secondary-button" type="button" onClick={() => setView("mockup")}>
+              <Boxes aria-hidden size={17} />
+              Mockup
+            </button>
+            <button className="secondary-button" disabled type="button">
+              <PenTool aria-hidden size={17} />
+              Create Artwork
+            </button>
+            <button className="secondary-button" type="button" onClick={() => stageRef.current?.requestFullscreen()}>
+              <Maximize2 aria-hidden size={17} />
+              Full screen
+            </button>
+          </div>
+        </aside>
+      </section>
+    </main>
+  );
+}
+
+function TemplateBuilderTopbar({ template }: { template?: RegisteredDielineTemplate }) {
+  return (
+    <header className="template-builder-topbar">
+      <Link className="template-builder-brand" href="/dielines">
+        <span className="brand-mark">
+          <Box aria-hidden size={19} />
+        </span>
+        <span>
+          <strong>FoldView</strong>
+          <em>Dieline generator</em>
+        </span>
+      </Link>
+      <div className="template-builder-topbar-actions">
+        <Link className="secondary-button" href="/dielines/foldingBox">
+          Folding Box
+        </Link>
+        <Link className="secondary-button" href="/projects">
+          Projects
+        </Link>
+        {template ? <span className="dimension-pill">{template.exportFormats.map((format) => format.toUpperCase()).join(" / ")}</span> : null}
+      </div>
+    </header>
+  );
+}
+
+function getEnabledFormats(template: RegisteredDielineTemplate | null, values: ParameterValueMap): DielineTemplateExportFormat[] {
+  if (!template) return [];
+
+  return template.exportFormats.filter((format) => {
+    if (format === "dxf") return values.dxfExport !== false;
+    if (format === "pdf") return values.pdfExport !== false;
+    return true;
+  });
+}
+
+function formatMetric(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}

@@ -146,6 +146,7 @@ export type ParameterSpec = {
   kind: DielineParameterKind;
   input: DielineParameterInput;
   defaultValue: string | number | boolean;
+  description?: string;
   unit?: string;
   min?: number;
   max?: number;
@@ -163,11 +164,27 @@ export type DielineParameter = {
 
 export type ParameterValueMap = Record<string, string | number | boolean>;
 
-export type DielineTemplateDefinition = {
+export type DielineParameterGroup = {
   id: string;
   label: string;
+  description?: string;
+  parameterIds: string[];
+  columns?: 1 | 2 | 3;
+};
+
+export type DielineTemplateExportFormat = "svg" | "dxf" | "pdf";
+
+export type DielineTemplateDefinition = {
+  id: string;
+  slug?: string;
+  label: string;
   category: DielineCategory;
+  categorySlug?: string;
+  description?: string;
   parameters: ParameterSpec[];
+  parameterGroups?: DielineParameterGroup[];
+  exportFormats?: DielineTemplateExportFormat[];
+  capabilities?: string[];
 };
 
 export type DielineGraphMetadata = {

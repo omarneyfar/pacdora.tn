@@ -9,3 +9,4 @@ export * from "./manualBuilder";
 export * from "./structure";
 export * from "./canonicalGeometry";
 export * from "./reference";
+export * from "./templateRegistry";
