@@ -75,6 +75,9 @@ const TEMPLATE_CATEGORY_HINTS: Record<string, DielineCategory> = {
   "mailer-box": "mailer-box",
   sleeve: "sleeve",
   "tray-with-lid": "tray-and-cover",
+  "sticker-rectangle": "sticker",
+  "sticker-rounded": "sticker",
+  "sticker-oval": "sticker",
 };
 
 const TEMPLATE_FAMILY_LABELS: Record<string, string> = {
@@ -85,6 +88,9 @@ const TEMPLATE_FAMILY_LABELS: Record<string, string> = {
   "mailer-box": "Mailer Box",
   sleeve: "Standard Sleeve",
   "tray-with-lid": "Tray with Lid",
+  "sticker-rectangle": "Rectangular Sticker/Label",
+  "sticker-rounded": "Well-rounded Sticker/Label",
+  "sticker-oval": "Oval Sticker",
 };
 
 export function getDielineCategory(graph: DielineGraph): DielineCategory {
@@ -128,6 +134,13 @@ export function createDimensionParameters(width: number, height: number, depth: 
     { id: "length", label: "Length", kind: "dimension" as const, value: width, unit: "mm" },
     { id: "width", label: "Width", kind: "dimension" as const, value: depth, unit: "mm" },
     { id: "height", label: "Height", kind: "dimension" as const, value: height, unit: "mm" },
+  ];
+}
+
+export function createFlatSizeParameters(length: number, width: number) {
+  return [
+    { id: "length", label: "Length", kind: "dimension" as const, value: length, unit: "mm" },
+    { id: "width", label: "Width", kind: "dimension" as const, value: width, unit: "mm" },
   ];
 }
 

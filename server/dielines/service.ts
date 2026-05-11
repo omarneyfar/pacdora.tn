@@ -94,10 +94,7 @@ export async function updateDielineTemplate(id: string, input: DielineTemplateIn
 export async function listDielineTemplates(options: DielineTemplateListOptions = {}): Promise<DielineTemplate[]> {
   const db = await readLocalDb();
 
-  // Auto-seed on first launch if library is empty
-  if (Object.keys(db.dielines).length === 0) {
-    await seedInitialDielines(db);
-  }
+  await seedInitialDielines(db);
 
   return filterDielineList(Object.values(db.dielines), options);
 }
@@ -129,6 +126,7 @@ export async function deleteDielineTemplate(id: string): Promise<boolean> {
 async function seedInitialDielines(db: LocalDielinesDb): Promise<void> {
   const seeds = getSeedDielines();
   const now = new Date().toISOString();
+  let inserted = false;
 
   for (const seed of seeds) {
     if (!db.dielines[seed.id]) {
@@ -142,10 +140,13 @@ async function seedInitialDielines(db: LocalDielinesDb): Promise<void> {
         createdAt: now,
         updatedAt: now,
       };
+      inserted = true;
     }
   }
 
-  await writeLocalDb(db);
+  if (inserted) {
+    await writeLocalDb(db);
+  }
 }
 
 async function saveDielineTemplate(template: DielineTemplate): Promise<void> {

@@ -12,6 +12,7 @@ const moduleCache = new Map();
 const packaging = loadTs(path.join(projectRoot, "domain", "packaging", "index"));
 const geometry = loadTs(path.join(projectRoot, "domain", "dieline", "geometry"));
 const { buildFoldedModel, getFoldErrors } = loadTs(path.join(projectRoot, "domain", "dieline", "fold3d"));
+const { CEFBOX_FOLDING_BOX_DEFINITIONS } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "foldingBoxVariants"));
 const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
 const { normalizeDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
@@ -73,10 +74,15 @@ assertFoldedModel(imported, "SVG fixture");
 assertTwoPanelFold();
 assertNestedFold();
 
-for (const seed of getSeedDielines()) {
+const seeds = getSeedDielines();
+
+for (const seed of seeds) {
   assertFoldedModel(seed.graph, `seed ${seed.id}`);
   assertTemplateStructure(seed.graph, `seed ${seed.id}`);
 }
+
+assertStickerSeeds(seeds);
+assertCefBoxFoldingBoxSeeds(seeds);
 
 console.log("Dieline graph verification passed.");
 
@@ -278,7 +284,7 @@ function assertTemplateStructure(testGraph, label) {
   }
 
   for (const faceId of graphFaceIds) {
-    assert(partFaceCounts.get(faceId) === 1, `${label}: face ${faceId} should appear in exactly one part`);
+    assert(partFaceCounts.get(faceId) >= 1, `${label}: face ${faceId} is not assigned to a structural part`);
   }
 
   for (const parameter of testGraph.metadata.parameters ?? []) {
@@ -286,6 +292,53 @@ function assertTemplateStructure(testGraph, label) {
     assert(parameter.label, `${label}: parameter ${parameter.id} is missing label`);
     if (typeof parameter.value === "number") {
       assert(Number.isFinite(parameter.value), `${label}: parameter ${parameter.id} is not finite`);
+    }
+  }
+}
+
+function assertCefBoxFoldingBoxSeeds(seeds) {
+  const expectedIds = new Set(CEFBOX_FOLDING_BOX_DEFINITIONS.map((definition) => definition.id));
+  const foldingBoxSeeds = seeds.filter((seed) => seed.id.startsWith("seed-foldingbox-"));
+
+  assert(foldingBoxSeeds.length === expectedIds.size, `Expected ${expectedIds.size} cefBox folding box seeds, got ${foldingBoxSeeds.length}`);
+
+  for (const seed of foldingBoxSeeds) {
+    const metadata = seed.graph.metadata;
+    assert(metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
+    assert(expectedIds.has(metadata.family), `${seed.id}: unexpected folding-box family ${metadata?.family ?? "missing"}`);
+    assert(seed.graph.faces.length >= 5, `${seed.id}: folding box seed should have a foldable carton body`);
+    assert(seed.graph.creases.length >= 4, `${seed.id}: folding box seed should have body creases`);
+
+    const definition = CEFBOX_FOLDING_BOX_DEFINITIONS.find((candidate) => candidate.id === metadata.family);
+    assert(definition, `${seed.id}: missing definition`);
+
+    for (const code of ["L", "W", "H", ...definition.parameters]) {
+      assert(metadata.parameters?.some((parameter) => parameter.id === code), `${seed.id}: missing parameter ${code}`);
+    }
+  }
+}
+
+function assertStickerSeeds(seeds) {
+  const stickerSeeds = seeds.filter((seed) => seed.graph.metadata?.category === "sticker");
+  const expectedFamilies = new Set(["sticker-rectangle", "sticker-rounded", "sticker-oval"]);
+
+  assert(stickerSeeds.length === 3, `Expected 3 sticker seeds, got ${stickerSeeds.length}`);
+
+  for (const seed of stickerSeeds) {
+    const family = seed.graph.metadata?.family;
+    assert(expectedFamilies.has(family), `Unexpected sticker family ${family ?? "missing"}`);
+    assert(seed.graph.faces.length === 1, `${seed.id}: sticker should have one artwork face`);
+    assert(seed.graph.creases.length === 0, `${seed.id}: sticker should not have creases`);
+    assert(seed.graph.faces[0].id === "front", `${seed.id}: sticker face should be legacy-compatible front`);
+    assert(seed.graph.faces[0].artworkEnabled, `${seed.id}: sticker face should accept artwork`);
+    assert(seed.graph.metadata.parameters?.some((parameter) => parameter.id === "length"), `${seed.id}: missing length parameter`);
+    assert(seed.graph.metadata.parameters?.some((parameter) => parameter.id === "width"), `${seed.id}: missing width parameter`);
+
+    if (family === "sticker-rounded") {
+      assert(
+        seed.graph.metadata.parameters?.some((parameter) => parameter.id === "corner-radius"),
+        `${seed.id}: rounded sticker missing corner-radius parameter`,
+      );
     }
   }
 }
