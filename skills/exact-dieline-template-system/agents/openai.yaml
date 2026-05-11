@@ -1,0 +1,4 @@
+interface:
+  display_name: "Exact Dieline Template System"
+  short_description: "Exact parametric dieline workflow"
+  default_prompt: "Use $exact-dieline-template-system when implementing exact carton templates, dieline parameters, canonical geometry, exports, or 3D folding from template graphs."

@@ -1,6 +1,6 @@
 ---
 name: nextjs-react-redux
-description: FoldView frontend architecture and coding conventions for Next.js App Router, React components, Redux Toolkit state, hooks, client API helpers, and vanilla CSS. Use when editing app routes, builder/dashboard/viewer UI, Redux slices, custom hooks, or any frontend state management in this repository.
+description: FoldView frontend architecture and coding conventions for Next.js App Router, React components, Redux Toolkit state, hooks, client API helpers, vanilla CSS, builder template-parameter mode, and dieline export UI. Use when editing app routes, builder/dashboard/viewer UI, Redux slices, custom hooks, template controls, export routes, or any frontend state management in this repository.
 ---
 
 # Next.js React Redux
@@ -24,6 +24,14 @@ Use this skill before changing FoldView frontend code. Keep the codebase split b
 5. Memoize only components that receive stable props or render expensive UI.
 6. Use lucide-react icons and existing vanilla CSS classes.
 7. Run `npm run lint` and `npm run build` after frontend changes.
+
+## Builder Template Rules
+
+- Keep template-specific parameter controls driven by `ParameterSpec[]`; do not hardcode one-off controls in the panel.
+- Regenerate template graphs from `ParameterValueMap` through domain generators.
+- Keep canonical 2D geometry display and export separate from 3D rendering.
+- Put SVG/DXF/PDF export actions near dieline selection and builder workflows when they are user-facing.
+- Use Redux for selected template graph and values when multiple builder panels need them.
 
 ## Redux Rules
 
