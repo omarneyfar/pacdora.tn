@@ -48,7 +48,6 @@ export function createDefaultVisibleLayers(): Record<DielineLayer, boolean> {
     hole: true,
     bleed: true,
     safe: true,
-    label: true,
+    label: false,
   };
 }
-

@@ -315,9 +315,13 @@ function assertReverseTuckEndExactScaffold() {
     assert(Object.hasOwn(values, id), `Reverse Tuck End missing parameter value ${id}`);
   }
 
-  const changed = generateReverseTuckEnd({ L: 90, W: 45, H: 120, TFW: 35, TFR: 9, GFW: 20, DFW: 22 });
+  const changed = generateReverseTuckEnd({ L: 140, W: 70, H: 190, TFW: 28, TFR: 18, GFW: 22, DFW: 42 });
   assert(changed.size.width > graph.size.width, "Reverse Tuck End L/GFW changes should increase width");
   assert(changed.size.height > graph.size.height, "Reverse Tuck End H/TFW/DFW changes should increase height");
+  assert(Math.abs(graph.size.width - 378.62) < 0.01, `Reverse Tuck End screenshot width should be 378.62, got ${graph.size.width}`);
+  assert(Math.abs(graph.size.height - 273.07) < 0.01, `Reverse Tuck End screenshot height should be 273.07, got ${graph.size.height}`);
+  assert(graph.faces.some((face) => face.id === "glue-tab" && Math.abs(face.bounds.x - 362.74) < 0.01), "Reverse Tuck End glue flap should sit on the right side");
+  assert(!graph.faces.some((face) => face.id === "top-panel" || face.id === "bottom-panel"), "Reverse Tuck End should not add extra top/bottom panels");
 
   const svg = graphToSvg(graph);
   const dxf = graphToDxf(graph);

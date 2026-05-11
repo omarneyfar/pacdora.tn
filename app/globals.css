@@ -1994,12 +1994,8 @@ a {
 }
 
 .template-viewport-shell {
-  background:
-    linear-gradient(90deg, rgba(31, 42, 36, 0.05) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(31, 42, 36, 0.05) 1px, transparent 1px),
-    #eee8d9;
-  background-size: 20px 20px;
-  border: 1px dashed var(--line-strong);
+  background: #171717;
+  border: 1px solid #171717;
   border-radius: 8px;
   height: 100%;
   min-height: 0;
@@ -2014,9 +2010,8 @@ a {
 }
 
 .template-viewport-face {
-  fill: rgba(255, 253, 247, 0.76);
-  stroke: rgba(31, 42, 36, 0.3);
-  stroke-width: 0.7;
+  fill: transparent;
+  stroke: none;
   vector-effect: non-scaling-stroke;
 }
 
@@ -2028,6 +2023,35 @@ a {
   stroke: #6b7280;
   stroke-dasharray: 2 4;
   stroke-width: 1.2;
+}
+
+.template-viewport-guides .dieline-guide-cut {
+  stroke: #0000ff;
+  stroke-width: 1.4;
+}
+
+.template-viewport-guides .dieline-guide-fold {
+  stroke: #ff0000;
+  stroke-dasharray: none;
+  stroke-linecap: square;
+  stroke-width: 1.05;
+}
+
+.template-measurements line {
+  stroke: #ffffff;
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+
+.template-measurements text {
+  fill: #ffffff;
+  font-size: 7px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(23, 23, 23, 0.9);
+  stroke-linejoin: round;
+  stroke-width: 2px;
+  text-anchor: middle;
 }
 
 .template-mockup-shell {

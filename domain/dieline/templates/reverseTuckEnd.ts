@@ -13,13 +13,13 @@ import type {
 
 const RIGHT_ANGLE = Math.PI / 2;
 const DEFAULTS = {
-  L: 65,
-  W: 44,
-  H: 101,
-  TFW: 27.3,
-  TFR: 3.5,
-  GFW: 15,
-  DFW: 17.5,
+  L: 120.65,
+  W: 60.72,
+  H: 161.13,
+  TFW: 19.85,
+  TFR: 15.08,
+  GFW: 15.88,
+  DFW: 36.12,
   materialThickness: 1.5,
 } as const;
 
@@ -94,46 +94,43 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
   const rawValues = normalizeReverseTuckEndParameters(input);
   const values = applyDimensionMode(rawValues);
   const { L, W, H, TFW, TFR, GFW, DFW } = values;
-  const topBand = Math.max(TFW, DFW);
-  const bottomBand = Math.max(TFW, DFW);
+  const topBand = TFW + DFW;
+  const bottomBand = TFW + DFW;
+  const dustTop = TFW;
   const bodyTop = topBand;
   const bodyBottom = bodyTop + H;
   const col0 = 0;
-  const col1 = GFW;
-  const col2 = col1 + W;
-  const col3 = col2 + L;
-  const col4 = col3 + W;
-  const col5 = col4 + L;
+  const col1 = W;
+  const col2 = col1 + L;
+  const col3 = col2 + W;
+  const col4 = col3 + L;
+  const col5 = col4 + GFW;
 
   const faces: DielineFace[] = [
-    rect("front", col2, bodyTop, L, H, "panel", "Front"),
-    rect("back", col4, bodyTop, L, H, "panel", "Back"),
-    rect("left", col1, bodyTop, W, H, "panel", "Left"),
-    rect("right", col3, bodyTop, W, H, "panel", "Right"),
-    glueTab("glue-tab", col0, bodyTop, GFW, H),
-    dustFlap("top-dust-left", col1, bodyTop - DFW, W, DFW, "top", "Top dust flap (L)"),
-    dustFlap("top-dust-right", col3, bodyTop - DFW, W, DFW, "top", "Top dust flap (R)"),
-    tuckFlap("top-tuck", col2, bodyTop - TFW, L, TFW, TFR, "top", "Top tuck flap"),
-    dustFlap("top-panel", col4, bodyTop - DFW, L, DFW, "top", "Top panel"),
-    dustFlap("bottom-dust-left", col1, bodyBottom, W, DFW, "bottom", "Bottom dust flap (L)"),
-    dustFlap("bottom-dust-right", col3, bodyBottom, W, DFW, "bottom", "Bottom dust flap (R)"),
-    tuckFlap("bottom-tuck", col4, bodyBottom, L, TFW, TFR, "bottom", "Bottom tuck flap"),
-    dustFlap("bottom-panel", col2, bodyBottom, L, DFW, "bottom", "Bottom panel"),
+    rect("left", col0, bodyTop, W, H, "panel", "Left"),
+    rect("front", col1, bodyTop, L, H, "panel", "Front"),
+    rect("right", col2, bodyTop, W, H, "panel", "Right"),
+    rect("back", col3, bodyTop, L, H, "panel", "Back"),
+    glueTab("glue-tab", col4, bodyTop, GFW, H),
+    dustFlap("top-dust-left", col0, dustTop, W, DFW, "top", "Top dust flap (L)"),
+    dustFlap("top-dust-right", col2, dustTop, W, DFW, "top", "Top dust flap (R)"),
+    tuckFlap("top-tuck", col1, 0, L, topBand, TFW, TFR, "top", "Top tuck flap"),
+    dustFlap("bottom-dust-left", col0, bodyBottom, W, DFW, "bottom", "Bottom dust flap (L)"),
+    dustFlap("bottom-dust-right", col2, bodyBottom, W, DFW, "bottom", "Bottom dust flap (R)"),
+    tuckFlap("bottom-tuck", col3, bodyBottom, L, bottomBand, TFW, TFR, "bottom", "Bottom tuck flap"),
   ];
 
   const creases: DielineCrease[] = [
-    crease("cr-glue-left", "glue-tab", "left", { x: col1, y: bodyTop }, { x: col1, y: bodyBottom }),
-    crease("cr-left-front", "left", "front", { x: col2, y: bodyTop }, { x: col2, y: bodyBottom }),
-    crease("cr-front-right", "front", "right", { x: col3, y: bodyTop }, { x: col3, y: bodyBottom }),
-    crease("cr-right-back", "right", "back", { x: col4, y: bodyTop }, { x: col4, y: bodyBottom }),
-    crease("cr-left-topdust", "left", "top-dust-left", { x: col1, y: bodyTop }, { x: col2, y: bodyTop }),
-    crease("cr-front-toptuck", "front", "top-tuck", { x: col2, y: bodyTop }, { x: col3, y: bodyTop }),
-    crease("cr-right-topdust", "right", "top-dust-right", { x: col3, y: bodyTop }, { x: col4, y: bodyTop }),
-    crease("cr-back-toppanel", "back", "top-panel", { x: col4, y: bodyTop }, { x: col5, y: bodyTop }),
-    crease("cr-left-bottomdust", "left", "bottom-dust-left", { x: col1, y: bodyBottom }, { x: col2, y: bodyBottom }),
-    crease("cr-front-bottompanel", "front", "bottom-panel", { x: col2, y: bodyBottom }, { x: col3, y: bodyBottom }),
-    crease("cr-right-bottomdust", "right", "bottom-dust-right", { x: col3, y: bodyBottom }, { x: col4, y: bodyBottom }),
-    crease("cr-back-bottomtuck", "back", "bottom-tuck", { x: col4, y: bodyBottom }, { x: col5, y: bodyBottom }),
+    crease("cr-left-front", "left", "front", { x: col1, y: bodyTop }, { x: col1, y: bodyBottom }),
+    crease("cr-front-right", "front", "right", { x: col2, y: bodyTop }, { x: col2, y: bodyBottom }),
+    crease("cr-right-back", "right", "back", { x: col3, y: bodyTop }, { x: col3, y: bodyBottom }),
+    crease("cr-back-glue", "back", "glue-tab", { x: col4, y: bodyTop }, { x: col4, y: bodyBottom }),
+    crease("cr-left-topdust", "left", "top-dust-left", { x: col0, y: bodyTop }, { x: col1, y: bodyTop }),
+    crease("cr-front-toptuck", "front", "top-tuck", { x: col1, y: bodyTop }, { x: col2, y: bodyTop }),
+    crease("cr-right-topdust", "right", "top-dust-right", { x: col2, y: bodyTop }, { x: col3, y: bodyTop }),
+    crease("cr-left-bottomdust", "left", "bottom-dust-left", { x: col0, y: bodyBottom }, { x: col1, y: bodyBottom }),
+    crease("cr-right-bottomdust", "right", "bottom-dust-right", { x: col2, y: bodyBottom }, { x: col3, y: bodyBottom }),
+    crease("cr-back-bottomtuck", "back", "bottom-tuck", { x: col3, y: bodyBottom }, { x: col4, y: bodyBottom }),
   ];
   const exteriorCutPaths = createExteriorCutPaths(faces);
   const geometry: GeometryPrimitive[] = [
@@ -173,28 +170,28 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
           label: "Body panels",
           role: "body",
           faceIds: ["front", "back", "left", "right"],
-          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back"],
+          creaseIds: ["cr-left-front", "cr-front-right", "cr-right-back", "cr-back-glue"],
         },
         {
           id: "top-closure",
           label: "Top closure",
           role: "top-closure",
-          faceIds: ["top-tuck", "top-panel", "top-dust-left", "top-dust-right"],
-          creaseIds: ["cr-front-toptuck", "cr-back-toppanel", "cr-left-topdust", "cr-right-topdust"],
+          faceIds: ["top-tuck", "top-dust-left", "top-dust-right"],
+          creaseIds: ["cr-front-toptuck", "cr-left-topdust", "cr-right-topdust"],
         },
         {
           id: "bottom-closure",
           label: "Bottom closure",
           role: "bottom-closure",
-          faceIds: ["bottom-tuck", "bottom-panel", "bottom-dust-left", "bottom-dust-right"],
-          creaseIds: ["cr-back-bottomtuck", "cr-front-bottompanel", "cr-left-bottomdust", "cr-right-bottomdust"],
+          faceIds: ["bottom-tuck", "bottom-dust-left", "bottom-dust-right"],
+          creaseIds: ["cr-back-bottomtuck", "cr-left-bottomdust", "cr-right-bottomdust"],
         },
         {
           id: "glue-tab",
           label: "Glue tab",
           role: "glue-flap",
           faceIds: ["glue-tab"],
-          creaseIds: ["cr-glue-left"],
+          creaseIds: ["cr-back-glue"],
         },
       ],
       parameterSpecs: REVERSE_TUCK_END_PARAMETER_SPECS,
@@ -271,17 +268,15 @@ function rect(id: string, x: number, y: number, width: number, height: number, r
 }
 
 function glueTab(id: string, x: number, y: number, width: number, height: number): DielineFace {
-  const bevel = Math.min(width * 0.35, height * 0.08);
+  const bevel = Math.min(width * 0.34, height * 0.08);
   return createDielineFace({
     id,
     label: "Glue tab",
     vertices: [
-      { x: x + bevel, y },
-      { x: x + width, y },
-      { x: x + width, y: y + height },
-      { x: x + bevel, y: y + height },
-      { x, y: y + height - bevel },
-      { x, y: y + bevel },
+      { x, y },
+      { x: x + width, y: y + bevel },
+      { x: x + width, y: y + height - bevel },
+      { x, y: y + height },
     ],
     role: "glue",
     artworkEnabled: false,
@@ -289,43 +284,56 @@ function glueTab(id: string, x: number, y: number, width: number, height: number
 }
 
 function dustFlap(id: string, x: number, y: number, width: number, height: number, direction: "top" | "bottom", label: string): DielineFace {
-  const taper = Math.min(width * 0.12, height * 0.5);
+  const taper = Math.min(width * 0.12, height * 0.45);
   const vertices = direction === "top"
     ? [
         { x, y: y + height },
         { x: x + width, y: y + height },
         { x: x + width - taper, y },
-        { x: x + taper, y },
+        { x: x + taper * 0.35, y },
+        { x: x + taper * 0.25, y: y + height * 0.82 },
       ]
     : [
         { x, y },
         { x: x + width, y },
         { x: x + width - taper, y: y + height },
-        { x: x + taper, y: y + height },
+        { x: x + taper * 0.35, y: y + height },
+        { x: x + taper * 0.25, y: y + height * 0.18 },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
 }
 
-function tuckFlap(id: string, x: number, y: number, width: number, height: number, radius: number, direction: "top" | "bottom", label: string): DielineFace {
-  const inset = Math.min(radius, width * 0.38, height * 0.7);
-  const shoulder = Math.min(width * 0.08, height * 0.32);
+function tuckFlap(
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  lipHeight: number,
+  radius: number,
+  direction: "top" | "bottom",
+  label: string,
+): DielineFace {
+  const r = Math.min(radius, width * 0.2, lipHeight * 0.95);
+  const innerY = direction === "top" ? y + lipHeight : y + height - lipHeight;
   const vertices = direction === "top"
     ? [
         { x, y: y + height },
+        { x, y: innerY + r },
+        ...sampleQuarterArc({ x: x + r, y: innerY + r }, r, Math.PI, Math.PI * 1.5),
+        { x: x + width - r, y },
+        ...sampleQuarterArc({ x: x + width - r, y: innerY + r }, r, Math.PI * 1.5, Math.PI * 2),
         { x: x + width, y: y + height },
-        { x: x + width - shoulder, y: y + height * 0.38 },
-        { x: x + width - inset, y },
-        { x: x + inset, y },
-        { x: x + shoulder, y: y + height * 0.38 },
       ]
     : [
         { x, y },
         { x: x + width, y },
-        { x: x + width - shoulder, y: y + height * 0.62 },
-        { x: x + width - inset, y: y + height },
-        { x: x + inset, y: y + height },
-        { x: x + shoulder, y: y + height * 0.62 },
+        { x: x + width, y: innerY - r },
+        ...sampleQuarterArc({ x: x + width - r, y: innerY - r }, r, 0, Math.PI / 2),
+        { x: x + r, y: y + height },
+        ...sampleQuarterArc({ x: x + r, y: innerY - r }, r, Math.PI / 2, Math.PI),
+        { x, y },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
@@ -345,7 +353,6 @@ function getFaceTree(): DielineFaceNode[] {
           faceId: "left",
           creaseId: "cr-left-front",
           children: [
-            { faceId: "glue-tab", creaseId: "cr-glue-left", children: [] },
             { faceId: "top-dust-left", creaseId: "cr-left-topdust", children: [] },
             { faceId: "bottom-dust-left", creaseId: "cr-left-bottomdust", children: [] },
           ],
@@ -358,7 +365,7 @@ function getFaceTree(): DielineFaceNode[] {
               faceId: "back",
               creaseId: "cr-right-back",
               children: [
-                { faceId: "top-panel", creaseId: "cr-back-toppanel", children: [] },
+                { faceId: "glue-tab", creaseId: "cr-back-glue", children: [] },
                 { faceId: "bottom-tuck", creaseId: "cr-back-bottomtuck", children: [] },
               ],
             },
@@ -367,10 +374,19 @@ function getFaceTree(): DielineFaceNode[] {
           ],
         },
         { faceId: "top-tuck", creaseId: "cr-front-toptuck", children: [] },
-        { faceId: "bottom-panel", creaseId: "cr-front-bottompanel", children: [] },
       ],
     },
   ];
+}
+
+function sampleQuarterArc(center: Point, radius: number, startAngle: number, endAngle: number): Point[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const angle = startAngle + ((endAngle - startAngle) * index) / 6;
+    return {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius,
+    };
+  });
 }
 
 function numberSpec(
