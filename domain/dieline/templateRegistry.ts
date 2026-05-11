@@ -63,10 +63,24 @@ export const DIELINE_TEMPLATE_CATEGORIES: DielineCategoryDefinition[] = [
 
 export const REVERSE_TUCK_END_PARAMETER_GROUPS: DielineParameterGroup[] = [
   {
+    id: "custom-size",
+    label: "Custom Size",
+    description: "Primary product dimensions. Auto closure mode derives the tuck, dust, and glue geometry from these values.",
+    parameterIds: ["L", "W", "H"],
+    columns: 3,
+  },
+  {
     id: "basic",
     label: "Basic",
     parameterIds: ["outputSizeMode", "materialThickness", "material", "bleeds"],
     columns: 2,
+  },
+  {
+    id: "closure-mode",
+    label: "Closure",
+    description: "Auto is recommended. Manual unlocks the advanced closure values on the right.",
+    parameterIds: ["closureMode"],
+    columns: 1,
   },
   {
     id: "download-formats",
@@ -75,14 +89,9 @@ export const REVERSE_TUCK_END_PARAMETER_GROUPS: DielineParameterGroup[] = [
     columns: 2,
   },
   {
-    id: "custom-size",
-    label: "Custom Size",
-    parameterIds: ["L", "W", "H"],
-    columns: 3,
-  },
-  {
-    id: "size-flaps",
-    label: "Size flaps",
+    id: "advanced-closure",
+    label: "Advanced Closure",
+    description: "Editable in manual mode for dieline technicians who need exact closure control.",
     parameterIds: ["TFW", "TFR", "GFW", "DFW"],
     columns: 2,
   },
@@ -178,4 +187,3 @@ export function getFoldingBoxDefinition(templateId: string): FoldingBoxVariantDe
 function toTemplateSlug(templateId: string): string {
   return templateId.replace(/-([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 }
-

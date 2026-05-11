@@ -22,6 +22,7 @@ const DEFAULTS = {
   DFW: 36.12,
   materialThickness: 1.5,
 } as const;
+const DEFAULT_AUTO_CLOSURE = autoClosureValues(DEFAULTS.L, DEFAULTS.W);
 
 export type ReverseTuckEndParameters = {
   L?: number;
@@ -31,6 +32,7 @@ export type ReverseTuckEndParameters = {
   TFR?: number;
   GFW?: number;
   DFW?: number;
+  closureMode?: "auto" | "manual";
   outputSizeMode?: "inner" | "outer";
   materialThickness?: number;
   material?: string;
@@ -42,10 +44,23 @@ export type ReverseTuckEndParameters = {
   depth?: number;
 };
 
+type NormalizedReverseTuckEndParameters = Required<Omit<ReverseTuckEndParameters, "width" | "height" | "depth">>;
+
 export const REVERSE_TUCK_END_PARAMETER_SPECS: ParameterSpec[] = [
   numberSpec("L", "Length(L)", DEFAULTS.L, 10, 800, 1, "mm"),
   numberSpec("W", "Width(W)", DEFAULTS.W, 8, 500, 1, "mm"),
   numberSpec("H", "Height(H)", DEFAULTS.H, 10, 900, 1, "mm"),
+  {
+    id: "closureMode",
+    label: "Closure dimensions",
+    kind: "closure",
+    input: "select",
+    defaultValue: "auto",
+    options: [
+      { label: "Auto", value: "auto" },
+      { label: "Manual", value: "manual" },
+    ],
+  },
   {
     id: "outputSizeMode",
     label: "Output Size Mode",
@@ -84,10 +99,10 @@ export const REVERSE_TUCK_END_PARAMETER_SPECS: ParameterSpec[] = [
   },
   { id: "pdfExport", label: "PDF for Dielines", kind: "export", input: "boolean", defaultValue: true },
   { id: "dxfExport", label: "DXF for Dielines", kind: "export", input: "boolean", defaultValue: true },
-  numberSpec("TFW", "TFW", DEFAULTS.TFW, 1, 500, 0.5, "mm", "closure"),
-  numberSpec("TFR", "TFR", DEFAULTS.TFR, 0, 120, 0.5, "mm", "closure"),
-  numberSpec("GFW", "GFW", DEFAULTS.GFW, 1, 120, 0.5, "mm", "closure"),
-  numberSpec("DFW", "DFW", DEFAULTS.DFW, 1, 300, 0.5, "mm", "closure"),
+  numberSpec("TFW", "Tuck flap lip", DEFAULT_AUTO_CLOSURE.TFW, 1, 500, 0.5, "mm", "closure"),
+  numberSpec("TFR", "Tuck flap radius", DEFAULT_AUTO_CLOSURE.TFR, 0, 120, 0.5, "mm", "closure"),
+  numberSpec("GFW", "Glue tab width", DEFAULT_AUTO_CLOSURE.GFW, 1, 120, 0.5, "mm", "closure"),
+  numberSpec("DFW", "Dust flap depth", DEFAULT_AUTO_CLOSURE.DFW, 1, 300, 0.5, "mm", "closure"),
 ];
 
 export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): DielineGraph {
@@ -153,7 +168,7 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
     })),
   ];
 
-  return {
+  const graph: DielineGraph = {
     size: { width: col5, height: bodyBottom + bottomBand },
     faces,
     creases,
@@ -195,21 +210,35 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
         },
       ],
       parameterSpecs: REVERSE_TUCK_END_PARAMETER_SPECS,
-      parameterValues: rawValues,
-      parameters: parameterValuesToList(rawValues),
+      parameterValues: values,
+      parameters: parameterValuesToList(values),
     }),
     source: { type: "template", templateId: "reverse-tuck-end" },
   };
+
+  validateReverseTuckEndGraph(graph, values);
+
+  return graph;
 }
 
-export function normalizeReverseTuckEndParameters(input: ReverseTuckEndParameters = {}): Required<Omit<ReverseTuckEndParameters, "width" | "height" | "depth">> {
+export function normalizeReverseTuckEndParameters(input: ReverseTuckEndParameters = {}): NormalizedReverseTuckEndParameters {
   const L = positive(input.L ?? input.width, DEFAULTS.L);
   const W = positive(input.W ?? input.depth, DEFAULTS.W);
   const H = positive(input.H ?? input.height, DEFAULTS.H);
-  const TFW = positive(input.TFW, Math.min(DEFAULTS.TFW, W * 0.9));
-  const DFW = positive(input.DFW, Math.min(DEFAULTS.DFW, W * 0.6));
-  const TFR = clampNumber(input.TFR, 0, Math.min(L, W), Math.min(DEFAULTS.TFR, W * 0.25));
-  const GFW = positive(input.GFW, DEFAULTS.GFW);
+  const closureMode = input.closureMode === "manual" ? "manual" : "auto";
+  const auto = autoClosureValues(L, W);
+  const TFW = closureMode === "manual"
+    ? clampNumber(input.TFW, W * 0.15, W * 0.6, auto.TFW)
+    : auto.TFW;
+  const DFW = closureMode === "manual"
+    ? clampNumber(input.DFW, W * 0.25, Math.min(W * 0.9, W * 1.15 - TFW), auto.DFW)
+    : auto.DFW;
+  const TFR = closureMode === "manual"
+    ? clampNumber(input.TFR, 0, Math.min(W * 0.5, L * 0.25), auto.TFR)
+    : auto.TFR;
+  const GFW = closureMode === "manual"
+    ? clampNumber(input.GFW, 10, 22, auto.GFW)
+    : auto.GFW;
 
   return {
     L,
@@ -219,6 +248,7 @@ export function normalizeReverseTuckEndParameters(input: ReverseTuckEndParameter
     TFR,
     GFW,
     DFW,
+    closureMode,
     outputSizeMode: input.outputSizeMode === "outer" ? "outer" : "inner",
     materialThickness: clampNumber(input.materialThickness, 0, 12, DEFAULTS.materialThickness),
     material: input.material || "E-flute paper",
@@ -228,17 +258,34 @@ export function normalizeReverseTuckEndParameters(input: ReverseTuckEndParameter
   };
 }
 
-function applyDimensionMode(values: ReturnType<typeof normalizeReverseTuckEndParameters>) {
+function applyDimensionMode(values: NormalizedReverseTuckEndParameters): NormalizedReverseTuckEndParameters {
   if (values.outputSizeMode !== "outer") {
     return values;
   }
 
   const inset = values.materialThickness * 2;
-  return {
+  const resized = {
     ...values,
     L: Math.max(1, values.L - inset),
     W: Math.max(1, values.W - inset),
     H: Math.max(1, values.H - inset),
+  };
+
+  if (resized.closureMode === "auto") {
+    return {
+      ...resized,
+      ...autoClosureValues(resized.L, resized.W),
+    };
+  }
+
+  const TFW = clampNumber(resized.TFW, resized.W * 0.15, resized.W * 0.6, DEFAULT_AUTO_CLOSURE.TFW);
+
+  return {
+    ...resized,
+    TFW,
+    DFW: clampNumber(resized.DFW, resized.W * 0.25, Math.min(resized.W * 0.9, resized.W * 1.15 - TFW), DEFAULT_AUTO_CLOSURE.DFW),
+    TFR: clampNumber(resized.TFR, 0, Math.min(resized.W * 0.5, resized.L * 0.25), DEFAULT_AUTO_CLOSURE.TFR),
+    GFW: clampNumber(resized.GFW, 10, 22, DEFAULT_AUTO_CLOSURE.GFW),
   };
 }
 
@@ -333,7 +380,6 @@ function tuckFlap(
         ...sampleQuarterArc({ x: x + width - r, y: innerY - r }, r, 0, Math.PI / 2),
         { x: x + r, y: y + height },
         ...sampleQuarterArc({ x: x + r, y: innerY - r }, r, Math.PI / 2, Math.PI),
-        { x, y },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
@@ -389,6 +435,194 @@ function sampleQuarterArc(center: Point, radius: number, startAngle: number, end
   });
 }
 
+function autoClosureValues(L: number, W: number) {
+  return {
+    TFW: clampNumber(W * 0.32, W * 0.22, W * 0.45, W * 0.32),
+    DFW: clampNumber(W * 0.58, W * 0.45, W * 0.75, W * 0.58),
+    TFR: clampNumber(W * 0.25, 4, Math.min(W * 0.35, L * 0.2), W * 0.25),
+    GFW: clampNumber(W * 0.25, 10, 22, W * 0.25),
+  };
+}
+
+function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReverseTuckEndParameters) {
+  const errors: string[] = [];
+  const faceIds = new Set<string>();
+  const creaseIds = new Set(graph.creases.map((crease) => crease.id));
+
+  if (!isPositiveFinite(graph.size.width) || !isPositiveFinite(graph.size.height)) {
+    errors.push("graph size must be positive and finite");
+  }
+
+  if (values.TFW + values.DFW > values.W * 1.15 + 0.0001) {
+    errors.push("TFW + DFW must not exceed W * 1.15");
+  }
+
+  if (values.GFW < 10 || values.GFW > 22) {
+    errors.push("GFW must stay between 10 and 22 mm");
+  }
+
+  if (values.TFR > values.W / 2) {
+    errors.push("TFR must not exceed half of W");
+  }
+
+  for (const face of graph.faces) {
+    if (faceIds.has(face.id)) {
+      errors.push(`duplicate face id ${face.id}`);
+    }
+
+    faceIds.add(face.id);
+
+    if (face.vertices.length < 3) {
+      errors.push(`face ${face.id} must have at least 3 vertices`);
+    }
+
+    if (!face.vertices.every(isFinitePoint)) {
+      errors.push(`face ${face.id} contains non-finite points`);
+    }
+
+    if (face.bounds.width < 0 || face.bounds.height < 0 || !isFinitePoint({ x: face.bounds.x, y: face.bounds.y })) {
+      errors.push(`face ${face.id} has invalid bounds`);
+    }
+
+    if (hasSelfIntersection(face.vertices)) {
+      errors.push(`face ${face.id} has self-crossing polygon geometry`);
+    }
+  }
+
+  for (const crease of graph.creases) {
+    if (!faceIds.has(crease.faceA) || !faceIds.has(crease.faceB)) {
+      errors.push(`crease ${crease.id} references a missing face`);
+    }
+
+    if (!isFinitePoint(crease.edgeStart) || !isFinitePoint(crease.edgeEnd)) {
+      errors.push(`crease ${crease.id} contains non-finite endpoints`);
+    }
+  }
+
+  for (const cutPath of graph.cutPaths) {
+    if (cutPath.points && !cutPath.points.every(isFinitePoint)) {
+      errors.push(`cut path ${cutPath.id} contains non-finite points`);
+    }
+  }
+
+  for (const primitive of graph.geometry ?? []) {
+    if (!getPrimitivePoints(primitive).every(isFinitePoint)) {
+      errors.push(`geometry primitive ${primitive.id} contains non-finite points`);
+    }
+  }
+
+  const treeFaceIds = new Set<string>();
+  for (const node of graph.faceTree) {
+    validateFaceTreeNode(node, true, faceIds, creaseIds, treeFaceIds, errors);
+  }
+
+  for (const faceId of faceIds) {
+    if (!treeFaceIds.has(faceId)) {
+      errors.push(`faceTree missing face ${faceId}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid Reverse Tuck End graph: ${errors.join("; ")}`);
+  }
+}
+
+function getPrimitivePoints(primitive: GeometryPrimitive): Point[] {
+  switch (primitive.type) {
+    case "line":
+      return [primitive.start, primitive.end];
+    case "polyline":
+    case "polygon":
+      return primitive.points;
+    case "arc":
+    case "circle":
+    case "ellipse":
+      return [primitive.center];
+    case "label":
+      return [primitive.position];
+    case "rounded-rect":
+    case "slot":
+      return [
+        { x: primitive.x, y: primitive.y },
+        { x: primitive.x + primitive.width, y: primitive.y + primitive.height },
+      ];
+  }
+}
+
+function validateFaceTreeNode(
+  node: DielineFaceNode,
+  isRoot: boolean,
+  faceIds: Set<string>,
+  creaseIds: Set<string>,
+  treeFaceIds: Set<string>,
+  errors: string[],
+) {
+  if (!faceIds.has(node.faceId)) {
+    errors.push(`faceTree references missing face ${node.faceId}`);
+  }
+
+  if (treeFaceIds.has(node.faceId)) {
+    errors.push(`faceTree contains duplicate face ${node.faceId}`);
+  }
+
+  treeFaceIds.add(node.faceId);
+
+  if (isRoot) {
+    if (node.creaseId !== null) {
+      errors.push(`faceTree root ${node.faceId} must not have a crease`);
+    }
+  } else if (!node.creaseId || !creaseIds.has(node.creaseId)) {
+    errors.push(`faceTree face ${node.faceId} references missing crease ${node.creaseId ?? "null"}`);
+  }
+
+  for (const child of node.children) {
+    validateFaceTreeNode(child, false, faceIds, creaseIds, treeFaceIds, errors);
+  }
+}
+
+function hasSelfIntersection(points: Point[]): boolean {
+  for (let a = 0; a < points.length; a += 1) {
+    const a1 = points[a];
+    const a2 = points[(a + 1) % points.length];
+
+    for (let b = a + 1; b < points.length; b += 1) {
+      if (Math.abs(a - b) <= 1 || (a === 0 && b === points.length - 1)) {
+        continue;
+      }
+
+      const b1 = points[b];
+      const b2 = points[(b + 1) % points.length];
+
+      if (segmentsIntersect(a1, a2, b1, b2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function segmentsIntersect(a1: Point, a2: Point, b1: Point, b2: Point): boolean {
+  const o1 = orientation(a1, a2, b1);
+  const o2 = orientation(a1, a2, b2);
+  const o3 = orientation(b1, b2, a1);
+  const o4 = orientation(b1, b2, a2);
+
+  return o1 * o2 < -0.0000001 && o3 * o4 < -0.0000001;
+}
+
+function orientation(a: Point, b: Point, c: Point): number {
+  return (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+}
+
+function isPositiveFinite(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+function isFinitePoint(point: Point): boolean {
+  return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
 function numberSpec(
   id: string,
   label: string,
@@ -409,9 +643,12 @@ function positive(value: unknown, fallback: number): number {
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
   const numeric = Number(value);
+  const safeMin = Math.min(min, max);
+  const safeMax = Math.max(min, max);
+
   if (!Number.isFinite(numeric)) {
-    return fallback;
+    return Math.min(safeMax, Math.max(safeMin, fallback));
   }
 
-  return Math.min(max, Math.max(min, numeric));
+  return Math.min(safeMax, Math.max(safeMin, numeric));
 }

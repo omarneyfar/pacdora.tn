@@ -310,17 +310,34 @@ function assertReverseTuckEndExactScaffold() {
 
   assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Reverse Tuck End should include cut geometry primitives");
   assert(graph.geometry?.some((primitive) => primitive.layer === "crease"), "Reverse Tuck End should include crease geometry primitives");
-  assert(graph.metadata?.parameterSpecs?.length >= 13, "Reverse Tuck End should expose template parameter specs");
-  for (const id of ["L", "W", "H", "TFW", "TFR", "GFW", "DFW", "materialThickness", "outputSizeMode"]) {
+  assert(graph.metadata?.parameterSpecs?.length >= 14, "Reverse Tuck End should expose template parameter specs");
+  for (const id of ["L", "W", "H", "closureMode", "TFW", "TFR", "GFW", "DFW", "materialThickness", "outputSizeMode"]) {
     assert(Object.hasOwn(values, id), `Reverse Tuck End missing parameter value ${id}`);
   }
 
-  const changed = generateReverseTuckEnd({ L: 140, W: 70, H: 190, TFW: 28, TFR: 18, GFW: 22, DFW: 42 });
-  assert(changed.size.width > graph.size.width, "Reverse Tuck End L/GFW changes should increase width");
-  assert(changed.size.height > graph.size.height, "Reverse Tuck End H/TFW/DFW changes should increase height");
-  assert(Math.abs(graph.size.width - 378.62) < 0.01, `Reverse Tuck End screenshot width should be 378.62, got ${graph.size.width}`);
-  assert(Math.abs(graph.size.height - 273.07) < 0.01, `Reverse Tuck End screenshot height should be 273.07, got ${graph.size.height}`);
-  assert(graph.faces.some((face) => face.id === "glue-tab" && Math.abs(face.bounds.x - 362.74) < 0.01), "Reverse Tuck End glue flap should sit on the right side");
+  assert(values.closureMode === "auto", "Reverse Tuck End should default to automatic closure dimensions");
+  assert(Math.abs(values.TFW - values.W * 0.32) < 0.0001, `Auto TFW should derive from W, got ${values.TFW}`);
+  assert(Math.abs(values.DFW - values.W * 0.58) < 0.0001, `Auto DFW should derive from W, got ${values.DFW}`);
+  assert(values.GFW >= 10 && values.GFW <= 22, "Auto GFW should be clamped to a production-safe range");
+  assert(values.TFW + values.DFW <= values.W * 1.15, "Auto closure values should fit the carton depth");
+
+  const expectedWidth = values.L * 2 + values.W * 2 + values.GFW;
+  const expectedHeight = values.H + 2 * (values.TFW + values.DFW);
+  assert(Math.abs(graph.size.width - expectedWidth) < 0.01, `Reverse Tuck End auto width should be ${expectedWidth}, got ${graph.size.width}`);
+  assert(Math.abs(graph.size.height - expectedHeight) < 0.01, `Reverse Tuck End auto height should be ${expectedHeight}, got ${graph.size.height}`);
+
+  const changed = generateReverseTuckEnd({ L: 160, W: 80, H: 210 });
+  assert(changed.size.width > graph.size.width, "Reverse Tuck End L/W changes should increase width");
+  assert(changed.size.height > graph.size.height, "Reverse Tuck End H/W changes should increase height");
+
+  const manual = generateReverseTuckEnd({ closureMode: "manual", L: 120, W: 60, H: 160, TFW: 500, TFR: 500, GFW: 500, DFW: 500 });
+  const manualValues = manual.metadata?.parameterValues ?? {};
+  assert(manualValues.closureMode === "manual", "Manual closure mode should be preserved");
+  assert(manualValues.GFW <= 22, "Manual glue tab width should be clamped");
+  assert(manualValues.TFR <= manualValues.W / 2, "Manual tuck radius should be clamped");
+  assert(manualValues.TFW + manualValues.DFW <= manualValues.W * 1.15, "Manual closure values should be clamped to fit");
+
+  assert(graph.faces.some((face) => face.id === "glue-tab" && Math.abs(face.bounds.x - (values.W + values.L + values.W + values.L)) < 0.01), "Reverse Tuck End glue flap should sit on the right side");
   assert(!graph.faces.some((face) => face.id === "top-panel" || face.id === "bottom-panel"), "Reverse Tuck End should not add extra top/bottom panels");
 
   const svg = graphToSvg(graph);
@@ -349,7 +366,7 @@ function assertSeedPolicy(seeds) {
   assert(seed.id === "seed-foldingbox-reverse-tuck-end", `Unexpected seed id ${seed.id}`);
   assert(seed.graph.metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
   assert(seed.graph.metadata?.family === "reverse-tuck-end", `${seed.id}: expected reverse-tuck-end family`);
-  assert(seed.graph.metadata?.parameterSpecs?.length >= 13, `${seed.id}: expected grouped parameter-ready seed`);
+  assert(seed.graph.metadata?.parameterSpecs?.length >= 14, `${seed.id}: expected grouped parameter-ready seed`);
   assert(seed.graph.geometry?.some((primitive) => primitive.layer === "cut"), `${seed.id}: expected canonical cut geometry`);
   assert(seed.graph.geometry?.some((primitive) => primitive.layer === "crease"), `${seed.id}: expected canonical crease geometry`);
 }
@@ -357,10 +374,10 @@ function assertSeedPolicy(seeds) {
 function assertTemplateRegistry() {
   const reverseTuckEnd = getDielineTemplateByRoute("foldingBox", "reverseTuckEnd");
   assert(reverseTuckEnd, "Template registry should expose Reverse Tuck End by CefBox-style route");
-  assert(reverseTuckEnd.parameterGroups?.length >= 4, "Reverse Tuck End should expose grouped builder parameters");
+  assert(reverseTuckEnd.parameterGroups?.length >= 5, "Reverse Tuck End should expose grouped builder parameters");
   assert(reverseTuckEnd.exportFormats.includes("dxf") && reverseTuckEnd.exportFormats.includes("pdf"), "Reverse Tuck End should expose downloadable formats");
 
-  const graph = reverseTuckEnd.generate({ L: 72, W: 36, H: 104, TFW: 28, TFR: 6, GFW: 16, DFW: 18 });
+  const graph = reverseTuckEnd.generate({ closureMode: "manual", L: 72, W: 36, H: 104, TFW: 18, TFR: 6, GFW: 16, DFW: 20 });
   assert(graph.metadata?.family === "reverse-tuck-end", "Registered Reverse Tuck End should generate the canonical family graph");
   assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Registered Reverse Tuck End should generate canonical cut geometry");
 

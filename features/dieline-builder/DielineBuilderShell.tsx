@@ -45,6 +45,21 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
     [parameterValues, template],
   );
   const graph = useMemo(() => template?.generate(mergedValues), [mergedValues, template]);
+  const displayValues = useMemo(
+    () => {
+      const generatedValues = graph?.metadata?.parameterValues ?? {};
+
+      return {
+        ...mergedValues,
+        closureMode: generatedValues.closureMode ?? mergedValues.closureMode,
+        TFW: generatedValues.TFW ?? mergedValues.TFW,
+        TFR: generatedValues.TFR ?? mergedValues.TFR,
+        GFW: generatedValues.GFW ?? mergedValues.GFW,
+        DFW: generatedValues.DFW ?? mergedValues.DFW,
+      };
+    },
+    [graph, mergedValues],
+  );
   const layerCounts = useMemo(() => graph ? getLayerPrimitiveCounts(graph) : null, [graph]);
   const enabledFormats = useMemo(() => getEnabledFormats(template, mergedValues), [mergedValues, template]);
 
@@ -63,10 +78,25 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
   }
 
   function setParameterValue(spec: ParameterSpec, value: string | number | boolean) {
-    setParameterValues((current) => ({
-      ...current,
-      [spec.id]: value,
-    }));
+    setParameterValues((current) => {
+      if (spec.id === "closureMode" && value === "manual") {
+        const currentClosureValues = graph?.metadata?.parameterValues ?? {};
+
+        return {
+          ...current,
+          TFW: currentClosureValues.TFW ?? current.TFW,
+          TFR: currentClosureValues.TFR ?? current.TFR,
+          GFW: currentClosureValues.GFW ?? current.GFW,
+          DFW: currentClosureValues.DFW ?? current.DFW,
+          [spec.id]: value,
+        };
+      }
+
+      return {
+        ...current,
+        [spec.id]: value,
+      };
+    });
   }
 
   function toggleLayer(layer: DielineLayer) {
@@ -130,7 +160,7 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
         <TemplateParameterPanel
           template={template}
           unitMode={unitMode}
-          values={mergedValues}
+          values={displayValues}
           onChange={setParameterValue}
           onUnitModeChange={setUnitMode}
         />

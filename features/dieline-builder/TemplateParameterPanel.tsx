@@ -21,6 +21,10 @@ export function TemplateParameterPanel({
   values,
 }: TemplateParameterPanelProps) {
   const groups = getParameterSpecsByGroup(template);
+  const primaryGroups = groups.filter((group) => group.id !== "advanced-closure");
+  const advancedGroups = groups.filter((group) => group.id === "advanced-closure");
+  const closureMode = values.closureMode === "manual" ? "manual" : "auto";
+  const advancedDisabled = closureMode !== "manual";
 
   return (
     <aside className="template-builder-parameters" aria-label="Template parameters">
@@ -37,35 +41,84 @@ export function TemplateParameterPanel({
         ))}
       </div>
 
-      {groups.map((group) => (
-        <section className="template-parameter-group" key={group.id}>
-          <div className="template-parameter-group-heading">
-            <h3>{group.label}</h3>
-            {group.description ? <p>{group.description}</p> : null}
+      <div className="template-parameter-layout">
+        <div className="template-parameter-basic-stack">
+          {primaryGroups.map((group) => (
+            <TemplateParameterGroup
+              disabled={false}
+              group={group}
+              key={group.id}
+              onChange={onChange}
+              unitMode={unitMode}
+              values={values}
+            />
+          ))}
+        </div>
+
+        <div className={`template-parameter-advanced-stack${advancedDisabled ? " is-disabled" : ""}`}>
+          <div className="template-advanced-note">
+            <strong>{advancedDisabled ? "Auto closure" : "Manual closure"}</strong>
+            <span>{advancedDisabled ? "Derived from length and width." : "Advanced values are editable."}</span>
           </div>
-          <div className={`template-parameter-controls template-parameter-columns-${group.columns ?? 2}`}>
-            {group.specs.map((spec) => (
-              <TemplateParameterControl
-                key={spec.id}
-                spec={spec}
-                unitMode={unitMode}
-                value={values[spec.id] ?? spec.defaultValue}
-                onChange={onChange}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+          {advancedGroups.map((group) => (
+            <TemplateParameterGroup
+              disabled={advancedDisabled}
+              group={group}
+              key={group.id}
+              onChange={onChange}
+              unitMode={unitMode}
+              values={values}
+            />
+          ))}
+        </div>
+      </div>
     </aside>
   );
 }
 
+function TemplateParameterGroup({
+  disabled,
+  group,
+  onChange,
+  unitMode,
+  values,
+}: {
+  disabled: boolean;
+  group: ReturnType<typeof getParameterSpecsByGroup>[number];
+  onChange: (spec: ParameterSpec, value: string | number | boolean) => void;
+  unitMode: BuilderUnitMode;
+  values: ParameterValueMap;
+}) {
+  return (
+    <section className="template-parameter-group">
+      <div className="template-parameter-group-heading">
+        <h3>{group.label}</h3>
+        {group.description ? <p>{group.description}</p> : null}
+      </div>
+      <div className={`template-parameter-controls template-parameter-columns-${group.columns ?? 2}`}>
+        {group.specs.map((spec) => (
+          <TemplateParameterControl
+            disabled={disabled}
+            key={spec.id}
+            spec={spec}
+            unitMode={unitMode}
+            value={values[spec.id] ?? spec.defaultValue}
+            onChange={onChange}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function TemplateParameterControl({
+  disabled = false,
   onChange,
   spec,
   unitMode,
   value,
 }: {
+  disabled?: boolean;
   onChange: (spec: ParameterSpec, value: string | number | boolean) => void;
   spec: ParameterSpec;
   unitMode: BuilderUnitMode;
@@ -73,18 +126,22 @@ function TemplateParameterControl({
 }) {
   if (spec.input === "boolean") {
     return (
-      <label className="template-builder-control template-builder-control-checkbox">
+      <label className="template-builder-control template-builder-control-checkbox" aria-disabled={disabled}>
         <span>{spec.label}</span>
-        <input checked={Boolean(value)} type="checkbox" onChange={(event) => onChange(spec, event.currentTarget.checked)} />
+        <input checked={Boolean(value)} disabled={disabled} type="checkbox" onChange={(event) => onChange(spec, event.currentTarget.checked)} />
       </label>
     );
   }
 
   if (spec.input === "select") {
     return (
-      <label className="template-builder-control">
+      <label className="template-builder-control" aria-disabled={disabled}>
         <span>{spec.label}</span>
-        <select value={String(value)} onChange={(event) => onChange(spec, coerceSelectValue(spec, event.currentTarget.value))}>
+        <select
+          disabled={disabled}
+          value={String(value)}
+          onChange={(event) => onChange(spec, coerceSelectValue(spec, event.currentTarget.value))}
+        >
           {(spec.options ?? []).map((option) => (
             <option key={String(option.value)} value={String(option.value)}>
               {option.label}
@@ -99,9 +156,10 @@ function TemplateParameterControl({
   const unitLabel = spec.unit === "mm" ? getDisplayUnitLabel(unitMode) : spec.unit;
 
   return (
-    <label className="template-builder-control">
+    <label className="template-builder-control" aria-disabled={disabled}>
       <span>{spec.label}</span>
       <input
+        disabled={disabled}
         min={getDisplayLimit(spec.min, spec, unitMode)}
         max={getDisplayLimit(spec.max, spec, unitMode)}
         step={getDisplayStep(spec.step, spec, unitMode)}
@@ -159,4 +217,3 @@ function round(value: number, precision: number): number {
   const scale = 10 ** precision;
   return Math.round(value * scale) / scale;
 }
-
