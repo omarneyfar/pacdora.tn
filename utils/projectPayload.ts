@@ -30,7 +30,7 @@ export type FacePayload = {
 export type ProjectSavePayload = {
   name: string;
   status: ProjectStatus;
-  templateId: TemplateId;
+  templateId: string;
   dimensions: CartonDimensions;
   workspace: {
     sources: SourcePayload[];
@@ -43,7 +43,7 @@ export type ProjectSavePayload = {
 export type ProjectPatchPayload = {
   name?: string;
   status?: ProjectStatus;
-  templateId?: TemplateId;
+  templateId?: string;
   dimensions?: CartonDimensions;
   workspace?: {
     sources?: SourcePayload[];
@@ -64,9 +64,13 @@ export type LiveProjectState = {
   faces: Record<string, { sourceId: string; fileName: string; sourceType: "image" | "pdf"; crop: CropSettings } | undefined>;
   dielineSource: "template" | "svg-upload" | "library";
   dielineTemplateId?: string;
+  dielineTemplateSlug?: string;
   dielineTemplateName?: string;
+  dielineGeneratorId?: string;
   dielineFileName: string;
   dielineGraph: ProjectDieline["graph"] | null;
+  dielineUserParameters?: Record<string, string | number | boolean>;
+  dielineResolvedParameters?: Record<string, string | number | boolean>;
 };
 
 export function createFullProjectPayload(
@@ -78,7 +82,7 @@ export function createFullProjectPayload(
   return {
     name: state.projectName,
     status,
-    templateId: FOLDING_CARTON_TEMPLATE_ID,
+    templateId: state.dielineTemplateId || FOLDING_CARTON_TEMPLATE_ID,
     dimensions: state.dimensions,
     workspace: {
       sources: state.sources.map((source) => ({
@@ -89,16 +93,19 @@ export function createFullProjectPayload(
         sourceType: source.sourceType,
       })),
       selectedSourceId: state.selectedSourceId,
-      dieline:
-        (state.dielineSource === "svg-upload" || state.dielineSource === "library") && state.dielineGraph
-          ? {
-            source: state.dielineSource,
-            ...(state.dielineTemplateId ? { templateId: state.dielineTemplateId } : {}),
-            ...(state.dielineTemplateName ? { name: state.dielineTemplateName } : {}),
-            ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
-            graph: state.dielineGraph,
-          }
-          : null,
+      dieline: state.dielineGraph
+        ? {
+          source: state.dielineSource,
+          ...(state.dielineTemplateId ? { templateId: state.dielineTemplateId } : {}),
+          ...(state.dielineTemplateSlug ? { templateSlug: state.dielineTemplateSlug } : {}),
+          ...(state.dielineGeneratorId ? { generatorId: state.dielineGeneratorId } : {}),
+          ...(state.dielineTemplateName ? { name: state.dielineTemplateName } : {}),
+          ...(state.dielineFileName ? { fileName: state.dielineFileName } : {}),
+          ...(state.dielineUserParameters ? { userParameters: state.dielineUserParameters } : {}),
+          ...(state.dielineResolvedParameters ? { resolvedParameters: state.dielineResolvedParameters } : {}),
+          graph: state.dielineGraph,
+        }
+        : null,
       faceAssets: Object.fromEntries(
         Object.entries(state.faces).flatMap(([face, asset]) => {
           if (!asset?.sourceId) return [];

@@ -13,15 +13,19 @@ export type {
   Size,
 } from "@/domain/dieline/types";
 
+/** @deprecated Legacy six-face carton face keys. Use dynamic graph face IDs instead. */
 export const FACE_KEYS = ["front", "back", "left", "right", "top", "bottom"] as const;
 export const PROJECT_STATUSES = ["draft", "published"] as const;
+/** @deprecated Legacy template ID list. Catalog templates use string IDs. */
 export const TEMPLATE_IDS = ["folding-carton"] as const;
 
-export type FaceKey = (typeof FACE_KEYS)[number]; // Legacy, for migration only
+/** @deprecated Legacy face key type. Use dynamic `string` face IDs from DielineGraph. */
+export type FaceKey = (typeof FACE_KEYS)[number];
 export type FaceId = string;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
-export type TemplateId = (typeof TEMPLATE_IDS)[number];
+/** Template identity — supports both legacy "folding-carton" and dynamic catalog template IDs. */
+export type TemplateId = string;
 
 export type CartonDimensions = {
   width: number;
@@ -87,7 +91,8 @@ export type Project = {
   id: string;
   name: string;
   status: ProjectStatus;
-  templateId: TemplateId;
+  /** Template identity — "folding-carton" for legacy, or a catalog template ID like "reverse-tuck-end". */
+  templateId: string;
   dimensions: CartonDimensions;
   faces: Record<FaceId, string>;
   createdAt: string;
@@ -465,13 +470,15 @@ export function normalizeProjectStatus(
     : fallback;
 }
 
+/** Normalize template ID. Accepts any non-empty string; falls back to legacy folding-carton. */
 export function normalizeTemplateId(
   value: unknown,
-  fallback: TemplateId = FOLDING_CARTON_TEMPLATE_ID,
-): TemplateId {
-  return TEMPLATE_IDS.includes(value as TemplateId)
-    ? (value as TemplateId)
-    : fallback;
+  fallback: string = FOLDING_CARTON_TEMPLATE_ID,
+): string {
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  return fallback;
 }
 
 export const FOLDING_CARTON_TEMPLATE: PackagingTemplate = {

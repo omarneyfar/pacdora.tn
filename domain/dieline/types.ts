@@ -218,6 +218,8 @@ export type DielineFace = {
   artworkEnabled: boolean;
 };
 
+export type DielineFoldSemantic = "mountain" | "valley";
+
 export type DielineCrease = {
   id: string;
   faceA: string;
@@ -226,6 +228,8 @@ export type DielineCrease = {
   edgeEnd: Point;
   foldAngle: number;
   direction: 1 | -1;
+  /** Explicit fold direction for 3D folding. If omitted, fold direction is inferred from geometry. */
+  foldSemantic?: DielineFoldSemantic;
 };
 
 export type DielineCutPath = {

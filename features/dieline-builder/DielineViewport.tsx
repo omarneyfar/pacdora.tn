@@ -124,36 +124,48 @@ function getLayerClassName(layer: DielineLayer): string {
 }
 
 function getReverseTuckEndMeasurements(graph: DielineGraph) {
-  const values = graph.metadata?.family === "reverse-tuck-end" ? graph.metadata.parameterValues : null;
-  if (!values) return [];
+  if (graph.metadata?.family !== "reverse-tuck-end") return [];
 
-  const L = numberValue(values.L);
-  const W = numberValue(values.W);
-  const H = numberValue(values.H);
-  const TFW = numberValue(values.TFW);
-  const TFR = numberValue(values.TFR);
-  const GFW = numberValue(values.GFW);
-  const DFW = numberValue(values.DFW);
-  if (![L, W, H, TFW, TFR, GFW, DFW].every((value) => value > 0)) return [];
+  // Derive all measurement positions from the actual generated graph faces.
+  // Do NOT duplicate generator formulas — the renderer shows what the graph produced.
+  const faceBounds = new Map(graph.faces.map((face) => [face.id, face.bounds]));
+  const front = faceBounds.get("front");
+  const left = faceBounds.get("left");
+  const glueTab = faceBounds.get("glue-tab");
+  const topDustLeft = faceBounds.get("top-dust-left");
+  const topTuck = faceBounds.get("top-tuck");
+  if (!front || !left) return [];
 
-  const bodyTop = TFW + DFW;
-  const bodyBottom = bodyTop + H;
-  const x0 = 0;
-  const x1 = W;
-  const x2 = x1 + L;
-  const x3 = x2 + W;
-  const x4 = x3 + L;
-  const x5 = x4 + GFW;
+  const bodyTop = front.y;
+  const bodyBottom = front.y + front.height;
+  const panelWidth = left.width;
+  const panelLength = front.width;
+  const panelHeight = front.height;
+  const x0 = left.x;
+  const x1 = front.x;
+  const x2 = front.x + front.width;
 
-  return [
-    horizontalMeasurement("dim-width", x0, x1, bodyBottom - 12, W),
-    horizontalMeasurement("dim-length", x1, x2, bodyBottom - 12, L),
-    verticalMeasurement("dim-height", 6, bodyTop, bodyBottom, H),
-    horizontalMeasurement("dim-glue", x4, x5, bodyBottom - 12, GFW),
-    verticalMeasurement("dim-dfw", x1 - 7, TFW, bodyTop, DFW),
-    verticalMeasurement("dim-tfw", x1 + 18, 0, TFW, TFW),
-    verticalMeasurement("dim-tfr", x2 - 18, 0, TFR, TFR),
+  const measurements = [
+    horizontalMeasurement("dim-width", x0, x0 + panelWidth, bodyBottom - 12, panelWidth),
+    horizontalMeasurement("dim-length", x1, x2, bodyBottom - 12, panelLength),
+    verticalMeasurement("dim-height", 6, bodyTop, bodyBottom, panelHeight),
   ];
+
+  if (glueTab) {
+    measurements.push(horizontalMeasurement("dim-glue", glueTab.x, glueTab.x + glueTab.width, bodyBottom - 12, glueTab.width));
+  }
+
+  if (topDustLeft) {
+    const dustFlapDepth = topDustLeft.height;
+    measurements.push(verticalMeasurement("dim-dfw", x1 - 7, topDustLeft.y, topDustLeft.y + dustFlapDepth, dustFlapDepth));
+  }
+
+  if (topTuck) {
+    const tuckExtent = bodyTop - topTuck.y;
+    measurements.push(verticalMeasurement("dim-tuck", x1 + 18, topTuck.y, bodyTop, tuckExtent));
+  }
+
+  return measurements;
 }
 
 function horizontalMeasurement(id: string, x1: number, x2: number, y: number, value: number) {
@@ -178,11 +190,7 @@ function verticalMeasurement(id: string, x: number, y1: number, y2: number, valu
   };
 }
 
-function numberValue(value: unknown): number {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : 0;
-}
-
 function formatMeasurement(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
+

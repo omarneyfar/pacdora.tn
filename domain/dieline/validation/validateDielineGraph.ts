@@ -70,6 +70,10 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
       errors.push(`Crease "${crease.id}" references a missing face.`);
     }
 
+    if (crease.faceA === crease.faceB) {
+      errors.push(`Crease "${crease.id}" connects face "${crease.faceA}" to itself. Structural creases must connect two distinct faces. Internal score/guide lines belong in graph.geometry, not graph.creases.`);
+    }
+
     if (!isFinitePoint(crease.edgeStart) || !isFinitePoint(crease.edgeEnd)) {
       errors.push(`Crease "${crease.id}" contains non-finite endpoints.`);
     }
@@ -85,7 +89,7 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
       errors.push(`Crease "${crease.id}" is not on boundary of face "${faceA.id}".`);
     }
 
-    if (faceB && !isCreaseOnFaceBoundary(crease, faceB)) {
+    if (faceB && crease.faceA !== crease.faceB && !isCreaseOnFaceBoundary(crease, faceB)) {
       errors.push(`Crease "${crease.id}" is not on boundary of face "${faceB.id}".`);
     }
   }

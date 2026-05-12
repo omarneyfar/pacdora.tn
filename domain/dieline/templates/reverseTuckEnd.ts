@@ -147,9 +147,16 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
     crease("cr-left-bottomdust", "left", "bottom-dust-left", { x: col0, y: bodyBottom }, { x: col1, y: bodyBottom }),
     crease("cr-right-bottomdust", "right", "bottom-dust-right", { x: col2, y: bodyBottom }, { x: col3, y: bodyBottom }),
     crease("cr-back-bottomtuck", "back", "bottom-tuck", { x: col3, y: bodyBottom }, { x: col4, y: bodyBottom }),
-    crease("cr-toptuck-lip", "top-tuck", "top-tuck", { x: col1, y: topTuckY + TFW }, { x: col2, y: topTuckY + TFW }),
-    crease("cr-bottomtuck-lip", "bottom-tuck", "bottom-tuck", { x: col3, y: bodyBottom + W }, { x: col4, y: bodyBottom + W }),
   ];
+
+  // Internal score lines on tuck flaps (lip bend marks).
+  // These are NOT structural hinges — they don't create child faces in faceTree.
+  // They live in graph.geometry as visual/manufacturing crease lines.
+  const internalScoreLines: GeometryPrimitive[] = [
+    { id: "score-toptuck-lip", layer: "crease", type: "line", start: { x: col1, y: topTuckY + TFW }, end: { x: col2, y: topTuckY + TFW } },
+    { id: "score-bottomtuck-lip", layer: "crease", type: "line", start: { x: col3, y: bodyBottom + W }, end: { x: col4, y: bodyBottom + W } },
+  ];
+
   const exteriorCutPaths = createExteriorCutPaths(faces);
   const geometry: GeometryPrimitive[] = [
     ...exteriorCutPaths.flatMap((path, index) => path.points && path.points.length >= 2
@@ -162,6 +169,7 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
       start: current.edgeStart,
       end: current.edgeEnd,
     })),
+    ...internalScoreLines,
     ...faces.map((face): GeometryPrimitive => ({
       id: `label-${face.id}`,
       layer: "label",

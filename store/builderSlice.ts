@@ -19,6 +19,8 @@ export type BuilderState = {
   dimensions: CartonDimensions;
   dielineSource: DielineSource;
   dielineTemplateId: string;
+  dielineTemplateSlug: string;
+  dielineGeneratorId: string;
   dielineTemplateName: string;
   dielineFileName: string;
   dielineGraph: DielineGraph | null;
@@ -35,6 +37,8 @@ const initialState: BuilderState = {
   dimensions: DEFAULT_CARTON_DIMENSIONS,
   dielineSource: "template",
   dielineTemplateId: "",
+  dielineTemplateSlug: "",
+  dielineGeneratorId: "",
   dielineTemplateName: "",
   dielineFileName: "",
   dielineGraph: null,
@@ -79,8 +83,26 @@ export const builderSlice = createSlice({
     setLibraryDieline(state, action: PayloadAction<{ templateId: string; name: string; fileName?: string; graph: DielineGraph }>) {
       state.dielineSource = "library";
       state.dielineTemplateId = action.payload.templateId;
+      state.dielineTemplateSlug = "";
+      state.dielineGeneratorId = "";
       state.dielineTemplateName = action.payload.name;
       state.dielineFileName = action.payload.fileName ?? "";
+      state.dielineGraph = action.payload.graph;
+    },
+
+    setTemplateDieline(state, action: PayloadAction<{
+      templateId: string;
+      templateSlug: string;
+      generatorId: string;
+      name: string;
+      graph: DielineGraph;
+    }>) {
+      state.dielineSource = "template";
+      state.dielineTemplateId = action.payload.templateId;
+      state.dielineTemplateSlug = action.payload.templateSlug;
+      state.dielineGeneratorId = action.payload.generatorId;
+      state.dielineTemplateName = action.payload.name;
+      state.dielineFileName = "";
       state.dielineGraph = action.payload.graph;
     },
 
@@ -91,6 +113,8 @@ export const builderSlice = createSlice({
     resetDieline(state) {
       state.dielineSource = "template";
       state.dielineTemplateId = "";
+      state.dielineTemplateSlug = "";
+      state.dielineGeneratorId = "";
       state.dielineTemplateName = "";
       state.dielineFileName = "";
       state.dielineGraph = null;
@@ -146,9 +170,11 @@ export const builderSlice = createSlice({
       state.dimensions = normalizeDimensions(dimensions);
       state.dielineSource = dieline?.source ?? "template";
       state.dielineTemplateId = dieline?.templateId ?? "";
+      state.dielineTemplateSlug = dieline?.templateSlug ?? "";
+      state.dielineGeneratorId = dieline?.generatorId ?? "";
       state.dielineTemplateName = dieline?.name ?? "";
       state.dielineFileName = dieline?.fileName ?? "";
-      state.dielineGraph = dieline?.source === "svg-upload" || dieline?.source === "library" ? (dieline.graph ?? null) : null;
+      state.dielineGraph = dieline?.graph ?? null;
       state.saveStatus = status === "published" ? "published" : "saved";
       state.isProjectLoading = false;
       state.isProjectSaving = false;
@@ -168,6 +194,7 @@ export const {
   setDimensions,
   setImportedDieline,
   setLibraryDieline,
+  setTemplateDieline,
   setDielineGraph,
   resetDieline,
   setSaveStatus,
