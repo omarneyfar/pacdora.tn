@@ -17,7 +17,7 @@ const {
   getDielineTemplateByRoute,
   listDielineTemplateSummaries,
 } = loadTs(path.join(projectRoot, "domain", "dieline", "templateRegistry"));
-const { CEFBOX_FOLDING_BOX_DEFINITIONS } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "foldingBoxVariants"));
+const { loadTemplateCatalog } = loadTs(path.join(projectRoot, "domain", "dieline", "catalog"));
 const { generateReverseTuckEnd } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "reverseTuckEnd"));
 const { parseReferenceGeometry, compareGraphToReference } = loadTs(path.join(projectRoot, "domain", "dieline", "reference"));
 const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
@@ -91,6 +91,7 @@ for (const seed of seeds) {
 assertSeedPolicy(seeds);
 assertTemplateRegistry();
 assertReverseTuckEndExactScaffold();
+assertReverseTuckEndStructureCases();
 
 console.log("Dieline graph verification passed.");
 
@@ -322,7 +323,7 @@ function assertReverseTuckEndExactScaffold() {
   assert(values.TFW + values.DFW <= values.W * 1.15, "Auto closure values should fit the carton depth");
 
   const expectedWidth = values.L * 2 + values.W * 2 + values.GFW;
-  const expectedHeight = values.H + 2 * (values.TFW + values.DFW);
+  const expectedHeight = values.H + 2 * Math.max(values.W + values.TFW, values.DFW);
   assert(Math.abs(graph.size.width - expectedWidth) < 0.01, `Reverse Tuck End auto width should be ${expectedWidth}, got ${graph.size.width}`);
   assert(Math.abs(graph.size.height - expectedHeight) < 0.01, `Reverse Tuck End auto height should be ${expectedHeight}, got ${graph.size.height}`);
 
@@ -359,16 +360,135 @@ function assertReverseTuckEndExactScaffold() {
   }
 }
 
-function assertSeedPolicy(seeds) {
-  assert(seeds.length === 1, `Expected only exact registered template seeds, got ${seeds.length}`);
+function assertReverseTuckEndStructureCases() {
+  const cases = [
+    { label: "Reverse Tuck End 120x60x160", input: { L: 120, W: 60, H: 160 } },
+    { label: "Reverse Tuck End 80x40x120", input: { L: 80, W: 40, H: 120 } },
+    { label: "Reverse Tuck End 200x80x250", input: { L: 200, W: 80, H: 250 } }
+  ];
 
-  const seed = seeds[0];
-  assert(seed.id === "seed-foldingbox-reverse-tuck-end", `Unexpected seed id ${seed.id}`);
-  assert(seed.graph.metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
-  assert(seed.graph.metadata?.family === "reverse-tuck-end", `${seed.id}: expected reverse-tuck-end family`);
-  assert(seed.graph.metadata?.parameterSpecs?.length >= 14, `${seed.id}: expected grouped parameter-ready seed`);
-  assert(seed.graph.geometry?.some((primitive) => primitive.layer === "cut"), `${seed.id}: expected canonical cut geometry`);
-  assert(seed.graph.geometry?.some((primitive) => primitive.layer === "crease"), `${seed.id}: expected canonical crease geometry`);
+  for (const current of cases) {
+    assertReverseTuckEndStructure(current.input, current.label);
+  }
+}
+
+function assertReverseTuckEndStructure(input, label) {
+  const graph = generateReverseTuckEnd(input);
+  const requiredFaces = [
+    "front",
+    "back",
+    "left",
+    "right",
+    "glue-tab",
+    "top-tuck",
+    "bottom-tuck",
+    "top-dust-left",
+    "top-dust-right",
+    "bottom-dust-left",
+    "bottom-dust-right"
+  ];
+  const requiredCreases = [
+    "cr-left-front",
+    "cr-front-right",
+    "cr-right-back",
+    "cr-back-glue",
+    "cr-left-topdust",
+    "cr-front-toptuck",
+    "cr-right-topdust",
+    "cr-left-bottomdust",
+    "cr-right-bottomdust",
+    "cr-back-bottomtuck"
+  ];
+  const faceById = new Map(graph.faces.map((face) => [face.id, face]));
+  const creaseById = new Map(graph.creases.map((crease) => [crease.id, crease]));
+
+  assert(Number.isFinite(graph.size.width) && graph.size.width > 0, `${label}: graph width must be positive`);
+  assert(Number.isFinite(graph.size.height) && graph.size.height > 0, `${label}: graph height must be positive`);
+
+  for (const faceId of requiredFaces) {
+    assert(faceById.has(faceId), `${label}: missing required face ${faceId}`);
+  }
+
+  for (const creaseId of requiredCreases) {
+    assert(creaseById.has(creaseId), `${label}: missing required crease ${creaseId}`);
+  }
+
+  for (const face of graph.faces) {
+    assert(face.vertices.length >= 3, `${label}: face ${face.id} has too few vertices`);
+    assert(face.vertices.every(isFinitePoint2D), `${label}: face ${face.id} contains non-finite vertices`);
+    assert(face.bounds.width >= 0 && face.bounds.height >= 0, `${label}: face ${face.id} has negative bounds`);
+    assert(!hasSelfCrossingPolygon(face.vertices), `${label}: face ${face.id} has a self-crossing polygon`);
+    assert(!hasTinyPolygonEdge(face.vertices), `${label}: face ${face.id} has a zero-length polygon edge`);
+  }
+
+  for (const crease of graph.creases) {
+    const faceA = faceById.get(crease.faceA);
+    const faceB = faceById.get(crease.faceB);
+
+    assert(faceA, `${label}: crease ${crease.id} references missing face ${crease.faceA}`);
+    assert(faceB, `${label}: crease ${crease.id} references missing face ${crease.faceB}`);
+    assert(isFinitePoint2D(crease.edgeStart) && isFinitePoint2D(crease.edgeEnd), `${label}: crease ${crease.id} has non-finite endpoints`);
+    assert(distance2D(crease.edgeStart, crease.edgeEnd) > 0.000001, `${label}: crease ${crease.id} has zero length`);
+    assert(isCreaseOnFaceBoundary(crease, faceA), `${label}: crease ${crease.id} is not on face ${faceA.id} boundary`);
+    assert(isCreaseOnFaceBoundary(crease, faceB), `${label}: crease ${crease.id} is not on face ${faceB.id} boundary`);
+  }
+
+  for (const cutPath of graph.cutPaths) {
+    assert(cutPath.points?.every(isFinitePoint2D), `${label}: cut path ${cutPath.id} contains non-finite points`);
+    assert(!hasTinyPolylineSegment(cutPath.points ?? []), `${label}: cut path ${cutPath.id} contains a zero-length segment`);
+  }
+
+  const treeFaceIds = collectTreeFaceIds(graph.faceTree);
+  assert(graph.faceTree.length === 1, `${label}: faceTree should have one root`);
+  assert(new Set(treeFaceIds).size === graph.faces.length, `${label}: faceTree contains duplicate or missing faces`);
+
+  for (const face of graph.faces) {
+    assert(treeFaceIds.includes(face.id), `${label}: faceTree does not include ${face.id}`);
+  }
+
+  const treeRelations = collectTreeRelations(graph.faceTree);
+  assert(treeRelations.get("top-tuck")?.parentFaceId === "front", `${label}: top tuck must attach to the front panel`);
+  assert(treeRelations.get("bottom-tuck")?.parentFaceId === "back", `${label}: bottom tuck must attach to the opposite major panel`);
+  assert(treeRelations.get("top-tuck")?.parentFaceId !== treeRelations.get("bottom-tuck")?.parentFaceId, `${label}: top and bottom tucks must be on opposite panels`);
+
+  for (const [faceId, relation] of treeRelations) {
+    if (!relation.parentFaceId) {
+      assert(relation.creaseId === null, `${label}: root face ${faceId} must not reference a crease`);
+      continue;
+    }
+
+    const crease = creaseById.get(relation.creaseId);
+    assert(crease, `${label}: faceTree face ${faceId} references missing crease ${relation.creaseId}`);
+    assert(creaseConnectsFaces(crease, relation.parentFaceId, faceId), `${label}: faceTree crease ${relation.creaseId} does not connect ${relation.parentFaceId} to ${faceId}`);
+  }
+
+  assertCreasePair(graph, "cr-front-toptuck", "front", "top-tuck", label);
+  assertCreasePair(graph, "cr-back-bottomtuck", "back", "bottom-tuck", label);
+  assertCreasePair(graph, "cr-left-topdust", "left", "top-dust-left", label);
+  assertCreasePair(graph, "cr-right-topdust", "right", "top-dust-right", label);
+  assertCreasePair(graph, "cr-left-bottomdust", "left", "bottom-dust-left", label);
+  assertCreasePair(graph, "cr-right-bottomdust", "right", "bottom-dust-right", label);
+  assertCreasePair(graph, "cr-back-glue", "back", "glue-tab", label);
+
+  assertFoldedModel(graph, label);
+}
+
+function assertSeedPolicy(seeds) {
+  assert(seeds.length >= 1, `Expected generator-backed template seeds, got ${seeds.length}`);
+
+  const reverseSeed = seeds.find((seed) => seed.id === "seed-foldingbox-reverseTuckEnd");
+  assert(reverseSeed, "Expected Reverse Tuck End catalog seed");
+
+  for (const seed of seeds) {
+    assert(seed.graph.metadata?.category === "folding-box", `${seed.id}: expected folding-box category`);
+    assert(seed.graph.metadata?.catalog?.templateId, `${seed.id}: expected catalog metadata`);
+    assert(seed.graph.metadata?.parameterValues, `${seed.id}: expected resolved parameter values`);
+  }
+
+  assert(reverseSeed.graph.metadata?.family === "reverse-tuck-end", `${reverseSeed.id}: expected reverse-tuck-end family`);
+  assert(reverseSeed.graph.metadata?.parameterSpecs?.length >= 14, `${reverseSeed.id}: expected grouped parameter-ready seed`);
+  assert(reverseSeed.graph.geometry?.some((primitive) => primitive.layer === "cut"), `${reverseSeed.id}: expected canonical cut geometry`);
+  assert(reverseSeed.graph.geometry?.some((primitive) => primitive.layer === "crease"), `${reverseSeed.id}: expected canonical crease geometry`);
 }
 
 function assertTemplateRegistry() {
@@ -382,8 +502,10 @@ function assertTemplateRegistry() {
   assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Registered Reverse Tuck End should generate canonical cut geometry");
 
   const summaries = listDielineTemplateSummaries("foldingBox");
-  assert(summaries.length === CEFBOX_FOLDING_BOX_DEFINITIONS.length, "Folding Box catalog should expose every scaffolded family");
+  assert(summaries.length === loadTemplateCatalog().templates.length, "Folding Box catalog should expose every catalog family");
   assert(summaries.some((summary) => summary.slug === "reverseTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Reverse Tuck End generator");
+  assert(summaries.some((summary) => summary.slug === "straightTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Straight Tuck End generator");
+  assert(summaries.some((summary) => !summary.isImplemented && summary.runtimeStatus === "catalog-only"), "Folding Box catalog should keep generator-missing templates visible");
 }
 
 function assertCreaseCoincidence(testGraph, model, label) {
@@ -416,6 +538,101 @@ function assertCreaseCoincidence(testGraph, model, label) {
   }
 }
 
+function assertCreasePair(graph, creaseId, faceA, faceB, label) {
+  const crease = graph.creases.find((candidate) => candidate.id === creaseId);
+
+  assert(crease, `${label}: missing crease ${creaseId}`);
+  assert(creaseConnectsFaces(crease, faceA, faceB), `${label}: crease ${creaseId} must connect ${faceA} to ${faceB}`);
+}
+
+function collectTreeRelations(nodes, parentFaceId = null, relations = new Map()) {
+  for (const node of nodes) {
+    relations.set(node.faceId, {
+      parentFaceId,
+      creaseId: node.creaseId
+    });
+    collectTreeRelations(node.children, node.faceId, relations);
+  }
+
+  return relations;
+}
+
+function creaseConnectsFaces(crease, faceA, faceB) {
+  return (crease.faceA === faceA && crease.faceB === faceB) || (crease.faceA === faceB && crease.faceB === faceA);
+}
+
+function isCreaseOnFaceBoundary(crease, face) {
+  return isPointOnFaceBoundary(crease.edgeStart, face) && isPointOnFaceBoundary(crease.edgeEnd, face);
+}
+
+function isPointOnFaceBoundary(point, face) {
+  return face.vertices.some((start, index) => pointOnSegment(point, start, face.vertices[(index + 1) % face.vertices.length]));
+}
+
+function pointOnSegment(point, start, end) {
+  const length = distance2D(start, end);
+
+  if (length <= 0.000001) {
+    return distance2D(point, start) <= 0.00001;
+  }
+
+  const cross = Math.abs((point.y - start.y) * (end.x - start.x) - (point.x - start.x) * (end.y - start.y));
+  const dot = (point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y);
+
+  return cross / length <= 0.00001 && dot >= -0.00001 && dot <= length * length + 0.00001;
+}
+
+function hasSelfCrossingPolygon(points) {
+  for (let a = 0; a < points.length; a += 1) {
+    const a1 = points[a];
+    const a2 = points[(a + 1) % points.length];
+
+    for (let b = a + 1; b < points.length; b += 1) {
+      if (Math.abs(a - b) <= 1 || (a === 0 && b === points.length - 1)) {
+        continue;
+      }
+
+      const b1 = points[b];
+      const b2 = points[(b + 1) % points.length];
+
+      if (segmentsIntersect2D(a1, a2, b1, b2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function segmentsIntersect2D(a1, a2, b1, b2) {
+  const o1 = orientation2D(a1, a2, b1);
+  const o2 = orientation2D(a1, a2, b2);
+  const o3 = orientation2D(b1, b2, a1);
+  const o4 = orientation2D(b1, b2, a2);
+
+  return o1 * o2 < -0.0000001 && o3 * o4 < -0.0000001;
+}
+
+function orientation2D(a, b, c) {
+  return (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+}
+
+function hasTinyPolygonEdge(points) {
+  return points.some((point, index) => distance2D(point, points[(index + 1) % points.length]) <= 0.000001);
+}
+
+function hasTinyPolylineSegment(points) {
+  return points.some((point, index) => index > 0 && distance2D(point, points[index - 1]) <= 0.000001);
+}
+
+function isFinitePoint2D(point) {
+  return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
+function distance2D(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
 function transformLocalPoint(matrix, point) {
   return [
     matrix[0] * point.x + matrix[4] * point.y + matrix[12],
@@ -430,6 +647,12 @@ function loadTs(modulePath) {
 
   if (cached) {
     return cached.exports;
+  }
+
+  if (filename.endsWith(".json")) {
+    const jsonModule = { exports: JSON.parse(fs.readFileSync(filename, "utf8")) };
+    moduleCache.set(filename, jsonModule);
+    return jsonModule.exports;
   }
 
   const source = fs.readFileSync(filename, "utf8");
@@ -471,6 +694,7 @@ function resolveTsFile(modulePath) {
     modulePath,
     `${modulePath}.ts`,
     `${modulePath}.tsx`,
+    `${modulePath}.json`,
     path.join(modulePath, "index.ts"),
     path.join(modulePath, "index.tsx")
   ];

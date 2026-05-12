@@ -22,10 +22,12 @@ export type SeedDieline = {
  * These are inserted into the library DB when missing.
  */
 export function getSeedDielines(): SeedDieline[] {
-  return listRegisteredDielineTemplates().map((template) => ({
-    id: `seed-${template.categorySlug.toLowerCase()}-${template.id}`,
-    name: template.label,
-    fileName: template.id,
-    graph: template.generate(template.defaultValues),
-  }));
+  return listRegisteredDielineTemplates()
+    .filter((template) => template.hasGenerator)
+    .map((template) => ({
+      id: `seed-${template.categorySlug.toLowerCase()}-${template.slug}`,
+      name: template.label,
+      fileName: template.id,
+      graph: template.generate(template.defaultValues),
+    }));
 }

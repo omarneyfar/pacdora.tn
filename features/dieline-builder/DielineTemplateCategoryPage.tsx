@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Box, CheckCircle2, ChevronRight, Clock3, FileUp } from "lucide-react";
+import { AlertTriangle, Box, CheckCircle2, ChevronRight, Clock3, FileUp } from "lucide-react";
 import { useMemo } from "react";
 
-import { generateCefBoxFoldingBoxGraph } from "@/domain/dieline/templates/foldingBoxVariants";
 import {
   getDielineTemplateCategories,
-  getFoldingBoxDefinition,
+  getDielineTemplateById,
   getImplementedFoldingBoxCount,
   listDielineTemplateSummaries,
 } from "@/domain/dieline/templateRegistry";
@@ -70,8 +69,8 @@ export function DielineTemplateCategoryPage({ categorySlug }: DielineTemplateCat
 }
 
 function TemplateCard({ template }: { template: ReturnType<typeof listDielineTemplateSummaries>[number] }) {
-  const definition = getFoldingBoxDefinition(template.id);
-  const graph = definition ? generateCefBoxFoldingBoxGraph(definition) : null;
+  const registered = getDielineTemplateById(template.id);
+  const graph = registered?.hasGenerator ? registered.generate(registered.defaultValues) : null;
 
   return (
     <article className={template.isImplemented ? "template-card is-active" : "template-card"}>
@@ -81,10 +80,20 @@ function TemplateCard({ template }: { template: ReturnType<typeof listDielineTem
           <h2>{template.label}</h2>
           <span className={template.isImplemented ? "template-status-ready" : "template-status-queued"}>
             {template.isImplemented ? <CheckCircle2 aria-hidden size={15} /> : <Clock3 aria-hidden size={15} />}
-            {template.isImplemented ? "Generator" : "Queued"}
+            {template.isImplemented ? template.runtimeStatus : "Catalog only"}
           </span>
         </div>
         <p>{template.description}</p>
+        <div className="template-card-badges">
+          {template.sourceWebsite ? <span>{template.sourceWebsite}</span> : null}
+          {template.productionRiskLevel ? <span>{template.productionRiskLevel} risk</span> : null}
+          {template.requiresManualVerification ? (
+            <span>
+              <AlertTriangle aria-hidden size={13} />
+              verify
+            </span>
+          ) : null}
+        </div>
         <div className="template-card-parameters">
           {template.parameters.slice(0, 8).map((parameter) => (
             <span key={parameter}>{parameter}</span>
@@ -94,7 +103,7 @@ function TemplateCard({ template }: { template: ReturnType<typeof listDielineTem
       </div>
       {template.href ? (
         <Link className="primary-button template-card-action" href={template.href}>
-          Open generator
+          {template.isImplemented ? "Open generator" : "View details"}
         </Link>
       ) : (
         <button className="secondary-button template-card-action" disabled type="button">
@@ -129,4 +138,3 @@ function TemplateCatalogTopbar() {
     </header>
   );
 }
-

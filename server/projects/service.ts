@@ -1026,11 +1026,40 @@ function normalizeWorkspaceDieline(value: unknown, strict: boolean): ProjectDiel
   return {
     source: candidate.source,
     ...(typeof candidate.templateId === "string" ? { templateId: candidate.templateId.slice(0, 80) } : {}),
+    ...(typeof candidate.templateSlug === "string" ? { templateSlug: candidate.templateSlug.slice(0, 120) } : {}),
+    ...(typeof candidate.templateCatalogVersion === "string" ? { templateCatalogVersion: candidate.templateCatalogVersion.slice(0, 40) } : {}),
+    ...(typeof candidate.generatorId === "string" ? { generatorId: candidate.generatorId.slice(0, 120) } : {}),
+    ...(candidate.userParameters ? { userParameters: normalizePrimitiveRecord(candidate.userParameters) } : {}),
+    ...(candidate.resolvedParameters ? { resolvedParameters: normalizePrimitiveRecord(candidate.resolvedParameters) } : {}),
     ...(typeof candidate.name === "string" ? { name: normalizeFileName(candidate.name, "Custom dieline") } : {}),
     ...(candidate.fileName ? { fileName: normalizeFileName(candidate.fileName, "custom-dieline.svg") } : {}),
     ...(typeof candidate.importedAt === "string" ? { importedAt: candidate.importedAt } : {}),
     graph
   };
+}
+
+function normalizePrimitiveRecord(value: unknown): Record<string, string | number | boolean> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const next: Record<string, string | number | boolean> = {};
+
+  for (const [key, rawValue] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^[a-zA-Z0-9_-]{1,80}$/.test(key)) {
+      continue;
+    }
+
+    if (typeof rawValue === "string") {
+      next[key] = rawValue.slice(0, 160);
+    } else if (typeof rawValue === "boolean") {
+      next[key] = rawValue;
+    } else if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+      next[key] = rawValue;
+    }
+  }
+
+  return next;
 }
 
 function normalizeStoredSource(value: unknown, projectId: string): ProjectArtworkSource[] {

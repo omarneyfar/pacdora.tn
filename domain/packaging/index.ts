@@ -65,6 +65,11 @@ export type ProjectFaceAsset = {
 export type ProjectDieline = {
   source: "template" | "svg-upload" | "library";
   templateId?: string;
+  templateSlug?: string;
+  templateCatalogVersion?: string;
+  generatorId?: string;
+  userParameters?: Record<string, string | number | boolean>;
+  resolvedParameters?: Record<string, string | number | boolean>;
   name?: string;
   fileName?: string;
   importedAt?: string;

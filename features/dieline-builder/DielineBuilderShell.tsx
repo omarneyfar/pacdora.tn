@@ -44,7 +44,7 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
     () => template ? mergeTemplateParameterValues(template, parameterValues) : {},
     [parameterValues, template],
   );
-  const graph = useMemo(() => template?.generate(mergedValues), [mergedValues, template]);
+  const graph = useMemo(() => template?.hasGenerator ? template.generate(mergedValues) : null, [mergedValues, template]);
   const displayValues = useMemo(
     () => {
       const generatedValues = graph?.metadata?.parameterValues ?? {};
@@ -63,12 +63,77 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
   const layerCounts = useMemo(() => graph ? getLayerPrimitiveCounts(graph) : null, [graph]);
   const enabledFormats = useMemo(() => getEnabledFormats(template, mergedValues), [mergedValues, template]);
 
-  if (!template || !graph || !layerCounts) {
+  if (!template) {
     return (
       <main className="template-builder-page">
         <TemplateBuilderTopbar />
         <section className="template-builder-missing">
           <strong>Template not found</strong>
+          <Link className="secondary-button" href="/dielines/foldingBox">
+            Back to Folding Box
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (!template.hasGenerator) {
+    return (
+      <main className="template-builder-page">
+        <TemplateBuilderTopbar template={template} />
+
+        <section className="template-builder-grid">
+          <nav className="template-builder-catalog-rail" aria-label="Template navigation">
+            <Link href="/dielines">Dielines</Link>
+            <ChevronRight aria-hidden size={15} />
+            <Link href="/dielines/foldingBox">Folding Box</Link>
+            <ChevronRight aria-hidden size={15} />
+            <span>{template.label}</span>
+          </nav>
+
+          <section className="template-builder-stage" ref={stageRef} aria-label="Catalog template details">
+            <div className="template-stage-toolbar">
+              <div>
+                <span className="eyebrow">Catalog Template</span>
+                <h1>{template.label}</h1>
+              </div>
+              <span className="template-status-queued">Generator not implemented yet</span>
+            </div>
+            <TemplateCatalogOnlyDetails template={template} />
+          </section>
+
+          <TemplateParameterPanel
+            template={template}
+            unitMode={unitMode}
+            values={displayValues}
+            onChange={setParameterValue}
+            onUnitModeChange={setUnitMode}
+          />
+
+          <aside className="template-builder-actions" aria-label="Template actions">
+            <div className="template-action-block">
+              <span className="eyebrow">Generation</span>
+              <button className="secondary-button" disabled type="button">
+                Generator missing
+              </button>
+            </div>
+            <div className="template-action-grid">
+              <Link className="secondary-button" href="/dielines/foldingBox">
+                Back to catalog
+              </Link>
+            </div>
+          </aside>
+        </section>
+      </main>
+    );
+  }
+
+  if (!graph || !layerCounts) {
+    return (
+      <main className="template-builder-page">
+        <TemplateBuilderTopbar template={template} />
+        <section className="template-builder-missing">
+          <strong>Template generator failed</strong>
           <Link className="secondary-button" href="/dielines/foldingBox">
             Back to Folding Box
           </Link>
@@ -187,6 +252,57 @@ export function DielineBuilderShell({ categorySlug, templateSlug }: DielineBuild
         </aside>
       </section>
     </main>
+  );
+}
+
+function TemplateCatalogOnlyDetails({ template }: { template: RegisteredDielineTemplate }) {
+  const catalog = template.catalogTemplate;
+  const warnings = [
+    ...catalog.warnings.map((warning) => typeof warning === "string" ? warning : warning.message),
+    ...(catalog.productionStatus.warning ? [catalog.productionStatus.warning] : []),
+  ];
+
+  return (
+    <div className="template-catalog-only-details">
+      <section>
+        <h2>Catalog status</h2>
+        <p>{catalog.description}</p>
+        <div className="template-card-badges">
+          <span>{catalog.runtime.status}</span>
+          <span>{catalog.productionStatus.productionRiskLevel ?? "medium"} risk</span>
+          <span>{catalog.source.website ?? "source recorded"}</span>
+          <span>manual verification required</span>
+        </div>
+      </section>
+
+      {warnings.length > 0 ? (
+        <section>
+          <h2>Warnings</h2>
+          <ul>
+            {warnings.slice(0, 5).map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section>
+        <h2>Manufacturing notes</h2>
+        <p>{catalog.manufacturingRules.dieCuttingNotes ?? "Use named cut, crease, glue, bleed, and safe layers."}</p>
+        <p>{catalog.manufacturingRules.assemblyNotes ?? "Prototype before production."}</p>
+      </section>
+
+      {catalog.variants.length > 0 ? (
+        <section>
+          <h2>Variants</h2>
+          <div className="template-card-parameters">
+            {catalog.variants.slice(0, 8).map((variant) => (
+              <span key={variant.variantId}>{variant.variantName}</span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
   );
 }
 

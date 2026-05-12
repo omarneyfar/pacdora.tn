@@ -1993,6 +1993,43 @@ a {
   padding: 12px;
 }
 
+.template-catalog-only-details {
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding: 18px;
+}
+
+.template-catalog-only-details section {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  padding-bottom: 14px;
+}
+
+.template-catalog-only-details section:last-child {
+  border-bottom: 0;
+}
+
+.template-catalog-only-details h2 {
+  font-size: 16px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.template-catalog-only-details p,
+.template-catalog-only-details li {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.template-catalog-only-details ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .template-viewport-shell {
   background: #171717;
   border: 1px solid #171717;
@@ -2471,6 +2508,26 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.template-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.template-card-badges span {
+  align-items: center;
+  background: rgba(11, 94, 96, 0.08);
+  border: 1px solid rgba(11, 94, 96, 0.14);
+  border-radius: 6px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 7px;
 }
 
 .template-card-parameters span {

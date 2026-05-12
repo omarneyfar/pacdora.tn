@@ -262,7 +262,39 @@ function normalizeGraphMetadata(
     parts,
     ...(parameters.length > 0 ? { parameters } : {}),
     ...(parameterSpecs.length > 0 ? { parameterSpecs } : {}),
-    ...(Object.keys(parameterValues).length > 0 ? { parameterValues } : {})
+    ...(Object.keys(parameterValues).length > 0 ? { parameterValues } : {}),
+    ...(candidate.catalog ? { catalog: normalizeCatalogMetadata(candidate.catalog) } : {})
+  };
+}
+
+function normalizeCatalogMetadata(value: unknown): DielineGraphMetadata["catalog"] | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const candidate = value as NonNullable<DielineGraphMetadata["catalog"]>;
+  const templateId = normalizeShortText(candidate.templateId, "");
+  const templateSlug = normalizeShortText(candidate.templateSlug, "");
+  const templateCatalogVersion = normalizeShortText(candidate.templateCatalogVersion, "");
+  const generatorId = normalizeShortText(candidate.generatorId, "");
+  const status = normalizeShortText(candidate.status, "catalog-only");
+
+  if (!templateId || !templateSlug || !templateCatalogVersion || !generatorId) {
+    return undefined;
+  }
+
+  return {
+    templateId,
+    templateSlug,
+    templateCatalogVersion,
+    generatorId,
+    status,
+    requiresManualVerification: candidate.requiresManualVerification !== false,
+    productionReady: Boolean(candidate.productionReady),
+    ...(candidate.source ? { source: candidate.source } : {}),
+    ...(Array.isArray(candidate.warnings)
+      ? { warnings: candidate.warnings.filter((warning) => typeof warning === "string").slice(0, 20) }
+      : {})
   };
 }
 

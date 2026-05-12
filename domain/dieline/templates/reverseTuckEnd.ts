@@ -109,10 +109,11 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
   const rawValues = normalizeReverseTuckEndParameters(input);
   const values = applyDimensionMode(rawValues);
   const { L, W, H, TFW, TFR, GFW, DFW } = values;
-  const topBand = TFW + DFW;
-  const bottomBand = TFW + DFW;
-  const dustTop = TFW;
+  const topBand = Math.max(W + TFW, DFW);
+  const bottomBand = Math.max(W + TFW, DFW);
   const bodyTop = topBand;
+  const dustTop = bodyTop - DFW;
+  const topTuckY = bodyTop - (W + TFW);
   const bodyBottom = bodyTop + H;
   const col0 = 0;
   const col1 = W;
@@ -129,10 +130,10 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
     glueTab("glue-tab", col4, bodyTop, GFW, H),
     dustFlap("top-dust-left", col0, dustTop, W, DFW, "top", "Top dust flap (L)"),
     dustFlap("top-dust-right", col2, dustTop, W, DFW, "top", "Top dust flap (R)"),
-    tuckFlap("top-tuck", col1, 0, L, topBand, TFW, TFR, "top", "Top tuck flap"),
+    tuckFlap("top-tuck", col1, topTuckY, L, W + TFW, TFW, TFR, "top", "Top tuck flap"),
     dustFlap("bottom-dust-left", col0, bodyBottom, W, DFW, "bottom", "Bottom dust flap (L)"),
     dustFlap("bottom-dust-right", col2, bodyBottom, W, DFW, "bottom", "Bottom dust flap (R)"),
-    tuckFlap("bottom-tuck", col3, bodyBottom, L, bottomBand, TFW, TFR, "bottom", "Bottom tuck flap"),
+    tuckFlap("bottom-tuck", col3, bodyBottom, L, W + TFW, TFW, TFR, "bottom", "Bottom tuck flap"),
   ];
 
   const creases: DielineCrease[] = [
@@ -146,6 +147,8 @@ export function generateReverseTuckEnd(input: ReverseTuckEndParameters = {}): Di
     crease("cr-left-bottomdust", "left", "bottom-dust-left", { x: col0, y: bodyBottom }, { x: col1, y: bodyBottom }),
     crease("cr-right-bottomdust", "right", "bottom-dust-right", { x: col2, y: bodyBottom }, { x: col3, y: bodyBottom }),
     crease("cr-back-bottomtuck", "back", "bottom-tuck", { x: col3, y: bodyBottom }, { x: col4, y: bodyBottom }),
+    crease("cr-toptuck-lip", "top-tuck", "top-tuck", { x: col1, y: topTuckY + TFW }, { x: col2, y: topTuckY + TFW }),
+    crease("cr-bottomtuck-lip", "bottom-tuck", "bottom-tuck", { x: col3, y: bodyBottom + W }, { x: col4, y: bodyBottom + W }),
   ];
   const exteriorCutPaths = createExteriorCutPaths(faces);
   const geometry: GeometryPrimitive[] = [
@@ -331,21 +334,28 @@ function glueTab(id: string, x: number, y: number, width: number, height: number
 }
 
 function dustFlap(id: string, x: number, y: number, width: number, height: number, direction: "top" | "bottom", label: string): DielineFace {
-  const taper = Math.min(width * 0.12, height * 0.45);
+  const taper = Math.min(width * 0.15, height * 0.3);
+  const shoulder = Math.min(3, height * 0.1);
+  const topY = direction === "top" ? y : y + height;
+  const lidY = direction === "top" ? y + height : y;
+  const shoulderY = direction === "top" ? lidY - shoulder : lidY + shoulder;
+
   const vertices = direction === "top"
     ? [
-        { x, y: y + height },
-        { x: x + width, y: y + height },
-        { x: x + width - taper, y },
-        { x: x + taper * 0.35, y },
-        { x: x + taper * 0.25, y: y + height * 0.82 },
+        { x, y: lidY },
+        { x, y: shoulderY },
+        { x: x + taper, y: topY },
+        { x: x + width - taper, y: topY },
+        { x: x + width, y: shoulderY },
+        { x: x + width, y: lidY },
       ]
     : [
-        { x, y },
-        { x: x + width, y },
-        { x: x + width - taper, y: y + height },
-        { x: x + taper * 0.35, y: y + height },
-        { x: x + taper * 0.25, y: y + height * 0.18 },
+        { x, y: lidY },
+        { x, y: shoulderY },
+        { x: x + taper, y: topY },
+        { x: x + width - taper, y: topY },
+        { x: x + width, y: shoulderY },
+        { x: x + width, y: lidY },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
@@ -358,28 +368,50 @@ function tuckFlap(
   width: number,
   height: number,
   lipHeight: number,
-  radius: number,
+  taper: number,
   direction: "top" | "bottom",
   label: string,
 ): DielineFace {
-  const r = Math.min(radius, width * 0.2, lipHeight * 0.95);
   const innerY = direction === "top" ? y + lipHeight : y + height - lipHeight;
+  const topY = direction === "top" ? y : y + height;
+  const lidY = direction === "top" ? y + height : y;
+  
+  const r = Math.min(5, taper, lipHeight * 0.5); 
+  const slit = Math.min(3, taper * 0.5);
+  
+  const leftSlitX = x + slit;
+  const rightSlitX = x + width - slit;
+  
+  const leftTopCurveCenterX = x + taper + r;
+  const rightTopCurveCenterX = x + width - taper - r;
+  const topCurveCenterY = direction === "top" ? topY + r : topY - r;
+  
   const vertices = direction === "top"
     ? [
-        { x, y: y + height },
-        { x, y: innerY + r },
-        ...sampleQuarterArc({ x: x + r, y: innerY + r }, r, Math.PI, Math.PI * 1.5),
-        { x: x + width - r, y },
-        ...sampleQuarterArc({ x: x + width - r, y: innerY + r }, r, Math.PI * 1.5, Math.PI * 2),
-        { x: x + width, y: y + height },
+        { x, y: lidY },
+        { x, y: innerY },
+        { x: leftSlitX, y: innerY },
+        { x: leftSlitX, y: innerY - slit * 0.5 },
+        ...sampleQuarterArc({ x: leftTopCurveCenterX, y: topCurveCenterY }, r, Math.PI, Math.PI * 1.5),
+        { x: rightTopCurveCenterX, y: topY },
+        ...sampleQuarterArc({ x: rightTopCurveCenterX, y: topCurveCenterY }, r, Math.PI * 1.5, Math.PI * 2).slice(1),
+        { x: rightSlitX, y: innerY - slit * 0.5 },
+        { x: rightSlitX, y: innerY },
+        { x: x + width, y: innerY },
+        { x: x + width, y: lidY },
       ]
     : [
-        { x, y },
-        { x: x + width, y },
-        { x: x + width, y: innerY - r },
-        ...sampleQuarterArc({ x: x + width - r, y: innerY - r }, r, 0, Math.PI / 2),
-        { x: x + r, y: y + height },
-        ...sampleQuarterArc({ x: x + r, y: innerY - r }, r, Math.PI / 2, Math.PI),
+        { x, y: lidY },
+        { x, y: innerY },
+        { x: leftSlitX, y: innerY },
+        { x: leftSlitX, y: innerY + slit * 0.5 },
+        ...sampleQuarterArc({ x: leftTopCurveCenterX, y: topCurveCenterY }, r, Math.PI, Math.PI * 0.5),
+        { x: rightTopCurveCenterX, y: topY },
+        ...sampleQuarterArc({ x: rightTopCurveCenterX, y: topCurveCenterY }, r, Math.PI * 0.5, 0).slice(1),
+        { x: rightSlitX, y: innerY + slit * 0.5 },
+        { x: rightSlitX, y: innerY },
+        { x: x + width, y: innerY },
+        { x: x + width, y: lidY },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
@@ -447,7 +479,9 @@ function autoClosureValues(L: number, W: number) {
 function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReverseTuckEndParameters) {
   const errors: string[] = [];
   const faceIds = new Set<string>();
-  const creaseIds = new Set(graph.creases.map((crease) => crease.id));
+  const facesById = new Map<string, DielineFace>();
+  const creaseIds = new Set<string>();
+  const creasesById = new Map<string, DielineCrease>();
 
   if (!isPositiveFinite(graph.size.width) || !isPositiveFinite(graph.size.height)) {
     errors.push("graph size must be positive and finite");
@@ -471,6 +505,7 @@ function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReve
     }
 
     faceIds.add(face.id);
+    facesById.set(face.id, face);
 
     if (face.vertices.length < 3) {
       errors.push(`face ${face.id} must have at least 3 vertices`);
@@ -487,9 +522,20 @@ function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReve
     if (hasSelfIntersection(face.vertices)) {
       errors.push(`face ${face.id} has self-crossing polygon geometry`);
     }
+
+    if (hasTinyPolygonEdge(face.vertices)) {
+      errors.push(`face ${face.id} has duplicate or zero-length polygon edges`);
+    }
   }
 
   for (const crease of graph.creases) {
+    if (creaseIds.has(crease.id)) {
+      errors.push(`duplicate crease id ${crease.id}`);
+    }
+
+    creaseIds.add(crease.id);
+    creasesById.set(crease.id, crease);
+
     if (!faceIds.has(crease.faceA) || !faceIds.has(crease.faceB)) {
       errors.push(`crease ${crease.id} references a missing face`);
     }
@@ -497,11 +543,28 @@ function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReve
     if (!isFinitePoint(crease.edgeStart) || !isFinitePoint(crease.edgeEnd)) {
       errors.push(`crease ${crease.id} contains non-finite endpoints`);
     }
+
+    if (distance2D(crease.edgeStart, crease.edgeEnd) <= 0.000001) {
+      errors.push(`crease ${crease.id} has zero length`);
+    }
+
+    const faceA = facesById.get(crease.faceA);
+    const faceB = facesById.get(crease.faceB);
+    if (faceA && !isCreaseOnFaceBoundary(crease, faceA)) {
+      errors.push(`crease ${crease.id} is not on boundary of face ${faceA.id}`);
+    }
+    if (faceB && !isCreaseOnFaceBoundary(crease, faceB)) {
+      errors.push(`crease ${crease.id} is not on boundary of face ${faceB.id}`);
+    }
   }
 
   for (const cutPath of graph.cutPaths) {
     if (cutPath.points && !cutPath.points.every(isFinitePoint)) {
       errors.push(`cut path ${cutPath.id} contains non-finite points`);
+    }
+
+    if (cutPath.points && hasTinyPolylineSegment(cutPath.points)) {
+      errors.push(`cut path ${cutPath.id} contains zero-length segments`);
     }
   }
 
@@ -512,8 +575,12 @@ function validateReverseTuckEndGraph(graph: DielineGraph, values: NormalizedReve
   }
 
   const treeFaceIds = new Set<string>();
+  if (graph.faceTree.length !== 1) {
+    errors.push(`faceTree must have exactly one root, got ${graph.faceTree.length}`);
+  }
+
   for (const node of graph.faceTree) {
-    validateFaceTreeNode(node, true, faceIds, creaseIds, treeFaceIds, errors);
+    validateFaceTreeNode(node, true, null, faceIds, creasesById, treeFaceIds, errors);
   }
 
   for (const faceId of faceIds) {
@@ -552,8 +619,9 @@ function getPrimitivePoints(primitive: GeometryPrimitive): Point[] {
 function validateFaceTreeNode(
   node: DielineFaceNode,
   isRoot: boolean,
+  parentFaceId: string | null,
   faceIds: Set<string>,
-  creaseIds: Set<string>,
+  creasesById: Map<string, DielineCrease>,
   treeFaceIds: Set<string>,
   errors: string[],
 ) {
@@ -571,13 +639,57 @@ function validateFaceTreeNode(
     if (node.creaseId !== null) {
       errors.push(`faceTree root ${node.faceId} must not have a crease`);
     }
-  } else if (!node.creaseId || !creaseIds.has(node.creaseId)) {
-    errors.push(`faceTree face ${node.faceId} references missing crease ${node.creaseId ?? "null"}`);
+  } else if (!node.creaseId) {
+    errors.push(`faceTree face ${node.faceId} references missing crease null`);
+  } else {
+    const crease = creasesById.get(node.creaseId);
+    if (!crease) {
+      errors.push(`faceTree face ${node.faceId} references missing crease ${node.creaseId}`);
+    } else if (parentFaceId && !creaseConnectsFaces(crease, parentFaceId, node.faceId)) {
+      errors.push(`faceTree crease ${node.creaseId} does not connect parent ${parentFaceId} to child ${node.faceId}`);
+    }
   }
 
   for (const child of node.children) {
-    validateFaceTreeNode(child, false, faceIds, creaseIds, treeFaceIds, errors);
+    validateFaceTreeNode(child, false, node.faceId, faceIds, creasesById, treeFaceIds, errors);
   }
+}
+
+function creaseConnectsFaces(crease: DielineCrease, faceA: string, faceB: string): boolean {
+  return (crease.faceA === faceA && crease.faceB === faceB) || (crease.faceA === faceB && crease.faceB === faceA);
+}
+
+function isCreaseOnFaceBoundary(crease: DielineCrease, face: DielineFace): boolean {
+  return isPointOnFaceBoundary(crease.edgeStart, face) && isPointOnFaceBoundary(crease.edgeEnd, face);
+}
+
+function isPointOnFaceBoundary(point: Point, face: DielineFace): boolean {
+  return face.vertices.some((start, index) => pointOnSegment(point, start, face.vertices[(index + 1) % face.vertices.length]));
+}
+
+function pointOnSegment(point: Point, start: Point, end: Point): boolean {
+  const length = distance2D(start, end);
+
+  if (length <= 0.000001) {
+    return distance2D(point, start) <= 0.00001;
+  }
+
+  const cross = Math.abs((point.y - start.y) * (end.x - start.x) - (point.x - start.x) * (end.y - start.y));
+  const dot = (point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y);
+
+  return cross / length <= 0.00001 && dot >= -0.00001 && dot <= length * length + 0.00001;
+}
+
+function hasTinyPolygonEdge(points: Point[]): boolean {
+  return points.some((point, index) => distance2D(point, points[(index + 1) % points.length]) <= 0.000001);
+}
+
+function hasTinyPolylineSegment(points: Point[]): boolean {
+  return points.some((point, index) => index > 0 && distance2D(point, points[index - 1]) <= 0.000001);
+}
+
+function distance2D(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 function hasSelfIntersection(points: Point[]): boolean {

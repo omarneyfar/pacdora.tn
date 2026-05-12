@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "verify:catalog": "node scripts/verify-catalog.mjs",
     "verify:dieline": "node scripts/verify-dieline-graph.mjs",
     "verify:visual": "node scripts/verify-visual.mjs"
   },

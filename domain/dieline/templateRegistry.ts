@@ -1,13 +1,15 @@
 import {
-  CEFBOX_FOLDING_BOX_DEFINITIONS,
-  type FoldingBoxVariantDefinition,
-} from "./templates/foldingBoxVariants";
-import {
-  generateReverseTuckEnd,
-  normalizeReverseTuckEndParameters,
-  REVERSE_TUCK_END_PARAMETER_SPECS,
-  type ReverseTuckEndParameters,
-} from "./templates/reverseTuckEnd";
+  catalogTemplateToParameterGroups,
+  generateGraphFromCatalogTemplate,
+  getCatalogCategorySlug,
+  getCatalogTemplateById as getCatalogTemplate,
+  getCatalogTemplateByRoute,
+  listCatalogTemplates,
+  loadTemplateCatalog,
+  resolveTemplateParameters,
+  type DielineTemplateDefinition as CatalogTemplateDefinition,
+} from "./catalog";
+import { hasDielineGenerator } from "./generators/generatorRegistry";
 import type {
   DielineCategory,
   DielineGraph,
@@ -37,6 +39,11 @@ export type RegisteredDielineTemplate = {
   exportFormats: DielineTemplateExportFormat[];
   defaultValues: ParameterValueMap;
   capabilities: string[];
+  hasGenerator: boolean;
+  runtimeStatus: string;
+  productionRiskLevel?: string;
+  requiresManualVerification: boolean;
+  catalogTemplate: CatalogTemplateDefinition;
   generate: (values?: ParameterValueMap) => DielineGraph;
 };
 
@@ -49,81 +56,39 @@ export type DielineTemplateSummary = {
   parameters: string[];
   isImplemented: boolean;
   href?: string;
+  runtimeStatus: string;
+  productionRiskLevel?: string;
+  sourceWebsite?: string;
+  requiresManualVerification: boolean;
 };
+
+const catalog = loadTemplateCatalog();
 
 export const DIELINE_TEMPLATE_CATEGORIES: DielineCategoryDefinition[] = [
   {
     id: "folding-box",
     slug: "foldingBox",
-    label: "Folding Box",
-    description: "Retail carton dielines with tuck ends, lock bottoms, hang tabs, handles, windows, inserts, and tear strips.",
-    totalTemplates: CEFBOX_FOLDING_BOX_DEFINITIONS.length,
+    label: catalog.databaseInfo.category,
+    description:
+      catalog.databaseInfo.intendedUse ??
+      "Folding carton dielines with template metadata, parameters, manufacturing notes, and generator status.",
+    totalTemplates: catalog.templates.length,
   },
 ];
 
-export const REVERSE_TUCK_END_PARAMETER_GROUPS: DielineParameterGroup[] = [
-  {
-    id: "custom-size",
-    label: "Custom Size",
-    description: "Primary product dimensions. Auto closure mode derives the tuck, dust, and glue geometry from these values.",
-    parameterIds: ["L", "W", "H"],
-    columns: 3,
-  },
-  {
-    id: "basic",
-    label: "Basic",
-    parameterIds: ["outputSizeMode", "materialThickness", "material", "bleeds"],
-    columns: 2,
-  },
-  {
-    id: "closure-mode",
-    label: "Closure",
-    description: "Auto is recommended. Manual unlocks the advanced closure values on the right.",
-    parameterIds: ["closureMode"],
-    columns: 1,
-  },
-  {
-    id: "download-formats",
-    label: "Download Formats",
-    parameterIds: ["pdfExport", "dxfExport"],
-    columns: 2,
-  },
-  {
-    id: "advanced-closure",
-    label: "Advanced Closure",
-    description: "Editable in manual mode for dieline technicians who need exact closure control.",
-    parameterIds: ["TFW", "TFR", "GFW", "DFW"],
-    columns: 2,
-  },
-];
-
-const TEMPLATE_REGISTRY: RegisteredDielineTemplate[] = [
-  {
-    id: "reverse-tuck-end",
-    slug: "reverseTuckEnd",
-    category: "folding-box",
-    categorySlug: "foldingBox",
-    label: "Reverse Tuck End Folding Carton Box",
-    description: "A folding carton with tuck ends on the top and bottom opening from opposite sides.",
-    parameterSpecs: REVERSE_TUCK_END_PARAMETER_SPECS,
-    parameterGroups: REVERSE_TUCK_END_PARAMETER_GROUPS,
-    exportFormats: ["dxf", "pdf", "svg"],
-    defaultValues: normalizeReverseTuckEndParameters(),
-    capabilities: ["canonical-2d", "svg-export", "dxf-export", "pdf-export", "folded-3d"],
-    generate: (values = {}) => generateReverseTuckEnd(values as ReverseTuckEndParameters),
-  },
-];
+const TEMPLATE_REGISTRY: RegisteredDielineTemplate[] = catalog.templates.map((template) => createRegisteredTemplate(template));
 
 export function getDielineTemplateCategories(): DielineCategoryDefinition[] {
   return DIELINE_TEMPLATE_CATEGORIES;
 }
 
 export function getDielineTemplateByRoute(categorySlug: string, templateSlug: string): RegisteredDielineTemplate | null {
-  return TEMPLATE_REGISTRY.find((template) => template.categorySlug === categorySlug && template.slug === templateSlug) ?? null;
+  const catalogTemplate = getCatalogTemplateByRoute(categorySlug, templateSlug);
+  return catalogTemplate ? getDielineTemplateById(catalogTemplate.id) : null;
 }
 
 export function getDielineTemplateById(templateId: string): RegisteredDielineTemplate | null {
-  return TEMPLATE_REGISTRY.find((template) => template.id === templateId) ?? null;
+  return TEMPLATE_REGISTRY.find((template) => template.id === templateId || template.slug === templateId) ?? null;
 }
 
 export function listRegisteredDielineTemplates(categorySlug?: string): RegisteredDielineTemplate[] {
@@ -133,22 +98,23 @@ export function listRegisteredDielineTemplates(categorySlug?: string): Registere
 }
 
 export function listDielineTemplateSummaries(categorySlug: string): DielineTemplateSummary[] {
-  if (categorySlug !== "foldingBox") {
-    return [];
-  }
+  return listCatalogTemplates(categorySlug).map((template) => {
+    const registered = getDielineTemplateById(template.id);
+    const hasGenerator = Boolean(registered?.hasGenerator);
 
-  return CEFBOX_FOLDING_BOX_DEFINITIONS.map((definition) => {
-    const registered = getDielineTemplateById(definition.id);
-    const slug = registered?.slug ?? toTemplateSlug(definition.id);
     return {
-      id: definition.id,
-      slug,
+      id: template.id,
+      slug: template.slug,
       categorySlug,
-      label: definition.label,
-      description: definition.description,
-      parameters: definition.parameters,
-      isImplemented: Boolean(registered),
-      ...(registered ? { href: `/dielines/${categorySlug}/${slug}` } : {}),
+      label: template.name,
+      description: template.description,
+      parameters: template.editableParameters.map((parameter) => parameter.label || parameter.key),
+      isImplemented: hasGenerator,
+      href: `/dielines/${categorySlug}/${template.slug}`,
+      runtimeStatus: hasGenerator ? template.runtime.status : "catalog-only",
+      productionRiskLevel: template.productionStatus.productionRiskLevel,
+      sourceWebsite: template.source.website,
+      requiresManualVerification: template.requiresManualVerification,
     };
   });
 }
@@ -177,13 +143,41 @@ export function getParameterSpecsByGroup(template: RegisteredDielineTemplate) {
 }
 
 export function getImplementedFoldingBoxCount(): number {
-  return listDielineTemplateSummaries("foldingBox").filter((template) => template.isImplemented).length;
+  return listRegisteredDielineTemplates("foldingBox").filter((template) => template.hasGenerator).length;
 }
 
-export function getFoldingBoxDefinition(templateId: string): FoldingBoxVariantDefinition | null {
-  return CEFBOX_FOLDING_BOX_DEFINITIONS.find((definition) => definition.id === templateId) ?? null;
+export function getFoldingBoxDefinition(templateId: string): CatalogTemplateDefinition | null {
+  return getCatalogTemplate(templateId);
 }
 
-function toTemplateSlug(templateId: string): string {
-  return templateId.replace(/-([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+function createRegisteredTemplate(template: CatalogTemplateDefinition): RegisteredDielineTemplate {
+  const hasGenerator = hasDielineGenerator(template.runtime.generatorId);
+  const resolved = resolveTemplateParameters(template, {}, catalog.globalDefaults);
+
+  return {
+    id: template.id,
+    slug: template.slug,
+    category: toDielineCategory(template.category),
+    categorySlug: getCatalogCategorySlug(template),
+    label: template.name,
+    description: template.description,
+    parameterSpecs: resolved.parameterSpecs,
+    parameterGroups: catalogTemplateToParameterGroups(template),
+    exportFormats: hasGenerator ? ["dxf", "pdf", "svg"] : [],
+    defaultValues: resolved.generatorParameters,
+    capabilities: [
+      "catalog-driven-ui",
+      ...(hasGenerator ? ["typescript-generator", "canonical-2d", "folded-3d"] : ["catalog-only"]),
+    ],
+    hasGenerator,
+    runtimeStatus: hasGenerator ? template.runtime.status : "catalog-only",
+    productionRiskLevel: template.productionStatus.productionRiskLevel,
+    requiresManualVerification: template.requiresManualVerification,
+    catalogTemplate: template,
+    generate: (values = {}) => generateGraphFromCatalogTemplate(template.id, values).graph,
+  };
+}
+
+function toDielineCategory(category: string): DielineCategory {
+  return category.toLowerCase().includes("folding") ? "folding-box" : "custom";
 }

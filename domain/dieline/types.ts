@@ -195,6 +195,17 @@ export type DielineGraphMetadata = {
   parameters?: DielineParameter[];
   parameterSpecs?: ParameterSpec[];
   parameterValues?: ParameterValueMap;
+  catalog?: {
+    templateId: string;
+    templateSlug: string;
+    templateCatalogVersion: string;
+    generatorId: string;
+    status: string;
+    requiresManualVerification: boolean;
+    productionReady: boolean;
+    source?: unknown;
+    warnings?: string[];
+  };
 };
 
 export type DielineFace = {
