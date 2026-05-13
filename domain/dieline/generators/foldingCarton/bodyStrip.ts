@@ -52,9 +52,10 @@ export function createBodyStrip(params: NormalizedParams, recipe: FoldingCartonR
     return createRectFace(panelId, col.x, bodyTop, col.width, H, "panel", capitalize(panelId));
   });
 
-  // Create glue tab face
+  // Create glue tab face. Bevel goes on the FREE edge (away from the attached panel).
   const glueCol = columnsByFaceId.get("glue-tab")!;
-  const glueTabFace = createGlueTabFace("glue-tab", glueCol.x, bodyTop, GFW, H);
+  const bevelSide = recipe.body.glueTabSide === "before" ? "left" : "right";
+  const glueTabFace = createGlueTabFace("glue-tab", glueCol.x, bodyTop, GFW, H, bevelSide);
 
   return {
     faces: bodyFaces,
@@ -112,18 +113,31 @@ export function createRectFace(
   });
 }
 
-function createGlueTabFace(id: string, x: number, y: number, width: number, height: number): DielineFace {
+function createGlueTabFace(
+  id: string, x: number, y: number, width: number, height: number,
+  bevelSide: "left" | "right",
+): DielineFace {
   // Beveled glue tab. Bevel proportions are approximate (needs verification).
+  // Bevel goes on the free edge (away from the attached panel).
   const bevel = Math.min(width * 0.34, height * 0.08);
+  const vertices = bevelSide === "right"
+    ? [
+        { x, y },
+        { x: x + width, y: y + bevel },
+        { x: x + width, y: y + height - bevel },
+        { x, y: y + height },
+      ]
+    : [
+        { x, y: y + bevel },
+        { x: x + width, y },
+        { x: x + width, y: y + height },
+        { x, y: y + height - bevel },
+      ];
+
   return createDielineFace({
     id,
     label: "Glue tab",
-    vertices: [
-      { x, y },
-      { x: x + width, y: y + bevel },
-      { x: x + width, y: y + height - bevel },
-      { x, y: y + height },
-    ],
+    vertices,
     role: "glue",
     artworkEnabled: false,
   });

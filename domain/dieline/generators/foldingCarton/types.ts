@@ -24,6 +24,8 @@ export type FoldingCartonRecipe = {
   family: string;
   verificationStatus: VerificationStatus;
   productionReady: boolean;
+  /** Optional parameter specs for the UI parameter editor. */
+  parameterSpecs?: ParameterSpec[];
   body: {
     /** Panel IDs in left-to-right strip order. Widths alternate W, L, W, L. */
     panelOrder: string[];

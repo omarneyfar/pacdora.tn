@@ -1,5 +1,5 @@
 import { createTemplateMetadata } from "../../structure";
-import type { DielineCrease, DielineFace, DielineGraph, GeometryPrimitive, Point } from "../../types";
+import type { DielineCrease, DielineFace, DielineGraph, DielineParameter, DielinePart, DielinePartRole, GeometryPrimitive, Point } from "../../types";
 import { assembleGeometryPrimitives } from "./assembleGeometry";
 import { createBodyStrip } from "./bodyStrip";
 import { createDustFlapFaces, createPanelFlapFaces } from "./closures/dustFlaps";
@@ -58,7 +58,15 @@ export function generateFoldingCarton(
     family: recipe.family,
     familyLabel: recipe.label,
     parts: buildParts(recipe, allFaces, creases),
+    parameterSpecs: recipe.parameterSpecs,
     parameterValues: params,
+    parameters: recipe.parameterSpecs?.map((spec): DielineParameter => ({
+      id: spec.id,
+      label: spec.label,
+      kind: spec.kind,
+      value: (params as Record<string, string | number | boolean>)[spec.id],
+      ...(spec.unit ? { unit: spec.unit } : {}),
+    })),
   });
 
   const graph: DielineGraph = {
@@ -207,11 +215,11 @@ function buildParts(recipe: FoldingCartonRecipe, faces: DielineFace[], creases: 
     .filter((c) => recipe.body.panelOrder.includes(c.faceA) && recipe.body.panelOrder.includes(c.faceB))
     .map((c) => c.id);
 
-  const parts = [
+  const parts: DielinePart[] = [
     {
       id: "body-panels",
       label: "Body panels",
-      role: "body" as const,
+      role: "body",
       faceIds: recipe.body.panelOrder.filter((id) => faceIdSet.has(id)),
       creaseIds: bodyCreaseIds.filter((id) => creaseIdSet.has(id)),
     },
@@ -244,7 +252,7 @@ function buildParts(recipe: FoldingCartonRecipe, faces: DielineFace[], creases: 
       parts.push({
         id: `${position}-closure`,
         label: `${position.charAt(0).toUpperCase() + position.slice(1)} closure`,
-        role: `${position}-closure` as const,
+        role: `${position}-closure` as DielinePartRole,
         faceIds,
         creaseIds: partCreaseIds,
       });
@@ -259,7 +267,7 @@ function buildParts(recipe: FoldingCartonRecipe, faces: DielineFace[], creases: 
     parts.push({
       id: "glue-tab",
       label: "Glue tab",
-      role: "glue-flap" as const,
+      role: "glue-flap",
       faceIds: ["glue-tab"],
       creaseIds: creaseIdSet.has(glueCreaseId) ? [glueCreaseId] : [],
     });
