@@ -3,8 +3,10 @@
 import { useCallback, useMemo } from "react";
 
 import type { CartonDimensions } from "@/domain/packaging";
+import { generateGraphFromCatalogTemplate } from "@/domain/dieline/catalog";
 import { generateReverseTuckEnd } from "@/domain/dieline/templates/reverseTuckEnd";
-import type { ParameterSpec, ParameterValueMap } from "@/domain/dieline/types";
+import { generateStraightTuckEnd } from "@/domain/dieline/templates/straightTuckEnd";
+import type { DielineGraph, ParameterSpec, ParameterValueMap } from "@/domain/dieline/types";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { markChanged, setDielineGraph, setDimensions } from "@/store/builderSlice";
 import { setSelectedSourceId } from "@/store/artworkSlice";
@@ -65,9 +67,10 @@ export function ParametersPanel() {
         [spec.id]: nextValue,
       };
 
-      if (dielineGraph.metadata.family === "reverse-tuck-end") {
+      const nextGraph = generateUpdatedTemplateGraph(dielineGraph, nextValues);
+      if (nextGraph) {
         dispatch(clearShareUrl());
-        dispatch(setDielineGraph(generateReverseTuckEnd(nextValues)));
+        dispatch(setDielineGraph(nextGraph));
         dispatch(markChanged());
       }
     },
@@ -133,6 +136,27 @@ export function ParametersPanel() {
       </CollapsibleSection>
     </>
   );
+}
+
+function generateUpdatedTemplateGraph(
+  graph: DielineGraph,
+  values: ParameterValueMap,
+) {
+  const catalogTemplateId = graph.metadata?.catalog?.templateId;
+
+  if (catalogTemplateId) {
+    return generateGraphFromCatalogTemplate(catalogTemplateId, values).graph;
+  }
+
+  if (graph.metadata?.family === "reverse-tuck-end") {
+    return generateReverseTuckEnd(values);
+  }
+
+  if (graph.metadata?.family === "straight-tuck-end") {
+    return generateStraightTuckEnd(values);
+  }
+
+  return null;
 }
 
 function TemplateParameterControl({

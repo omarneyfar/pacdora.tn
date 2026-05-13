@@ -19,12 +19,15 @@ const {
 } = loadTs(path.join(projectRoot, "domain", "dieline", "templateRegistry"));
 const { generateGraphFromCatalogTemplate, loadTemplateCatalog } = loadTs(path.join(projectRoot, "domain", "dieline", "catalog"));
 const { generateFromRecipe } = loadTs(path.join(projectRoot, "domain", "dieline", "componentEngine"));
+const { getDielineGenerator } = loadTs(path.join(projectRoot, "domain", "dieline", "generators", "generatorRegistry"));
 const { generateReverseTuckEnd } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "reverseTuckEnd"));
 const { parseReferenceGeometry, compareGraphToReference } = loadTs(path.join(projectRoot, "domain", "dieline", "reference"));
 const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
 const { normalizeDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
 const { getSeedDielines } = loadTs(path.join(projectRoot, "server", "dielines", "seedDielines"));
+const { createFullProjectPayload, createSavedPayloadFromProject } = loadTs(path.join(projectRoot, "utils", "projectPayload"));
+const { migrateProject } = loadTs(path.join(projectRoot, "utils", "migrateProject"));
 const reverseTuckEndV2Recipe = loadTs(path.join(projectRoot, "domain", "dieline", "recipes", "foldingBox", "reverseTuckEnd.v2.json"));
 const straightTuckEndV2Recipe = loadTs(path.join(projectRoot, "domain", "dieline", "recipes", "foldingBox", "straightTuckEnd.v2.json"));
 const dimensions = { width: 232, height: 70, depth: 232 };
@@ -495,6 +498,8 @@ function assertSeedPolicy(seeds) {
 }
 
 function assertTemplateRegistry() {
+  assertV2GeneratorRegistryPolicy();
+
   const reverseTuckEnd = getDielineTemplateByRoute("foldingBox", "reverseTuckEnd");
   assert(reverseTuckEnd, "Template registry should expose Reverse Tuck End by CefBox-style route");
   assert(reverseTuckEnd.catalogTemplate.runtime.generatorId === "reverseTuckEndV2", "Reverse Tuck End should use the v2 component-engine generator");
@@ -536,6 +541,20 @@ function assertTemplateRegistry() {
   );
   assertCatalogManualPassesExplicitClosures(reverseTuckEnd, "Reverse Tuck End catalog manual mode");
   assertCatalogManualPassesExplicitClosures(straightTuckEnd, "Straight Tuck End catalog manual mode");
+  assertProductBuilderFlow(reverseTuckEnd, "Reverse Tuck End product flow");
+  assertProductBuilderFlow(straightTuckEnd, "Straight Tuck End product flow");
+}
+
+function assertV2GeneratorRegistryPolicy() {
+  const officialReverse = getDielineGenerator("reverseTuckEnd")({ L: 120, W: 60, H: 160 });
+  const officialStraight = getDielineGenerator("straightTuckEnd")({ L: 120, W: 60, H: 160 });
+  const legacyReverse = getDielineGenerator("reverseTuckEndLegacy")({ L: 120, W: 60, H: 160 });
+  const legacyStraight = getDielineGenerator("straightTuckEndLegacy")({ L: 120, W: 60, H: 160 });
+
+  assert(officialReverse.metadata?.parameterValues?.generatorVersion === "component-engine-v2", "Official reverseTuckEnd registry path should use v2");
+  assert(officialStraight.metadata?.parameterValues?.generatorVersion === "component-engine-v2", "Official straightTuckEnd registry path should use v2");
+  assert(legacyReverse.metadata?.parameterValues?.generatorVersion !== "component-engine-v2", "Legacy reverseTuckEnd fallback should remain v1");
+  assert(legacyStraight.metadata?.parameterValues?.generatorVersion !== "component-engine-v2", "Legacy straightTuckEnd fallback should remain v1");
 }
 
 function assertCatalogAutoMatchesDirectV2(label, templateId, recipe) {
@@ -582,6 +601,106 @@ function assertCatalogManualPassesExplicitClosures(template, label) {
   }
 }
 
+function assertProductBuilderFlow(template, label) {
+  const baseInput = { L: 120, W: 60, H: 160, closureMode: "auto" };
+  const resizedInput = { L: 160, W: 70, H: 190, closureMode: "auto" };
+  const graph = template.generate(baseInput);
+  const resized = template.generate(resizedInput);
+
+  assert(graph.metadata?.parameterValues?.generatorVersion === "component-engine-v2", `${label}: catalog/product graph must use v2`);
+  assert(graph.metadata?.catalog?.generatorId === template.catalogTemplate.runtime.generatorId, `${label}: graph catalog generator id mismatch`);
+  assert(graph.metadata?.catalog?.productionReady === false, `${label}: graph must not claim productionReady`);
+  assert(graph.source?.type === "template", `${label}: graph source should be template`);
+  assert(graph.source?.templateId === template.id, `${label}: graph source should preserve catalog template id`);
+  assert(graph.faces.length > 6, `${label}: graph should not fall back to the legacy six-face folding carton`);
+  assert(!sameArray(graph.faces.map((face) => face.id), ["front", "back", "left", "right", "top", "bottom"]), `${label}: graph face IDs look like legacy folding-carton fallback`);
+
+  assertGraphsMatch(generateFromRecipe(template.catalogTemplate.slug === "reverseTuckEnd" ? reverseTuckEndV2Recipe : straightTuckEndV2Recipe, baseInput), graph, `${label}: catalog path direct-v2 parity`);
+  assert(!closeNumbers(graph.size.width, resized.size.width, 0.01) || !closeNumbers(graph.size.height, resized.size.height, 0.01), `${label}: dimension changes should change graph size`);
+  assert(sameArray(graph.faces.map((face) => face.id), resized.faces.map((face) => face.id)), `${label}: face IDs should remain stable after dimension changes`);
+
+  assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), `${label}: 2D renderer needs cut geometry`);
+  assert(graph.geometry?.some((primitive) => primitive.layer === "crease"), `${label}: 2D renderer needs crease geometry`);
+  assert(graph.cutPaths.length > 0, `${label}: 2D renderer needs cut paths`);
+  assert(graph.faces.every((face) => face.vertices.every(isFinitePoint2D)), `${label}: 2D renderer received non-finite face vertices`);
+  assertFoldedModel(graph, `${label}: 3D folded model`);
+
+  const artworkFaceIds = graph.faces.filter((face) => face.artworkEnabled).map((face) => face.id);
+  assert(artworkFaceIds.length >= 4, `${label}: expected dynamic artwork-enabled face IDs`);
+  for (const faceId of ["front", "back", "left", "right"]) {
+    assert(artworkFaceIds.includes(faceId), `${label}: missing artwork-enabled face ${faceId}`);
+  }
+
+  const faceAssets = Object.fromEntries(artworkFaceIds.map((faceId) => [
+    faceId,
+    {
+      sourceId: "source-1",
+      fileName: "artwork.png",
+      sourceType: "image",
+      crop: {
+        coordinates: null,
+        transforms: { flip: { horizontal: false, vertical: false }, rotate: 0 },
+      },
+    },
+  ]));
+  const projectPayload = createFullProjectPayload({
+    projectName: `${label} save-load`,
+    projectStatus: "published",
+    dimensions: { width: baseInput.L, depth: baseInput.W, height: baseInput.H },
+    sources: [{
+      id: "source-1",
+      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+      fileName: "artwork.png",
+      mimeType: "image/png",
+      sourceType: "image",
+    }],
+    selectedSourceId: "source-1",
+    faces: faceAssets,
+    dielineSource: "template",
+    dielineTemplateId: template.id,
+    dielineTemplateSlug: template.slug,
+    dielineTemplateName: template.label,
+    dielineGeneratorId: template.catalogTemplate.runtime.generatorId,
+    dielineFileName: "",
+    dielineGraph: graph,
+    dielineUserParameters: baseInput,
+    dielineResolvedParameters: graph.metadata?.parameterValues,
+  });
+
+  const savedProject = {
+    id: `verify-${template.slug}`,
+    name: projectPayload.name,
+    status: projectPayload.status,
+    templateId: projectPayload.templateId,
+    dimensions: projectPayload.dimensions,
+    faces: {},
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    workspace: {
+      sources: projectPayload.workspace.sources.map((source) => ({
+        id: source.id,
+        fileName: source.fileName,
+        mimeType: source.mimeType ?? "image/png",
+        sourceType: source.sourceType,
+        url: source.dataUrl,
+      })),
+      selectedSourceId: projectPayload.workspace.selectedSourceId,
+      faceAssets: projectPayload.workspace.faceAssets,
+      dieline: projectPayload.workspace.dieline,
+    },
+  };
+  const loadedProject = migrateProject(JSON.parse(JSON.stringify(savedProject)));
+  const loadedGraph = loadedProject.workspace?.dieline?.graph;
+  const savedSnapshot = createSavedPayloadFromProject(loadedProject);
+
+  assert(loadedGraph, `${label}: saved project did not reload a graph`);
+  assertGraphsMatch(graph, loadedGraph, `${label}: save/load graph preservation`);
+  assert(loadedProject.workspace?.dieline?.generatorId === template.catalogTemplate.runtime.generatorId, `${label}: save/load generator id mismatch`);
+  assert(loadedGraph.metadata?.parameterValues?.generatorVersion === "component-engine-v2", `${label}: save/load graph fell back from v2`);
+  assert(sameArray(Object.keys(savedSnapshot.workspace.faceAssets).sort(), artworkFaceIds.slice().sort()), `${label}: dynamic artwork face assignments were not preserved`);
+  assertFoldedModel(loadedGraph, `${label}: viewer saved graph`);
+}
+
 function assertGraphsMatch(expected, actual, label) {
   assert(
     sameArray(expected.faces.map((face) => face.id), actual.faces.map((face) => face.id)),
@@ -608,6 +727,10 @@ function assertGraphsMatch(expected, actual, label) {
 
 function sameArray(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function closeNumbers(actual, expected, epsilon) {
+  return Math.abs(actual - expected) <= epsilon;
 }
 
 function assertCloseNumber(actual, expected, label, epsilon) {

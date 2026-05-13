@@ -9,11 +9,17 @@ import type { FoldingCartonInput } from "./foldingCarton/types";
 
 export type DielineGenerator = (values?: ParameterValueMap) => DielineGraph;
 
+const generateReverseTuckEndV2: DielineGenerator = (values = {}) =>
+  generateFromRecipe(reverseTuckEndV2Recipe as DielineComponentRecipe, values);
+
+const generateStraightTuckEndV2: DielineGenerator = (values = {}) =>
+  generateFromRecipe(straightTuckEndV2Recipe as DielineComponentRecipe, values);
+
 export const DIELINE_GENERATOR_REGISTRY = {
-  reverseTuckEndV2: (values = {}) => generateFromRecipe(reverseTuckEndV2Recipe as DielineComponentRecipe, values),
-  straightTuckEndV2: (values = {}) => generateFromRecipe(straightTuckEndV2Recipe as DielineComponentRecipe, values),
-  reverseTuckEnd: (values = {}) => generateReverseTuckEnd(values as FoldingCartonInput),
-  straightTuckEnd: (values = {}) => generateStraightTuckEnd(values as FoldingCartonInput),
+  reverseTuckEndV2: generateReverseTuckEndV2,
+  straightTuckEndV2: generateStraightTuckEndV2,
+  reverseTuckEndLegacy: (values = {}) => generateReverseTuckEnd(values as FoldingCartonInput),
+  straightTuckEndLegacy: (values = {}) => generateStraightTuckEnd(values as FoldingCartonInput),
 } satisfies Record<string, DielineGenerator>;
 
 export type DielineGeneratorId = keyof typeof DIELINE_GENERATOR_REGISTRY;
