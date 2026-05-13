@@ -5,6 +5,7 @@ import type {
   DielinePartGenerator,
 } from "../../componentEngine/types";
 import type { DielineFace, GeometryPrimitive, Point } from "../../types";
+import { assertPositiveFinite, clampRadius, clampScoreOffset, pushAdjustmentWarning } from "../adaptiveGeometry";
 import { crease } from "../body/bodyStrip";
 
 type TuckFlapConfig = ComponentRecipePart & {
@@ -27,19 +28,28 @@ export const tuckFlapPart: DielinePartGenerator<TuckFlapConfig> = {
       throw new Error(`tuck-flap part ${config.id} must attach to a top or bottom edge anchor.`);
     }
 
-    const height = ctx.numberValue(config.height, `${config.id}.height`);
-    const lipHeight = ctx.numberValue(config.lipHeight, `${config.id}.lipHeight`);
-    const cornerRadius = ctx.numberValue(config.taper ?? 0, `${config.id}.taper`);
-    const scoreOffset = ctx.numberValue(config.scoreOffset, `${config.id}.scoreOffset`);
-
-    if (height <= 0 || lipHeight < 0 || scoreOffset < 0) {
-      throw new Error(`tuck-flap part ${config.id} has invalid dimensions.`);
-    }
-
     const position = anchor.edge === "top" ? "top" : "bottom";
     const x = Math.min(anchor.start.x, anchor.end.x);
-    const y = position === "top" ? anchor.start.y - height : anchor.start.y;
     const width = anchor.length;
+    const requestedHeight = ctx.numberValue(config.height, `${config.id}.height`);
+    const requestedLipHeight = ctx.numberValue(config.lipHeight, `${config.id}.lipHeight`);
+    const requestedCornerRadius = ctx.numberValue(config.taper ?? 0, `${config.id}.taper`);
+    const requestedScoreOffset = ctx.numberValue(config.scoreOffset, `${config.id}.scoreOffset`);
+    const warnings: string[] = [];
+
+    assertPositiveFinite(width, `tuck-flap part ${config.id} anchor width`);
+    assertPositiveFinite(requestedHeight, `tuck-flap part ${config.id} height`);
+
+    const height = requestedHeight;
+    const lipHeight = Math.min(height, Math.max(0, requestedLipHeight));
+    const cornerRadius = clampRadius(requestedCornerRadius, width, height);
+    const scoreOffset = clampScoreOffset(requestedScoreOffset, height, cornerRadius, position);
+
+    pushAdjustmentWarning(warnings, config.id, "lip height", requestedLipHeight, lipHeight);
+    pushAdjustmentWarning(warnings, config.id, "corner radius", requestedCornerRadius, cornerRadius);
+    pushAdjustmentWarning(warnings, config.id, "score offset", requestedScoreOffset, scoreOffset);
+
+    const y = position === "top" ? anchor.start.y - height : anchor.start.y;
     const faceId = config.faceId ?? `${position}-tuck`;
     const face = createTuckFlapFace(
       faceId,
@@ -47,7 +57,6 @@ export const tuckFlapPart: DielinePartGenerator<TuckFlapConfig> = {
       y,
       width,
       height,
-      lipHeight,
       cornerRadius,
       position,
       `${capitalize(position)} tuck flap`,
@@ -67,6 +76,7 @@ export const tuckFlapPart: DielinePartGenerator<TuckFlapConfig> = {
       geometry: [scoreLine],
       anchors: createFaceEdgeAnchors(config.id, face),
       faceTreeHints: [{ parentFaceId: anchor.faceId, childFaceId: faceId, creaseId: structuralCrease.id }],
+      warnings,
       part: {
         id: config.id,
         label: `${capitalize(position)} tuck flap`,
@@ -84,12 +94,11 @@ function createTuckFlapFace(
   y: number,
   width: number,
   height: number,
-  lipHeight: number,
   cornerRadius: number,
   direction: "top" | "bottom",
   label: string,
 ): DielineFace {
-  const r = Math.max(0, Math.min(cornerRadius, lipHeight * 0.75, width * 0.16, height * 0.22, 8));
+  const r = cornerRadius;
   const vertices = direction === "top"
     ? [
         { x, y: y + height },

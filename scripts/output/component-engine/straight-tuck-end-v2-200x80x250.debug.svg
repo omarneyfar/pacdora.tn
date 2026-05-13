@@ -10,48 +10,48 @@
 <polyline points="0,112.4 20,105.6"/>
 <polyline points="20,355.6 0,348.8"/>
 <polyline points="0,348.8 0,112.4"/>
-<polyline points="100,105.6 100,8"/>
-<polyline points="100,8 100.273,5.929"/>
-<polyline points="100.273,5.929 101.072,4"/>
-<polyline points="101.072,4 102.343,2.343"/>
-<polyline points="102.343,2.343 104,1.072"/>
-<polyline points="104,1.072 105.929,0.273"/>
-<polyline points="105.929,0.273 108,0"/>
-<polyline points="108,0 292,0"/>
-<polyline points="292,0 294.071,0.273"/>
-<polyline points="294.071,0.273 296,1.072"/>
-<polyline points="296,1.072 297.657,2.343"/>
-<polyline points="297.657,2.343 298.928,4"/>
-<polyline points="298.928,4 299.727,5.929"/>
-<polyline points="299.727,5.929 300,8"/>
-<polyline points="300,8 300,105.6"/>
-<polyline points="20,105.6 26,59.2"/>
-<polyline points="26,59.2 94,59.2"/>
-<polyline points="94,59.2 100,105.6"/>
-<polyline points="300,105.6 306,59.2"/>
-<polyline points="306,59.2 374,59.2"/>
-<polyline points="374,59.2 380,105.6"/>
-<polyline points="100,355.6 100,453.2"/>
-<polyline points="100,453.2 100.273,455.271"/>
-<polyline points="100.273,455.271 101.072,457.2"/>
-<polyline points="101.072,457.2 102.343,458.857"/>
-<polyline points="102.343,458.857 104,460.128"/>
-<polyline points="104,460.128 105.929,460.927"/>
-<polyline points="105.929,460.927 108,461.2"/>
-<polyline points="108,461.2 292,461.2"/>
-<polyline points="292,461.2 294.071,460.927"/>
-<polyline points="294.071,460.927 296,460.128"/>
-<polyline points="296,460.128 297.657,458.857"/>
-<polyline points="297.657,458.857 298.928,457.2"/>
-<polyline points="298.928,457.2 299.727,455.271"/>
-<polyline points="299.727,455.271 300,453.2"/>
-<polyline points="300,453.2 300,355.6"/>
-<polyline points="20,355.6 26,402"/>
-<polyline points="26,402 94,402"/>
-<polyline points="94,402 100,355.6"/>
-<polyline points="300,355.6 306,402"/>
-<polyline points="306,402 374,402"/>
-<polyline points="374,402 380,355.6"/>
+<polyline points="100,105.6 100,14.4"/>
+<polyline points="100,14.4 100.491,10.673"/>
+<polyline points="100.491,10.673 101.929,7.2"/>
+<polyline points="101.929,7.2 104.218,4.218"/>
+<polyline points="104.218,4.218 107.2,1.929"/>
+<polyline points="107.2,1.929 110.673,0.491"/>
+<polyline points="110.673,0.491 114.4,0"/>
+<polyline points="114.4,0 285.6,0"/>
+<polyline points="285.6,0 289.327,0.491"/>
+<polyline points="289.327,0.491 292.8,1.929"/>
+<polyline points="292.8,1.929 295.782,4.218"/>
+<polyline points="295.782,4.218 298.071,7.2"/>
+<polyline points="298.071,7.2 299.509,10.673"/>
+<polyline points="299.509,10.673 300,14.4"/>
+<polyline points="300,14.4 300,105.6"/>
+<polyline points="20,105.6 26.4,59.2"/>
+<polyline points="26.4,59.2 93.6,59.2"/>
+<polyline points="93.6,59.2 100,105.6"/>
+<polyline points="300,105.6 306.4,59.2"/>
+<polyline points="306.4,59.2 373.6,59.2"/>
+<polyline points="373.6,59.2 380,105.6"/>
+<polyline points="100,355.6 100,446.8"/>
+<polyline points="100,446.8 100.491,450.527"/>
+<polyline points="100.491,450.527 101.929,454"/>
+<polyline points="101.929,454 104.218,456.982"/>
+<polyline points="104.218,456.982 107.2,459.271"/>
+<polyline points="107.2,459.271 110.673,460.709"/>
+<polyline points="110.673,460.709 114.4,461.2"/>
+<polyline points="114.4,461.2 285.6,461.2"/>
+<polyline points="285.6,461.2 289.327,460.709"/>
+<polyline points="289.327,460.709 292.8,459.271"/>
+<polyline points="292.8,459.271 295.782,456.982"/>
+<polyline points="295.782,456.982 298.071,454"/>
+<polyline points="298.071,454 299.509,450.527"/>
+<polyline points="299.509,450.527 300,446.8"/>
+<polyline points="300,446.8 300,355.6"/>
+<polyline points="20,355.6 26.4,402"/>
+<polyline points="26.4,402 93.6,402"/>
+<polyline points="93.6,402 100,355.6"/>
+<polyline points="300,355.6 306.4,402"/>
+<polyline points="306.4,402 373.6,402"/>
+<polyline points="373.6,402 380,355.6"/>
 </g>
 <g id="face-outlines" fill="rgba(255,255,255,0.6)" stroke="#2f3437" stroke-width="0.35">
 <polygon points="20,105.6 100,105.6 100,355.6 20,355.6"/>
@@ -59,12 +59,12 @@
 <polygon points="300,105.6 380,105.6 380,355.6 300,355.6"/>
 <polygon points="380,105.6 580,105.6 580,355.6 380,355.6"/>
 <polygon points="0,112.4 20,105.6 20,355.6 0,348.8"/>
-<polygon points="100,105.6 100,8 100.273,5.929 101.072,4 102.343,2.343 104,1.072 105.929,0.273 108,0 292,0 294.071,0.273 296,1.072 297.657,2.343 298.928,4 299.727,5.929 300,8 300,105.6"/>
-<polygon points="20,105.6 26,59.2 94,59.2 100,105.6"/>
-<polygon points="300,105.6 306,59.2 374,59.2 380,105.6"/>
-<polygon points="100,355.6 100,453.2 100.273,455.271 101.072,457.2 102.343,458.857 104,460.128 105.929,460.927 108,461.2 292,461.2 294.071,460.927 296,460.128 297.657,458.857 298.928,457.2 299.727,455.271 300,453.2 300,355.6"/>
-<polygon points="20,355.6 26,402 94,402 100,355.6"/>
-<polygon points="300,355.6 306,402 374,402 380,355.6"/>
+<polygon points="100,105.6 100,14.4 100.491,10.673 101.929,7.2 104.218,4.218 107.2,1.929 110.673,0.491 114.4,0 285.6,0 289.327,0.491 292.8,1.929 295.782,4.218 298.071,7.2 299.509,10.673 300,14.4 300,105.6"/>
+<polygon points="20,105.6 26.4,59.2 93.6,59.2 100,105.6"/>
+<polygon points="300,105.6 306.4,59.2 373.6,59.2 380,105.6"/>
+<polygon points="100,355.6 100,446.8 100.491,450.527 101.929,454 104.218,456.982 107.2,459.271 110.673,460.709 114.4,461.2 285.6,461.2 289.327,460.709 292.8,459.271 295.782,456.982 298.071,454 299.509,450.527 300,446.8 300,355.6"/>
+<polygon points="20,355.6 26.4,402 93.6,402 100,355.6"/>
+<polygon points="300,355.6 306.4,402 373.6,402 380,355.6"/>
 </g>
 <g id="structural-creases" stroke="#2364aa" stroke-width="0.55" stroke-dasharray="2 1">
 <line x1="100" y1="105.6" x2="100" y2="355.6"/>
@@ -222,12 +222,12 @@
 <text x="340" y="230.6" text-anchor="middle">right</text>
 <text x="480" y="230.6" text-anchor="middle">back</text>
 <text x="10.093" y="230.6" text-anchor="middle">glue-tab</text>
-<text x="200" y="52.869" text-anchor="middle">top-tuck</text>
-<text x="60" y="83.027" text-anchor="middle">top-dust-left</text>
-<text x="340" y="83.027" text-anchor="middle">top-dust-right</text>
-<text x="200" y="408.331" text-anchor="middle">bottom-tuck</text>
-<text x="60" y="378.173" text-anchor="middle">bottom-dust-left</text>
-<text x="340" y="378.173" text-anchor="middle">bottom-dust-right</text>
+<text x="200" y="53.018" text-anchor="middle">top-tuck</text>
+<text x="60" y="83.072" text-anchor="middle">top-dust-left</text>
+<text x="340" y="83.072" text-anchor="middle">top-dust-right</text>
+<text x="200" y="408.182" text-anchor="middle">bottom-tuck</text>
+<text x="60" y="378.128" text-anchor="middle">bottom-dust-left</text>
+<text x="340" y="378.128" text-anchor="middle">bottom-dust-right</text>
 </g>
 <g id="crease-labels" fill="#174a7c" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
 <text x="100" y="229" text-anchor="middle">cr-left-front</text>
@@ -290,12 +290,12 @@
 <g id="part-labels" fill="#6f42c1" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
 <text x="270" y="235.6" text-anchor="middle">body</text>
 <text x="10.093" y="235.6" text-anchor="middle">glue-tab</text>
-<text x="200" y="57.869" text-anchor="middle">top-tuck</text>
-<text x="60" y="88.027" text-anchor="middle">top-dust-left</text>
-<text x="340" y="88.027" text-anchor="middle">top-dust-right</text>
-<text x="200" y="413.331" text-anchor="middle">bottom-tuck</text>
-<text x="60" y="383.173" text-anchor="middle">bottom-dust-left</text>
-<text x="340" y="383.173" text-anchor="middle">bottom-dust-right</text>
+<text x="200" y="58.018" text-anchor="middle">top-tuck</text>
+<text x="60" y="88.072" text-anchor="middle">top-dust-left</text>
+<text x="340" y="88.072" text-anchor="middle">top-dust-right</text>
+<text x="200" y="413.182" text-anchor="middle">bottom-tuck</text>
+<text x="60" y="383.128" text-anchor="middle">bottom-dust-left</text>
+<text x="340" y="383.128" text-anchor="middle">bottom-dust-right</text>
 </g>
 </g>
 </svg>

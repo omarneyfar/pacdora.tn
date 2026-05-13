@@ -149,6 +149,10 @@ function resolveParameterValue(
     throw new Error(`Dimension parameter ${id} must be positive.`);
   }
 
+  if (DIMENSION_IDS.has(id)) {
+    return numeric;
+  }
+
   return clampParameterValue(id, numeric, definition, context);
 }
 

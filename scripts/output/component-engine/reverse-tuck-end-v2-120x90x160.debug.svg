@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="514mm" height="469.6mm" viewBox="0 0 514 469.6">
+<svg xmlns="http://www.w3.org/2000/svg" width="514.5mm" height="469.6mm" viewBox="0 0 514.5 469.6">
 <title>Reverse Tuck End Folding Carton Box</title>
-<rect x="0" y="0" width="514" height="469.6" fill="#fbfaf7"/>
+<rect x="0" y="0" width="514.5" height="469.6" fill="#fbfaf7"/>
 <g transform="translate(36 36)">
 <g id="cut-paths" stroke="#d12f2f" stroke-width="0.45" fill="none">
 <polyline points="0,118.8 90,118.8"/>
@@ -9,66 +9,66 @@
 <polyline points="210,278.8 90,278.8"/>
 <polyline points="210,118.8 300,118.8"/>
 <polyline points="300,118.8 420,118.8"/>
-<polyline points="420,118.8 442,126.28"/>
-<polyline points="442,126.28 442,271.32"/>
-<polyline points="442,271.32 420,278.8"/>
-<polyline points="90,118.8 90,8"/>
-<polyline points="90,8 90.273,5.929"/>
-<polyline points="90.273,5.929 91.072,4"/>
-<polyline points="91.072,4 92.343,2.343"/>
-<polyline points="92.343,2.343 94,1.072"/>
-<polyline points="94,1.072 95.929,0.273"/>
-<polyline points="95.929,0.273 98,0"/>
-<polyline points="98,0 202,0"/>
-<polyline points="202,0 204.071,0.273"/>
-<polyline points="204.071,0.273 206,1.072"/>
-<polyline points="206,1.072 207.657,2.343"/>
-<polyline points="207.657,2.343 208.928,4"/>
-<polyline points="208.928,4 209.727,5.929"/>
-<polyline points="209.727,5.929 210,8"/>
-<polyline points="210,8 210,118.8"/>
-<polyline points="0,118.8 6,66.6"/>
-<polyline points="6,66.6 84,66.6"/>
-<polyline points="84,66.6 90,118.8"/>
+<polyline points="420,118.8 442.5,126.45"/>
+<polyline points="442.5,126.45 442.5,271.15"/>
+<polyline points="442.5,271.15 420,278.8"/>
+<polyline points="90,118.8 90,16.2"/>
+<polyline points="90,16.2 90.552,12.007"/>
+<polyline points="90.552,12.007 92.17,8.1"/>
+<polyline points="92.17,8.1 94.745,4.745"/>
+<polyline points="94.745,4.745 98.1,2.17"/>
+<polyline points="98.1,2.17 102.007,0.552"/>
+<polyline points="102.007,0.552 106.2,0"/>
+<polyline points="106.2,0 193.8,0"/>
+<polyline points="193.8,0 197.993,0.552"/>
+<polyline points="197.993,0.552 201.9,2.17"/>
+<polyline points="201.9,2.17 205.255,4.745"/>
+<polyline points="205.255,4.745 207.83,8.1"/>
+<polyline points="207.83,8.1 209.448,12.007"/>
+<polyline points="209.448,12.007 210,16.2"/>
+<polyline points="210,16.2 210,118.8"/>
+<polyline points="0,118.8 7.2,66.6"/>
+<polyline points="7.2,66.6 82.8,66.6"/>
+<polyline points="82.8,66.6 90,118.8"/>
 <polyline points="90,118.8 0,118.8"/>
-<polyline points="210,118.8 216,66.6"/>
-<polyline points="216,66.6 294,66.6"/>
-<polyline points="294,66.6 300,118.8"/>
+<polyline points="210,118.8 217.2,66.6"/>
+<polyline points="217.2,66.6 292.8,66.6"/>
+<polyline points="292.8,66.6 300,118.8"/>
 <polyline points="300,118.8 210,118.8"/>
-<polyline points="300,278.8 300,389.6"/>
-<polyline points="300,389.6 300.273,391.671"/>
-<polyline points="300.273,391.671 301.072,393.6"/>
-<polyline points="301.072,393.6 302.343,395.257"/>
-<polyline points="302.343,395.257 304,396.528"/>
-<polyline points="304,396.528 305.929,397.327"/>
-<polyline points="305.929,397.327 308,397.6"/>
-<polyline points="308,397.6 412,397.6"/>
-<polyline points="412,397.6 414.071,397.327"/>
-<polyline points="414.071,397.327 416,396.528"/>
-<polyline points="416,396.528 417.657,395.257"/>
-<polyline points="417.657,395.257 418.928,393.6"/>
-<polyline points="418.928,393.6 419.727,391.671"/>
-<polyline points="419.727,391.671 420,389.6"/>
-<polyline points="420,389.6 420,278.8"/>
-<polyline points="0,278.8 6,331"/>
-<polyline points="6,331 84,331"/>
-<polyline points="84,331 90,278.8"/>
-<polyline points="210,278.8 216,331"/>
-<polyline points="216,331 294,331"/>
-<polyline points="294,331 300,278.8"/>
+<polyline points="300,278.8 300,381.4"/>
+<polyline points="300,381.4 300.552,385.593"/>
+<polyline points="300.552,385.593 302.17,389.5"/>
+<polyline points="302.17,389.5 304.745,392.855"/>
+<polyline points="304.745,392.855 308.1,395.43"/>
+<polyline points="308.1,395.43 312.007,397.048"/>
+<polyline points="312.007,397.048 316.2,397.6"/>
+<polyline points="316.2,397.6 403.8,397.6"/>
+<polyline points="403.8,397.6 407.993,397.048"/>
+<polyline points="407.993,397.048 411.9,395.43"/>
+<polyline points="411.9,395.43 415.255,392.855"/>
+<polyline points="415.255,392.855 417.83,389.5"/>
+<polyline points="417.83,389.5 419.448,385.593"/>
+<polyline points="419.448,385.593 420,381.4"/>
+<polyline points="420,381.4 420,278.8"/>
+<polyline points="0,278.8 7.2,331"/>
+<polyline points="7.2,331 82.8,331"/>
+<polyline points="82.8,331 90,278.8"/>
+<polyline points="210,278.8 217.2,331"/>
+<polyline points="217.2,331 292.8,331"/>
+<polyline points="292.8,331 300,278.8"/>
 </g>
 <g id="face-outlines" fill="rgba(255,255,255,0.6)" stroke="#2f3437" stroke-width="0.35">
 <polygon points="0,118.8 90,118.8 90,278.8 0,278.8"/>
 <polygon points="90,118.8 210,118.8 210,278.8 90,278.8"/>
 <polygon points="210,118.8 300,118.8 300,278.8 210,278.8"/>
 <polygon points="300,118.8 420,118.8 420,278.8 300,278.8"/>
-<polygon points="420,118.8 442,126.28 442,271.32 420,278.8"/>
-<polygon points="90,118.8 90,8 90.273,5.929 91.072,4 92.343,2.343 94,1.072 95.929,0.273 98,0 202,0 204.071,0.273 206,1.072 207.657,2.343 208.928,4 209.727,5.929 210,8 210,118.8"/>
-<polygon points="0,118.8 6,66.6 84,66.6 90,118.8"/>
-<polygon points="210,118.8 216,66.6 294,66.6 300,118.8"/>
-<polygon points="300,278.8 300,389.6 300.273,391.671 301.072,393.6 302.343,395.257 304,396.528 305.929,397.327 308,397.6 412,397.6 414.071,397.327 416,396.528 417.657,395.257 418.928,393.6 419.727,391.671 420,389.6 420,278.8"/>
-<polygon points="0,278.8 6,331 84,331 90,278.8"/>
-<polygon points="210,278.8 216,331 294,331 300,278.8"/>
+<polygon points="420,118.8 442.5,126.45 442.5,271.15 420,278.8"/>
+<polygon points="90,118.8 90,16.2 90.552,12.007 92.17,8.1 94.745,4.745 98.1,2.17 102.007,0.552 106.2,0 193.8,0 197.993,0.552 201.9,2.17 205.255,4.745 207.83,8.1 209.448,12.007 210,16.2 210,118.8"/>
+<polygon points="0,118.8 7.2,66.6 82.8,66.6 90,118.8"/>
+<polygon points="210,118.8 217.2,66.6 292.8,66.6 300,118.8"/>
+<polygon points="300,278.8 300,381.4 300.552,385.593 302.17,389.5 304.745,392.855 308.1,395.43 312.007,397.048 316.2,397.6 403.8,397.6 407.993,397.048 411.9,395.43 415.255,392.855 417.83,389.5 419.448,385.593 420,381.4 420,278.8"/>
+<polygon points="0,278.8 7.2,331 82.8,331 90,278.8"/>
+<polygon points="210,278.8 217.2,331 292.8,331 300,278.8"/>
 </g>
 <g id="structural-creases" stroke="#2364aa" stroke-width="0.55" stroke-dasharray="2 1">
 <line x1="90" y1="118.8" x2="90" y2="278.8"/>
@@ -135,15 +135,15 @@
 <line x1="300" y1="118.8" x2="300" y2="278.8"/>
 <circle cx="300" cy="118.8" r="1.25"/>
 <circle cx="300" cy="278.8" r="1.25"/>
-<line x1="420" y1="118.8" x2="442" y2="118.8"/>
+<line x1="420" y1="118.8" x2="442.5" y2="118.8"/>
 <circle cx="420" cy="118.8" r="1.25"/>
-<circle cx="442" cy="118.8" r="1.25"/>
-<line x1="442" y1="118.8" x2="442" y2="278.8"/>
-<circle cx="442" cy="118.8" r="1.25"/>
-<circle cx="442" cy="278.8" r="1.25"/>
-<line x1="420" y1="278.8" x2="442" y2="278.8"/>
+<circle cx="442.5" cy="118.8" r="1.25"/>
+<line x1="442.5" y1="118.8" x2="442.5" y2="278.8"/>
+<circle cx="442.5" cy="118.8" r="1.25"/>
+<circle cx="442.5" cy="278.8" r="1.25"/>
+<line x1="420" y1="278.8" x2="442.5" y2="278.8"/>
 <circle cx="420" cy="278.8" r="1.25"/>
-<circle cx="442" cy="278.8" r="1.25"/>
+<circle cx="442.5" cy="278.8" r="1.25"/>
 <line x1="420" y1="118.8" x2="420" y2="278.8"/>
 <circle cx="420" cy="118.8" r="1.25"/>
 <circle cx="420" cy="278.8" r="1.25"/>
@@ -225,13 +225,13 @@
 <text x="150" y="198.8" text-anchor="middle">front</text>
 <text x="255" y="198.8" text-anchor="middle">right</text>
 <text x="360" y="198.8" text-anchor="middle">back</text>
-<text x="430.82" y="198.8" text-anchor="middle">glue-tab</text>
-<text x="150" y="59.516" text-anchor="middle">top-tuck</text>
-<text x="45" y="93.321" text-anchor="middle">top-dust-left</text>
-<text x="255" y="93.321" text-anchor="middle">top-dust-right</text>
-<text x="360" y="338.084" text-anchor="middle">bottom-tuck</text>
-<text x="45" y="304.279" text-anchor="middle">bottom-dust-left</text>
-<text x="255" y="304.279" text-anchor="middle">bottom-dust-right</text>
+<text x="431.062" y="198.8" text-anchor="middle">glue-tab</text>
+<text x="150" y="59.862" text-anchor="middle">top-tuck</text>
+<text x="45" y="93.457" text-anchor="middle">top-dust-left</text>
+<text x="255" y="93.457" text-anchor="middle">top-dust-right</text>
+<text x="360" y="337.738" text-anchor="middle">bottom-tuck</text>
+<text x="45" y="304.143" text-anchor="middle">bottom-dust-left</text>
+<text x="255" y="304.143" text-anchor="middle">bottom-dust-right</text>
 </g>
 <g id="crease-labels" fill="#174a7c" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
 <text x="90" y="197.2" text-anchor="middle">cr-left-front</text>
@@ -262,9 +262,9 @@
 <text x="423" y="198.8" text-anchor="middle">back.right</text>
 <text x="360" y="281.8" text-anchor="middle">back.bottom</text>
 <text x="297" y="198.8" text-anchor="middle">back.left</text>
-<text x="431" y="115.8" text-anchor="middle">glue-tab.top</text>
-<text x="445" y="198.8" text-anchor="middle">glue-tab.right</text>
-<text x="431" y="281.8" text-anchor="middle">glue-tab.bottom</text>
+<text x="431.25" y="115.8" text-anchor="middle">glue-tab.top</text>
+<text x="445.5" y="198.8" text-anchor="middle">glue-tab.right</text>
+<text x="431.25" y="281.8" text-anchor="middle">glue-tab.bottom</text>
 <text x="417" y="198.8" text-anchor="middle">glue-tab.left</text>
 <text x="150" y="-3" text-anchor="middle">top-tuck.top</text>
 <text x="213" y="59.4" text-anchor="middle">top-tuck.right</text>
@@ -293,13 +293,13 @@
 </g>
 <g id="part-labels" fill="#6f42c1" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
 <text x="202.5" y="203.8" text-anchor="middle">body</text>
-<text x="430.82" y="203.8" text-anchor="middle">glue-tab</text>
-<text x="150" y="64.516" text-anchor="middle">top-tuck</text>
-<text x="45" y="98.321" text-anchor="middle">top-dust-left</text>
-<text x="255" y="98.321" text-anchor="middle">top-dust-right</text>
-<text x="360" y="343.084" text-anchor="middle">bottom-tuck</text>
-<text x="45" y="309.279" text-anchor="middle">bottom-dust-left</text>
-<text x="255" y="309.279" text-anchor="middle">bottom-dust-right</text>
+<text x="431.062" y="203.8" text-anchor="middle">glue-tab</text>
+<text x="150" y="64.862" text-anchor="middle">top-tuck</text>
+<text x="45" y="98.457" text-anchor="middle">top-dust-left</text>
+<text x="255" y="98.457" text-anchor="middle">top-dust-right</text>
+<text x="360" y="342.738" text-anchor="middle">bottom-tuck</text>
+<text x="45" y="309.143" text-anchor="middle">bottom-dust-left</text>
+<text x="255" y="309.143" text-anchor="middle">bottom-dust-right</text>
 </g>
 </g>
 </svg>

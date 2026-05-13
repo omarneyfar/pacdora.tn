@@ -7,9 +7,9 @@
   "productionReady": false,
   "verificationStatus": "geometry-needs-verification",
   "parameters": {
-    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120.65, "min": 10, "max": 800, "step": 1, "unit": "mm" },
-    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 60.72, "min": 8, "max": 500, "step": 1, "unit": "mm" },
-    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 161.13, "min": 10, "max": 900, "step": 1, "unit": "mm" },
+    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120.65, "step": 1, "unit": "mm" },
+    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 60.72, "step": 1, "unit": "mm" },
+    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 161.13, "step": 1, "unit": "mm" },
     "closureMode": {
       "label": "Closure dimensions",
       "kind": "closure",
@@ -55,31 +55,31 @@
     },
     "pdfExport": { "label": "PDF for Dielines", "kind": "export", "input": "boolean", "default": true },
     "dxfExport": { "label": "DXF for Dielines", "kind": "export", "input": "boolean", "default": true },
-    "TFW": { "label": "Tuck flap lip", "kind": "closure", "input": "number", "default": "clamp(W * 0.32, W * 0.22, W * 0.45)", "min": "W * 0.15", "max": "W * 0.6", "step": 0.5, "unit": "mm" },
-    "TFR": { "label": "Tuck flap radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.25, 4, min(W * 0.35, L * 0.2))", "min": 0, "max": "min(W * 0.5, L * 0.25)", "step": 0.5, "unit": "mm" },
-    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(W * 0.25, 10, 22)", "min": 10, "max": 22, "step": 0.5, "unit": "mm" },
-    "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, W * 0.45, W * 0.75)", "min": "W * 0.25", "max": "W * 0.9", "step": 0.5, "unit": "mm" }
+    "TFW": { "label": "Tuck flap lip", "kind": "closure", "input": "number", "default": "clamp(W * 0.32, max(1, min(W, L, H) * 0.08), max(2, min(W, L, H) * 0.5))", "step": 0.5, "unit": "mm" },
+    "TFR": { "label": "Tuck flap radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.18, 0.5, min(W * 0.25, L * 0.18, H * 0.18))", "step": 0.5, "unit": "mm" },
+    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(min(W, L, H) * 0.25, 1.5, max(3, min(W, L, H) * 0.35))", "step": 0.5, "unit": "mm" },
+    "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, max(1, W * 0.25), max(2, min(W * 0.75, H * 0.75, L * 0.75)))", "step": 0.5, "unit": "mm" }
   },
   "constraints": [
     {
-      "id": "width-too-small-for-tuck-closures",
-      "severity": "error",
-      "condition": "W < 20",
-      "message": "Width is too small for stable tuck-end closure geometry.",
+      "id": "width-very-small-for-handling",
+      "severity": "warning",
+      "condition": "W < 15",
+      "message": "Width is very small. Geometry can be generated, but closure handling should be reviewed.",
       "affectedParameters": ["W"]
     },
     {
-      "id": "length-too-small-for-body-panel",
-      "severity": "error",
-      "condition": "L < 35",
-      "message": "Length is too small for a usable folding-carton body panel.",
+      "id": "length-very-small-for-handling",
+      "severity": "warning",
+      "condition": "L < 20",
+      "message": "Length is very small. Review body-panel usability before using this dieline.",
       "affectedParameters": ["L"]
     },
     {
-      "id": "height-too-small-for-carton",
-      "severity": "error",
-      "condition": "H < 60",
-      "message": "Height is too small for this tuck-end carton recipe.",
+      "id": "height-very-small-for-handling",
+      "severity": "warning",
+      "condition": "H < 25",
+      "message": "Height is very small. Folding and loading may need manual review.",
       "affectedParameters": ["H"]
     },
     {
@@ -133,17 +133,17 @@
     },
     {
       "id": "glue-tab-too-small",
-      "severity": "error",
-      "condition": "GFW < 10",
-      "message": "Glue tab width is below the safe minimum.",
-      "affectedParameters": ["GFW"]
+      "severity": "warning",
+      "condition": "GFW < min(W, L, H) * 0.08",
+      "message": "Glue tab is small compared to the carton. Bond strength may need review.",
+      "affectedParameters": ["GFW", "L", "W", "H"]
     },
     {
       "id": "glue-tab-too-large",
-      "severity": "error",
-      "condition": "GFW > 22",
-      "message": "Glue tab width is above the safe maximum.",
-      "affectedParameters": ["GFW"]
+      "severity": "warning",
+      "condition": "GFW > min(W, L, H) * 0.45",
+      "message": "Glue tab is large compared to the carton. Review overlap and artwork clearance.",
+      "affectedParameters": ["GFW", "L", "W", "H"]
     }
   ],
   "parts": [

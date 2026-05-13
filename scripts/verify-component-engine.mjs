@@ -26,27 +26,33 @@ const stressCases = [
 const extremeCases = [
   {
     name: "very-tall-narrow",
-    input: { L: 80, W: 20, H: 240 },
-    expected: "warning",
-    expectedMessage: "height-width-ratio-too-large",
+    input: { L: 80, W: 20, H: 300 },
+    expectedWarnings: ["height-width-ratio-too-large"],
   },
   {
     name: "very-wide-shallow",
-    input: { L: 300, W: 120, H: 60 },
-    expected: "warning",
-    expectedMessage: "tuck-flap-too-large-for-body-height",
+    input: { L: 300, W: 120, H: 30 },
+    expectedWarnings: ["height-width-ratio-too-small", "tuck-flap-too-large-for-body-height"],
   },
   {
-    name: "very-small-W",
-    input: { L: 80, W: 12, H: 120 },
-    expected: "error",
-    expectedMessage: "width-too-small-for-tuck-closures",
+    name: "small-W-large-H",
+    input: { L: 80, W: 8, H: 240 },
+    expectedWarnings: ["width-very-small-for-handling", "height-width-ratio-too-large"],
   },
   {
-    name: "very-large-HW-ratio",
-    input: { L: 120, W: 24, H: 220 },
-    expected: "warning",
-    expectedMessage: "height-width-ratio-too-large",
+    name: "large-W-small-H",
+    input: { L: 300, W: 160, H: 30 },
+    expectedWarnings: ["height-width-ratio-too-small", "tuck-flap-too-large-for-body-height"],
+  },
+  {
+    name: "very-large-L-compared-to-W",
+    input: { L: 400, W: 30, H: 120 },
+    expectedWarnings: ["length-width-ratio-too-large"],
+  },
+  {
+    name: "very-small-L-compared-to-W",
+    input: { L: 18, W: 120, H: 120 },
+    expectedWarnings: ["length-very-small-for-handling", "width-length-ratio-too-large"],
   },
 ];
 const summaryRows = [];
@@ -61,8 +67,8 @@ assertRecipeLoads(straightRecipe, "Straight Tuck End v2");
 
 runStressSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
 runStressSuite("STE v2", straightRecipe, "straight-tuck-end");
-runConstraintSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
-runConstraintSuite("STE v2", straightRecipe, "straight-tuck-end");
+runExtremeSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
+runExtremeSuite("STE v2", straightRecipe, "straight-tuck-end");
 
 printSummaryTable(summaryRows);
 console.log(`Invariant checks passed: ${Array.from(invariantNames).sort().join(", ")}`);
@@ -92,6 +98,7 @@ function assertEngineFailures(recipe) {
   expectThrow(() => generateFromRecipe(badFormula), "invalid formula should fail");
 
   expectThrow(() => generateFromRecipe(recipe, { L: -10 }), "negative dimensions should fail");
+  expectThrow(() => generateFromRecipe(recipe, { W: 0 }), "zero dimensions should fail");
   expectThrow(() => generateFromRecipe(recipe, { W: Number.NaN }), "non-finite dimensions should fail");
 }
 
@@ -124,32 +131,19 @@ function runStressSuite(templateLabel, recipe, filePrefix) {
   }
 }
 
-function runConstraintSuite(templateLabel, recipe, filePrefix) {
+function runExtremeSuite(templateLabel, recipe, filePrefix) {
   for (const current of extremeCases) {
     const caseLabel = `${templateLabel} ${current.name}`;
-
-    if (current.expected === "error") {
-      expectConstraintError(() => generateFromRecipeDebug(recipe, current.input), current.expectedMessage, caseLabel);
-      summaryRows.push({
-        template: templateLabel,
-        size: current.name,
-        faces: "-",
-        creases: "-",
-        geometry: "-",
-        anchors: "-",
-        warnings: "blocked",
-        status: "error",
-      });
-      continue;
-    }
 
     const result = generateFromRecipeDebug(recipe, current.input);
     const validation = validateDielineGraph(result.graph);
     const warnings = [...result.warnings, ...validation.warnings];
 
-    assert(validation.ok, `${caseLabel}: warning case should still generate a valid graph`);
-    assert(warnings.length > 0, `${caseLabel}: expected constraint warnings`);
-    assert(warnings.some((warning) => warning.includes(current.expectedMessage)), `${caseLabel}: expected warning ${current.expectedMessage}`);
+    assert(validation.ok, `${caseLabel}: unusual but possible case should still generate a valid graph`);
+    assert(warnings.length > 0, `${caseLabel}: expected proportion warnings`);
+    for (const expectedWarning of current.expectedWarnings) {
+      assert(warnings.some((warning) => warning.includes(expectedWarning)), `${caseLabel}: expected warning ${expectedWarning}`);
+    }
     assertInvariants(caseLabel, recipe, result);
 
     const outputPath = path.join(outputDir, `${filePrefix}-v2-extreme-${current.name}.debug.svg`);
@@ -199,6 +193,9 @@ function assertInvariants(label, recipe, result) {
   trackInvariant("internal score lines are GeometryPrimitive only");
   assert(graph.creases.every((crease) => !crease.id.startsWith("score-")), `${label}: score line found in structural creases`);
   assert((graph.geometry ?? []).some((primitive) => primitive.id.startsWith("score-") && primitive.layer === "crease"), `${label}: score line geometry missing`);
+
+  trackInvariant("internal score lines stay inside their faces");
+  assertScoreLinesInsideFaces(label, graph);
 
   trackInvariant("every attachTo resolves to an anchor");
   trackInvariant("every structural crease base matches attachTo anchor");
@@ -268,11 +265,29 @@ function assertTuckFlapGeometry(label, graph, recipe, anchorsById) {
     const baseEnd = anchor.edge === "top" ? face.vertices[face.vertices.length - 1] : face.vertices[face.vertices.length - 1];
     assertPointClose(baseStart, anchor.start, `${label}: tuck flap ${faceId} base start`, ANCHOR_EPSILON);
     assertPointClose(baseEnd, anchor.end, `${label}: tuck flap ${faceId} base end`, ANCHOR_EPSILON);
+    assertClose(face.vertices[1].x, anchor.start.x, `${label}: tuck flap ${faceId} left side continuity`, ANCHOR_EPSILON);
+    assertClose(face.vertices[face.vertices.length - 2].x, anchor.end.x, `${label}: tuck flap ${faceId} right side continuity`, ANCHOR_EPSILON);
 
     for (const point of face.vertices) {
       assert(point.x >= face.bounds.x - ANCHOR_EPSILON, `${label}: tuck flap ${faceId} vertex extends left of bounds`);
       assert(point.x <= face.bounds.x + face.bounds.width + ANCHOR_EPSILON, `${label}: tuck flap ${faceId} vertex extends right of bounds`);
     }
+  }
+}
+
+function assertScoreLinesInsideFaces(label, graph) {
+  const faceById = new Map(graph.faces.map((face) => [face.id, face]));
+  const scoreLines = (graph.geometry ?? []).filter((primitive) => primitive.id.startsWith("score-") && primitive.type === "line");
+
+  for (const scoreLine of scoreLines) {
+    const faceId = scoreLine.id.replace(/^score-/, "").replace(/-lip$/, "");
+    const face = faceById.get(faceId);
+    const midpoint = midpointOf(scoreLine.start, scoreLine.end);
+
+    assert(face, `${label}: score line ${scoreLine.id} does not map to a face`);
+    assert(pointInOrOnPolygon(scoreLine.start, face.vertices), `${label}: score line ${scoreLine.id} start is outside ${faceId}`);
+    assert(pointInOrOnPolygon(scoreLine.end, face.vertices), `${label}: score line ${scoreLine.id} end is outside ${faceId}`);
+    assert(pointInOrOnPolygon(midpoint, face.vertices), `${label}: score line ${scoreLine.id} midpoint is outside ${faceId}`);
   }
 }
 
@@ -433,6 +448,39 @@ function midpointOf(start, end) {
   return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 }
 
+function pointInOrOnPolygon(point, points) {
+  if (points.some((start, index) => pointOnSegment(point, start, points[(index + 1) % points.length]))) {
+    return true;
+  }
+
+  let inside = false;
+  for (let current = 0, previous = points.length - 1; current < points.length; previous = current, current += 1) {
+    const a = points[current];
+    const b = points[previous];
+    const intersects = (a.y > point.y) !== (b.y > point.y)
+      && point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+function pointOnSegment(point, start, end) {
+  const length = Math.hypot(end.x - start.x, end.y - start.y);
+
+  if (length <= ANCHOR_EPSILON) {
+    return Math.hypot(point.x - start.x, point.y - start.y) <= ANCHOR_EPSILON;
+  }
+
+  const cross = Math.abs((point.y - start.y) * (end.x - start.x) - (point.x - start.x) * (end.y - start.y));
+  const dot = (point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y);
+
+  return cross / length <= ANCHOR_EPSILON && dot >= -ANCHOR_EPSILON && dot <= length * length + ANCHOR_EPSILON;
+}
+
 function pointsAttr(points) {
   return points.map((point) => `${format(point.x)},${format(point.y)}`).join(" ");
 }
@@ -487,18 +535,6 @@ function expectThrow(fn, label) {
     return;
   }
   throw new Error(`${label}: expected an error`);
-}
-
-function expectConstraintError(fn, expectedMessage, label) {
-  try {
-    fn();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    assert(message.includes(expectedMessage), `${label}: expected error containing ${expectedMessage}, got ${message}`);
-    return;
-  }
-
-  throw new Error(`${label}: expected constraint error`);
 }
 
 function assert(condition, message) {

@@ -10,42 +10,42 @@
 <polyline points="0,84.3 15,79.2"/>
 <polyline points="15,239.2 0,234.1"/>
 <polyline points="0,234.1 0,84.3"/>
-<polyline points="75,79.2 75,8"/>
-<polyline points="75,8 75.273,5.929"/>
-<polyline points="75.273,5.929 76.072,4"/>
-<polyline points="76.072,4 77.343,2.343"/>
-<polyline points="77.343,2.343 79,1.072"/>
-<polyline points="79,1.072 80.929,0.273"/>
-<polyline points="80.929,0.273 83,0"/>
-<polyline points="83,0 187,0"/>
-<polyline points="187,0 189.071,0.273"/>
-<polyline points="189.071,0.273 191,1.072"/>
-<polyline points="191,1.072 192.657,2.343"/>
-<polyline points="192.657,2.343 193.928,4"/>
-<polyline points="193.928,4 194.727,5.929"/>
-<polyline points="194.727,5.929 195,8"/>
-<polyline points="195,8 195,79.2"/>
+<polyline points="75,79.2 75,10.8"/>
+<polyline points="75,10.8 75.368,8.005"/>
+<polyline points="75.368,8.005 76.447,5.4"/>
+<polyline points="76.447,5.4 78.163,3.163"/>
+<polyline points="78.163,3.163 80.4,1.447"/>
+<polyline points="80.4,1.447 83.005,0.368"/>
+<polyline points="83.005,0.368 85.8,0"/>
+<polyline points="85.8,0 184.2,0"/>
+<polyline points="184.2,0 186.995,0.368"/>
+<polyline points="186.995,0.368 189.6,1.447"/>
+<polyline points="189.6,1.447 191.837,3.163"/>
+<polyline points="191.837,3.163 193.553,5.4"/>
+<polyline points="193.553,5.4 194.632,8.005"/>
+<polyline points="194.632,8.005 195,10.8"/>
+<polyline points="195,10.8 195,79.2"/>
 <polyline points="15,79.2 19.8,44.4"/>
 <polyline points="19.8,44.4 70.2,44.4"/>
 <polyline points="70.2,44.4 75,79.2"/>
 <polyline points="195,79.2 199.8,44.4"/>
 <polyline points="199.8,44.4 250.2,44.4"/>
 <polyline points="250.2,44.4 255,79.2"/>
-<polyline points="75,239.2 75,310.4"/>
-<polyline points="75,310.4 75.273,312.471"/>
-<polyline points="75.273,312.471 76.072,314.4"/>
-<polyline points="76.072,314.4 77.343,316.057"/>
-<polyline points="77.343,316.057 79,317.328"/>
-<polyline points="79,317.328 80.929,318.127"/>
-<polyline points="80.929,318.127 83,318.4"/>
-<polyline points="83,318.4 187,318.4"/>
-<polyline points="187,318.4 189.071,318.127"/>
-<polyline points="189.071,318.127 191,317.328"/>
-<polyline points="191,317.328 192.657,316.057"/>
-<polyline points="192.657,316.057 193.928,314.4"/>
-<polyline points="193.928,314.4 194.727,312.471"/>
-<polyline points="194.727,312.471 195,310.4"/>
-<polyline points="195,310.4 195,239.2"/>
+<polyline points="75,239.2 75,307.6"/>
+<polyline points="75,307.6 75.368,310.395"/>
+<polyline points="75.368,310.395 76.447,313"/>
+<polyline points="76.447,313 78.163,315.237"/>
+<polyline points="78.163,315.237 80.4,316.953"/>
+<polyline points="80.4,316.953 83.005,318.032"/>
+<polyline points="83.005,318.032 85.8,318.4"/>
+<polyline points="85.8,318.4 184.2,318.4"/>
+<polyline points="184.2,318.4 186.995,318.032"/>
+<polyline points="186.995,318.032 189.6,316.953"/>
+<polyline points="189.6,316.953 191.837,315.237"/>
+<polyline points="191.837,315.237 193.553,313"/>
+<polyline points="193.553,313 194.632,310.395"/>
+<polyline points="194.632,310.395 195,307.6"/>
+<polyline points="195,307.6 195,239.2"/>
 <polyline points="15,239.2 19.8,274"/>
 <polyline points="19.8,274 70.2,274"/>
 <polyline points="70.2,274 75,239.2"/>
@@ -59,10 +59,10 @@
 <polygon points="195,79.2 255,79.2 255,239.2 195,239.2"/>
 <polygon points="255,79.2 375,79.2 375,239.2 255,239.2"/>
 <polygon points="0,84.3 15,79.2 15,239.2 0,234.1"/>
-<polygon points="75,79.2 75,8 75.273,5.929 76.072,4 77.343,2.343 79,1.072 80.929,0.273 83,0 187,0 189.071,0.273 191,1.072 192.657,2.343 193.928,4 194.727,5.929 195,8 195,79.2"/>
+<polygon points="75,79.2 75,10.8 75.368,8.005 76.447,5.4 78.163,3.163 80.4,1.447 83.005,0.368 85.8,0 184.2,0 186.995,0.368 189.6,1.447 191.837,3.163 193.553,5.4 194.632,8.005 195,10.8 195,79.2"/>
 <polygon points="15,79.2 19.8,44.4 70.2,44.4 75,79.2"/>
 <polygon points="195,79.2 199.8,44.4 250.2,44.4 255,79.2"/>
-<polygon points="75,239.2 75,310.4 75.273,312.471 76.072,314.4 77.343,316.057 79,317.328 80.929,318.127 83,318.4 187,318.4 189.071,318.127 191,317.328 192.657,316.057 193.928,314.4 194.727,312.471 195,310.4 195,239.2"/>
+<polygon points="75,239.2 75,307.6 75.368,310.395 76.447,313 78.163,315.237 80.4,316.953 83.005,318.032 85.8,318.4 184.2,318.4 186.995,318.032 189.6,316.953 191.837,315.237 193.553,313 194.632,310.395 195,307.6 195,239.2"/>
 <polygon points="15,239.2 19.8,274 70.2,274 75,239.2"/>
 <polygon points="195,239.2 199.8,274 250.2,274 255,239.2"/>
 </g>
@@ -222,10 +222,10 @@
 <text x="225" y="159.2" text-anchor="middle">right</text>
 <text x="315" y="159.2" text-anchor="middle">back</text>
 <text x="7.582" y="159.2" text-anchor="middle">glue-tab</text>
-<text x="135" y="39.714" text-anchor="middle">top-tuck</text>
+<text x="135" y="39.805" text-anchor="middle">top-tuck</text>
 <text x="45" y="62.304" text-anchor="middle">top-dust-left</text>
 <text x="225" y="62.304" text-anchor="middle">top-dust-right</text>
-<text x="135" y="278.686" text-anchor="middle">bottom-tuck</text>
+<text x="135" y="278.595" text-anchor="middle">bottom-tuck</text>
 <text x="45" y="256.096" text-anchor="middle">bottom-dust-left</text>
 <text x="225" y="256.096" text-anchor="middle">bottom-dust-right</text>
 </g>
@@ -290,10 +290,10 @@
 <g id="part-labels" fill="#6f42c1" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
 <text x="180" y="164.2" text-anchor="middle">body</text>
 <text x="7.582" y="164.2" text-anchor="middle">glue-tab</text>
-<text x="135" y="44.714" text-anchor="middle">top-tuck</text>
+<text x="135" y="44.805" text-anchor="middle">top-tuck</text>
 <text x="45" y="67.304" text-anchor="middle">top-dust-left</text>
 <text x="225" y="67.304" text-anchor="middle">top-dust-right</text>
-<text x="135" y="283.686" text-anchor="middle">bottom-tuck</text>
+<text x="135" y="283.595" text-anchor="middle">bottom-tuck</text>
 <text x="45" y="261.096" text-anchor="middle">bottom-dust-left</text>
 <text x="225" y="261.096" text-anchor="middle">bottom-dust-right</text>
 </g>
