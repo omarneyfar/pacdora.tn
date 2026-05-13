@@ -1,11 +1,17 @@
-import type { DielinePartGenerator } from "./types";
+import { getPartContract } from "../partLibrary/partContracts";
 import type { DielineComponentRecipe } from "./types";
+import type { PartRegistryEntry } from "./types";
+
+export type RecipeValidationResult = {
+  warnings: string[];
+};
 
 export function validateRecipe(
   recipe: DielineComponentRecipe,
-  registry: Map<string, DielinePartGenerator>,
-) {
+  registry: Map<string, PartRegistryEntry>,
+): RecipeValidationResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
   const partIds = new Set<string>();
 
   if (recipe.schemaVersion !== "dieline-recipe-1.0") {
@@ -46,10 +52,35 @@ export function validateRecipe(
 
     if (!part.type || !registry.has(part.type)) {
       errors.push(`Unknown recipe part type: ${part.type}`);
+      continue;
+    }
+
+    const registration = registry.get(part.type);
+    if (!registration) {
+      continue;
+    }
+
+    const contractId = part.contract ?? registration.contractId;
+    if (!registration.allowedContractIds.includes(contractId)) {
+      errors.push(
+        `Recipe part "${part.id || "(unknown)"}" uses contract "${contractId}", but type "${part.type}" supports: ${registration.allowedContractIds.join(", ")}`,
+      );
+      continue;
+    }
+
+    try {
+      const contract = getPartContract(contractId);
+      if (contract.productionReady) {
+        errors.push(`Part contract "${contract.id}" must not be productionReady yet.`);
+      }
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : `Unknown part contract: ${contractId}`);
     }
   }
 
   if (errors.length > 0) {
     throw new Error(`Recipe ${recipe.id || "(unknown)"} is invalid: ${errors.join("; ")}`);
   }
+
+  return { warnings };
 }

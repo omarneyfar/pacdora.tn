@@ -117,6 +117,7 @@
     {
       "id": "body",
       "type": "body-strip",
+      "contract": "body-strip",
       "topBand": "max(FTH, DFW)",
       "bottomBand": "max(FTH, DFW)",
       "offsetX": "GFW",
@@ -127,10 +128,11 @@
         { "id": "left", "label": "Left", "width": "W", "height": "H" }
       ]
     },
-    { "id": "glue-tab", "type": "glue-tab", "attachTo": "front.left", "width": "GFW" },
+    { "id": "glue-tab", "type": "glue-tab", "contract": "side-glue-tab", "attachTo": "front.left", "width": "GFW" },
     {
       "id": "top-slotted-tuck",
       "type": "slotted-tuck-flap",
+      "contract": "slotted-tuck-flap",
       "attachTo": "front.top",
       "side": "top",
       "faceId": "top-tuck",
@@ -150,13 +152,14 @@
       },
       "relief": { "enabled": false }
     },
-    { "id": "top-tuck-left-relief", "type": "relief-notch", "attachTo": "top-tuck.left", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "top-tuck-right-relief", "type": "relief-notch", "attachTo": "top-tuck.right", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "top-dust-right", "type": "custom-dust-flap", "attachTo": "right.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
-    { "id": "top-dust-left", "type": "custom-dust-flap", "attachTo": "left.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "top-tuck-left-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "top-tuck.left", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "top-tuck-right-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "top-tuck.right", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "top-dust-right", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "right.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "top-dust-left", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "left.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
     {
       "id": "bottom-slotted-tuck",
       "type": "slotted-tuck-flap",
+      "contract": "slotted-tuck-flap",
       "attachTo": "back.bottom",
       "side": "bottom",
       "faceId": "bottom-tuck",
@@ -176,10 +179,10 @@
       },
       "relief": { "enabled": false }
     },
-    { "id": "bottom-tuck-left-relief", "type": "relief-notch", "attachTo": "bottom-tuck.left", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "bottom-tuck-right-relief", "type": "relief-notch", "attachTo": "bottom-tuck.right", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "bottom-dust-right", "type": "custom-dust-flap", "attachTo": "right.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
-    { "id": "bottom-dust-left", "type": "custom-dust-flap", "attachTo": "left.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } }
+    { "id": "bottom-tuck-left-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "bottom-tuck.left", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "bottom-tuck-right-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "bottom-tuck.right", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "bottom-dust-right", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "right.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "bottom-dust-left", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "left.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } }
   ],
   "folding": {
     "rootFace": "front",

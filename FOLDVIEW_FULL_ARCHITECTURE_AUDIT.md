@@ -2,1455 +2,1455 @@
 
 ## Audit Scope
 
-This audit inspected the `omarneyfar/pacdora.tn` repository on branch `realistic-dieline`, focusing on the new/modified FoldView architecture introduced on that branch. The inspected branch is ahead of `develop` by 16 commits and adds the dieline domain, catalog system, generators, renderers, verification scripts, server persistence, and UI routes. Direct repository cloning was unavailable in this runtime, so the audit is based on GitHub branch comparison plus targeted file reads of the key architecture files. Files listed in the branch diff but not deeply opened are marked as **Present but usage not confirmed** where appropriate.
+Repository analyzed: `omarneyfar/pacdora.tn`, branch `realistic-dieline`.
+
+Requested output: `FOLDVIEW_FULL_ARCHITECTURE_AUDIT.md`.
+
+This audit is intentionally **read-only**. It does not modify, refactor, or patch any code. The focus is to understand the current real architecture before fixing Reverse Tuck End or any other dieline issue.
+
+Important limitation: I could not clone the repository directly from the execution container, so the audit is based on GitHub repository inspection and targeted file reads of the important architecture files. Some secondary UI/API files should still receive deeper inspection before production changes.
 
 ---
 
-## 1. Executive Summary
+# 1. Executive Summary
 
-FoldView is becoming a packaging dieline generator and carton preview system built on Next.js, React, Redux, TypeScript, Three.js, and Supabase/local file persistence. The new branch introduces a serious domain model around `DielineGraph`, a JSON-driven folding-box catalog, TypeScript generators, 2D SVG rendering, a folded 3D preview, dynamic face artwork assignment, and save/load/publish workflows.
+FoldView is a Next.js / React / TypeScript application for packaging dieline generation, 2D dieline preview, artwork assignment, 3D carton mockup rendering, and project save/load/publish workflows.
 
-The strongest part of the project is that it now has a real shared runtime graph model: `DielineGraph`. This model is used by generators, 2D rendering, 3D folding, persistence, and validation. That is the correct direction.
+The project currently contains **three architectural layers at the same time**:
 
-The biggest architectural risk is that the system currently mixes three layers that should stay separate:
+1. **Legacy packaging/project layer**
+   - Still centered around a fixed folding-carton concept and dimensions.
+   - Older model still knows classic carton dimensions and project save/load contracts.
 
-1. **Legacy six-face carton system** in `domain/packaging/index.ts`.
-2. **New dynamic graph system** in `domain/dieline/*`.
-3. **Large JSON catalog/database** in `domain/dieline/catalog/foldingBoxCatalog.json`.
+2. **Dynamic DielineGraph layer**
+   - A more correct architecture for real packaging.
+   - Uses dynamic faces, structural creases, cut paths, metadata, geometry primitives, and a face tree.
 
-The second major risk is that the Reverse Tuck End implementation is treated as implemented, but the graph contains internal self-referencing lip creases that conflict with strict graph validation assumptions. This could explain why fixes feel like they go in the wrong direction: the bug may be structural, not only visual or only 3D.
+3. **Catalog + generator layer**
+   - A JSON catalog describes templates, UI parameters, warnings, variants, and runtime generator IDs.
+   - TypeScript generators or recipe-based generators produce real `DielineGraph` objects.
 
-The third major risk is persistence. `utils/projectPayload.ts` still saves `templateId: folding-carton` and only saves a workspace `dieline` graph for `svg-upload` or `library` sources, not normal generated template projects. This means a generated catalog/template graph may not survive save/load in the way the new architecture expects.
+The strongest direction in the codebase is the move toward `DielineGraph` as the single runtime source for 2D, 3D, persistence, and viewer rendering.
 
-The correct next move is not to add more templates or randomly change geometry formulas. The next move is to establish graph verification fixtures, confirm the exact 2D Reverse Tuck End dieline against a trusted reference, then validate 3D folding from the same graph.
+The biggest architectural risks are:
 
----
+- **Template catalog and real generators are not the same thing.** The JSON catalog can describe many templates, but only registered generators can create usable geometry.
+- **Reverse Tuck End is now generated through v2 recipe/component logic, not directly inside `templates/reverseTuckEnd.ts`.** The old file is only a compatibility re-export.
+- **3D folding depends on `faceTree`, crease correctness, and inferred fold direction.** A correct 2D dieline can still fold incorrectly if parent-child relationships or crease direction are wrong.
+- **Persistence can store dynamic graph data, but only if the client payload sends it.** The save path is improved compared to older six-face assumptions, but generated template projects still need verification end-to-end.
+- **Validation is strict for structural creases.** Internal score lines must remain `geometry` primitives, not `creases`.
 
-## 2. Current Project Purpose
-
-FoldView currently targets these product goals:
-
-- **Template catalog**: `domain/dieline/catalog/foldingBoxCatalog.json` stores folding-box template metadata, parameters, manufacturing notes, variants, warnings, runtime status, and verification state.
-- **Dieline generator**: TypeScript generators in `domain/dieline/templates/` create real `DielineGraph` objects.
-- **2D editor / preview**: `features/dieline-builder/DielineViewport.tsx` renders template graphs, while `features/builder/components/DielineRenderer.tsx` renders artwork-enabled graph faces with upload/crop hotspots.
-- **3D mockup**: `domain/dieline/fold3d.ts` folds a graph using `faceTree`; `features/builder/DielineCartonStage.tsx` converts solved faces into Three.js `ShapeGeometry` meshes.
-- **Artwork assignment**: `store/artworkSlice.ts` stores artwork sources and `FaceAssets` keyed by dynamic face id.
-- **Client sharing / publish**: `server/projects/service.ts`, `utils/projectPayload.ts`, and `features/viewer/ProjectViewer.tsx` support draft/published project state and viewer rendering, but the new template graph persistence path is only partially implemented.
-- **Print production support**: Cut, crease, bleed, safe, label, hole, window, and perf layers exist in the data model. Production export exists as UI/actions and API routes, but true production-ready DXF/PDF output needs stronger validation and reference fixtures.
+The next correct action is **not** adding more templates. The next correct action is to make one exact template, Reverse Tuck End, fully verifiable from generator → 2D → 3D → save/load → published viewer.
 
 ---
 
-## 3. Folder-by-Folder Architecture
+# 2. Current Project Purpose
 
-### app/
+FoldView is trying to become a lightweight Pacdora-like packaging system, focused on:
 
-**Purpose**
+- Template catalog
+- Parametric dieline generation
+- Folding box templates
+- 2D SVG/Canvas-style dieline rendering
+- Cut / crease / bleed / safe / glue / guide layer rendering
+- Artwork assignment to dynamic faces
+- Crop and texture mapping
+- 3D carton mockup preview
+- Project save / load
+- Project publish / public viewer
+- Future print production support
 
-Next.js App Router entrypoints and API routes.
+Current maturity:
 
-**Key files**
+| Area | Status |
+|---|---|
+| Legacy project builder | Most stable |
+| Dynamic `DielineGraph` model | Good direction |
+| Template catalog | Present, metadata-heavy |
+| Reverse Tuck End | Implemented through v2 recipe, needs geometry verification |
+| Generic folding box system | Useful, but not production-trusted yet |
+| 2D rendering | Functional |
+| 3D rendering | Functional but fold correctness depends on graph quality |
+| Artwork assignment | Dynamic face IDs are supported in Redux |
+| Save/load/publish | Present, but needs generated-template verification |
+| Production export | Not ready without golden fixtures |
 
-- `app/dielines/page.tsx`
-- `app/dielines/new/page.tsx`
-- `app/dielines/[id]/edit/page.tsx`
-- `app/dielines/foldingBox/page.tsx`
+---
+
+# 3. Folder-by-Folder Architecture
+
+## app/
+
+### Purpose
+
+Next.js App Router entrypoints and API route boundaries.
+
+### Key responsibilities
+
+- Page routing
+- API route composition
+- Passing route params into feature components
+- Keeping server/client boundaries clean
+
+### What logic should be here
+
+- Route-level page composition
+- API request/response handling
+- Minimal glue code
+
+### What logic should NOT be here
+
+- Geometry formulas
+- Dieline graph construction
+- Fold math
+- Artwork crop math
+- Persistence normalization logic
+- Catalog normalization logic
+
+### Current problems
+
+The routes appear mostly thin, which is good. The deeper risk is not in `app/`, but in whether the page flows connect to the correct generator, renderer, save, and viewer pipelines.
+
+Important routes include:
+
 - `app/dielines/foldingBox/[templateSlug]/page.tsx`
 - `app/dielines/foldingBox/reverseTuckEnd/page.tsx`
-- `app/api/dielines/route.ts`
-- `app/api/dielines/[id]/route.ts`
-- `app/api/dielines/[id]/export/route.ts`
-- `app/page.tsx`
-- `app/globals.css`
-
-**What logic should be here**
-
-Routing, request/response boundaries, page composition, and minimal handoff to feature modules.
-
-**What logic should NOT be here**
-
-Geometry generation, graph validation, catalog mapping, persistence business rules, artwork transformations, or 3D math.
-
-**Current problems**
-
-The page routes appear thin, which is good. The API route files were present but not deeply inspected, so export correctness and validation depth are **Present but usage not confirmed**.
+- `app/api/dielines/*`
+- `app/api/projects/*`
+- `app/view/[id]/*`
+- `app/project/[id]/edit/*`
 
 ---
 
-### domain/
+## domain/
 
-**Purpose**
+### Purpose
 
-Business/domain logic. This is where the application should model packaging, dielines, templates, graph validation, and project types.
+Pure domain logic.
 
-**Key files/folders**
+### Important subfolders
 
 - `domain/dieline/`
 - `domain/dielines/`
-- `domain/packaging/index.ts`
-- `domain/projects/index.ts`
+- `domain/packaging/`
+- `domain/projects/`
 
-**How geometry/dielines/templates are modeled**
+### Current problem
 
-The new system models dielines through `DielineGraph` in `domain/dieline/types.ts`. The older system in `domain/packaging/index.ts` still models one legacy six-face folding carton through `CartonDimensions`, `FaceSpec`, `ModelSpec`, and `PackagingTemplate`.
+There is still a split between:
 
-**Current problems**
+- old packaging/project assumptions
+- new dynamic dieline graph assumptions
 
-`domain/packaging/index.ts` still defines legacy constants such as `FACE_KEYS = [front, back, left, right, top, bottom]` and `TEMPLATE_IDS = [folding-carton]`. This creates a split between the new dynamic graph architecture and the old six-face template architecture.
+This is not automatically wrong, but it must be clearly separated. The legacy packaging layer should gradually become a compatibility layer, not the source of truth for dynamic dielines.
 
 ---
 
-### domain/dieline/
+## domain/dieline/
 
-**Purpose**
+### Purpose
 
-Core dynamic dieline system.
+Core dynamic dieline architecture.
 
-**Key files**
+### Key files / areas
 
 - `types.ts`
 - `geometry.ts`
-- `canonicalGeometry.ts`
 - `fold3d.ts`
-- `manualBuilder.ts`
-- `reference.ts`
-- `structure.ts`
-- `svgImporter.ts`
-- `templateRegistry.ts`
 - `validation.ts`
 - `validation/validateDielineGraph.ts`
-- `generators/generatorRegistry.ts`
+- `templateRegistry.ts`
 - `catalog/*`
+- `generators/*`
+- `componentEngine/*`
+- `parts/*`
+- `recipes/*`
 - `templates/*`
 
-**Current DielineGraph model**
+### Current DielineGraph model
 
-`DielineGraph` contains `size`, `faces`, `creases`, `cutPaths`, `faceTree`, optional `geometry`, optional `metadata`, optional `source`, and optional `sourceSvg`. This is the correct central runtime model for both 2D and 3D.
+`DielineGraph` contains:
 
-**Current template system**
+- `size`
+- `faces`
+- `creases`
+- `cutPaths`
+- `faceTree`
+- optional `geometry`
+- optional `metadata`
+- optional `source`
+- optional `sourceSvg`
 
-There are two connected registries:
+This is the correct central data model.
 
-- `domain/dieline/catalog/*` loads and normalizes JSON catalog templates.
-- `domain/dieline/templateRegistry.ts` converts catalog templates to runtime `RegisteredDielineTemplate` objects and calls TypeScript generators through `generatorRegistry.ts`.
+### Current problems
 
-**Current validation system**
+The folder currently contains both older exact/generic generator files and newer component-engine recipe files. That can be acceptable, but the system needs stronger naming and status boundaries:
 
-There are two validation-like layers:
-
-- `domain/dieline/validation.ts`: sanitizes persisted/imported graph data.
-- `domain/dieline/validation/validateDielineGraph.ts`: strict graph validator for generator output.
-
-**Current problems**
-
-The strict validator assumes a crease connects two distinct faces and lies on the boundary of both faces. Reverse Tuck End creates internal lip creases where `faceA` and `faceB` are the same face. That is a dangerous mismatch between graph semantics and validation semantics.
+- `legacy`
+- `v2 recipe`
+- `experimental`
+- `production-ready`
+- `catalog-only`
 
 ---
 
-### domain/dieline/templates/
+## domain/dieline/templates/
 
-**Purpose**
+### Purpose
 
-TypeScript geometry generators for actual dieline graphs.
+Compatibility layer and older template generators.
 
-**Template files**
+### Important files
 
 - `reverseTuckEnd.ts`
 - `straightTuckEnd.ts`
 - `foldingCartonGraph.ts`
 - `foldingBoxVariants.ts`
-- `fullSealEnd.ts`
-- `mailerBox.ts`
-- `sleeve.ts`
-- `stickers.ts`
-- `trayWithLid.ts`
-- `index.ts`
+- other box-specific template files
 
-**What each file does**
+### Current Reverse Tuck End situation
 
-- `reverseTuckEnd.ts`: exact/primary Reverse Tuck End generator. Creates body panels, glue tab, dust flaps, top tuck, bottom tuck, creases, cut paths, geometry, metadata, and faceTree.
-- `straightTuckEnd.ts`: registered generator for Straight Tuck End. Its registry adapter maps catalog values to legacy carton dimensions. Needs deeper inspection before production trust.
-- `foldingCartonGraph.ts`: legacy/simple six-face carton graph generator. Useful for baseline cube-like folding but not a full production folding carton dieline.
-- `foldingBoxVariants.ts`: generic CEFBox-inspired variant definitions and approximate generator. It delegates Reverse Tuck End to `generateReverseTuckEnd`, but approximates other variants using generic panels/flaps/features.
-- `fullSealEnd.ts`, `mailerBox.ts`, `sleeve.ts`, `stickers.ts`, `trayWithLid.ts`: present in branch diff. Usage not deeply confirmed in this audit.
-- `index.ts`: barrel export. Present but usage not confirmed.
+`domain/dieline/templates/reverseTuckEnd.ts` is no longer the real implementation. It re-exports from:
 
-**Real generators vs generic/experimental**
+`domain/dieline/generators/foldingCarton/recipes/reverseTuckEnd`
 
-- Most serious current generator: `reverseTuckEnd.ts`.
-- Registered generator: `straightTuckEnd.ts`, but adapter suggests legacy dimension mapping.
-- Legacy simple generator: `foldingCartonGraph.ts`.
-- Generic/experimental: `foldingBoxVariants.ts` for all non-Reverse-Tuck-End CEFBox variants.
-- Catalog-only templates: any catalog template whose `runtime.generatorId` is missing from `DIELINE_GENERATOR_REGISTRY`.
+So changes made only in `templates/reverseTuckEnd.ts` will not fix the real geometry unless they affect the underlying reusable engine or recipe.
 
-**Relationships between files**
+### Real vs generic vs experimental
 
-`templateRegistry.ts` maps catalog templates to generator calls. `generatorRegistry.ts` only knows `reverseTuckEnd` and `straightTuckEnd`. `foldingBoxVariants.ts` contains many definitions but is not the same as the catalog registry and should not be treated as production geometry for every template.
+| File / System | Role | Production confidence |
+|---|---|---|
+| `templates/reverseTuckEnd.ts` | Compatibility export | Low ownership |
+| `generators/foldingCarton/recipes/reverseTuckEnd.ts` | Legacy reusable engine RTE recipe | Medium, still approximate |
+| `recipes/foldingBox/reverseTuckEnd.v2.json` | v2 recipe used by registry alias | Important, needs verification |
+| `componentEngine/*` | v2 recipe execution engine | High architectural importance |
+| `foldingBoxVariants.ts` | generic approximation | Experimental |
+| catalog JSON | metadata/UI/routing | Not geometry truth |
 
 ---
 
-### domain/dieline/catalog/
+## domain/dieline/generators/foldingCarton/
 
-**Purpose**
+### Purpose
 
-JSON catalog loading, normalization, parameter resolution, formula evaluation, catalog validation, and generator handoff.
+Reusable folding-carton engine.
 
-**Key files**
+### Key files
 
-- `foldingBoxCatalog.json`
-- `catalogTypes.ts`
-- `formulaEngine.ts`
-- `generateGraphFromCatalogTemplate.ts`
-- `loadTemplateCatalog.ts`
-- `normalizeTemplateCatalog.ts`
-- `parameterAliases.ts`
-- `resolveTemplateParameters.ts`
-- `validateTemplateCatalog.ts`
-- `index.ts`
+- `generateFoldingCarton.ts`
+- `bodyStrip.ts`
+- `closures/tuckEnd.ts`
+- `closures/dustFlaps.ts`
+- `faceTree.ts`
+- `parameters.ts`
+- `assembleGeometry.ts`
+- `validation.ts`
+- `types.ts`
 
-**JSON catalog usage**
+### What it does
 
-The catalog is loaded once through `loadTemplateCatalog.ts`, normalized, then consumed by `templateRegistry.ts` for UI summaries and parameter panels. `generateGraphFromCatalogTemplate.ts` resolves parameters, finds a TypeScript generator by `template.runtime.generatorId`, validates the produced graph, and attaches catalog metadata.
+This engine receives a `FoldingCartonRecipe`, normalizes dimensions, builds a horizontal body strip, creates top/bottom closures, creates structural creases, assembles geometry/cut paths, builds a `faceTree`, adds metadata, validates the graph, then returns a `DielineGraph`.
 
-**Runtime source, UI schema, or metadata only?**
+### Current strengths
 
-Currently the JSON catalog is mostly a metadata/UI schema plus generator routing layer. It is not yet a reliable full geometry source. The real graph comes from TypeScript generators.
+- Clear separation of body strip, closure faces, geometry assembly, face tree, and validation.
+- Good step-by-step architecture.
+- Internal score lines are now represented as `geometry` primitives, which is better than self-referencing structural creases.
 
-**Current problems**
+### Current risks
 
-The catalog contains far more templates than the generator registry supports. This is okay if catalog-only templates are clearly labeled, but risky if UI or users assume all catalog entries are production-ready.
-
----
-
-### features/
-
-**Purpose**
-
-Client UI modules and workflows.
-
-**Key UI modules**
-
-- `features/dieline-builder/*`: template catalog builder/generator UI.
-- `features/builder/*`: existing artwork builder, 2D renderer, 3D stage, panels, crop/upload integration.
-- `features/dielines/*`: dieline dashboard/studio/creator/client.
-- `features/artwork/artwork.ts`: artwork/crop helpers.
-- `features/viewer/ProjectViewer.tsx`: public/project viewer.
-- `features/projects/*`: projects dashboard/client.
-
-**Builder flow**
-
-The existing builder uses Redux, dimensions, optional imported/library graph, artwork sources, crops, and 3D preview.
-
-**Dieline UI flow**
-
-The new `features/dieline-builder/DielineBuilderShell.tsx` lets the user open a catalog template, edit parameters, generate a graph, switch between 2D dieline and mockup, and export.
-
-**Artwork UI flow**
-
-Artwork is currently integrated in the existing builder renderer, not fully in the new template builder. In `DielineBuilderShell.tsx`, the “Create Artwork” action is disabled.
-
-**Viewer flow**
-
-`ProjectViewer.tsx` exists and was modified, but not deeply inspected. The persistence model suggests viewer correctness depends on whether the project has a saved graph or only legacy dimensions.
-
-**Current problems**
-
-There are now two builder experiences: the legacy artwork builder and the new dieline template builder. They share some graph/rendering infrastructure but are not fully unified.
+- The comments repeatedly say closure geometry is approximate and needs verification.
+- Tuck flap lip/slit/arc proportions are not verified against production references.
+- Dust flap taper and glue tab bevel proportions are approximate.
+- `crease.direction` is hardcoded to `1`.
+- Fold direction still relies heavily on inference in `fold3d.ts`.
 
 ---
 
-### store/
+## domain/dieline/componentEngine/
 
-**Purpose**
+### Purpose
 
-Redux state for builder UI, artwork assets, and UI state.
+Newer v2 recipe-driven generator engine.
 
-**Redux slices**
+### Key files
 
-- `store/artworkSlice.ts`: artwork sources and face asset assignments.
-- `store/builderSlice.ts`: project identity, status, dimensions, selected dieline graph/source, saving/sharing flags.
-- `store/uiSlice.ts`: UI state. Present but not deeply inspected.
+- `generateFromRecipe.ts`
+- `graphAssembler.ts`
+- `partRegistry.ts`
+- `formulaResolver.ts`
+- `validateRecipe.ts`
+- `types.ts`
 
-**Whether dynamic face IDs are correctly supported**
+### What it does
 
-`artworkSlice.ts` uses `FaceAssets = Record<string, FaceAsset>`, which supports dynamic graph face IDs. `domain/packaging/index.ts` also defines `FaceId = string`, but still keeps the legacy `FACE_KEYS` constant for migration.
+The v2 engine reads JSON recipes, resolves parameters and constraints, runs reusable part generators, collects faces/creases/geometry/anchors/parts/faceTree hints, assembles a `DielineGraph`, and validates it.
 
-**Current problems**
-
-`builderSlice.ts` hydrates `dielineGraph` only when `dieline.source` is `svg-upload` or `library`. A generated template graph from the new catalog flow may not be preserved as the canonical saved graph.
-
----
-
-### hooks/
-
-**Purpose**
-
-UI orchestration around artwork, dimensions, initial graph setup, and persistence.
-
-**Key files**
-
-- `hooks/useArtworkWorkspace.ts`
-- `hooks/useDimensionSync.ts`
-- `hooks/useInitialDieline.ts`
-- `hooks/useProjectPersistence.ts`
-
-**Current problems**
-
-These hooks likely bridge old builder state with new graph state. `useProjectPersistence.ts` was modified and is high risk because persistence already shows legacy template assumptions in `utils/projectPayload.ts`. Needs deeper inspection before changing save/load behavior.
-
----
-
-### server/
-
-**Purpose**
-
-Server-side persistence and storage for projects and reusable dielines.
-
-**Key files**
-
-- `server/projects/service.ts`
-- `server/dielines/service.ts`
-- `server/dielines/seedDielines.ts`
-
-**Project persistence**
-
-`server/projects/service.ts` supports both local file storage and Supabase. It stores project metadata, face images, artwork sources, workspace face assets, and optional workspace dieline graph.
-
-**Supabase/local fallback**
-
-If Supabase is configured, it uses a `projects` table and `project-faces` bucket. Otherwise it uses `storage/projects-db.json` and per-project folders.
-
-**Asset storage**
-
-Face images and source artwork are stored separately. Workspace sources are stored under project assets, while face outputs are also stored per face.
-
-**Current problems**
-
-The server can store a `workspace.dieline`, but the client payload currently only sends that object for uploaded/library dielines, not generated template graphs.
-
----
-
-### utils/
-
-**Purpose**
-
-Payload building, migration, IDs, patch diffing, and helper logic.
-
-**Key files**
-
-- `utils/projectPayload.ts`
-- `utils/migrateProject.ts`
-
-**Current problems**
-
-`createFullProjectPayload` still hardcodes `templateId: FOLDING_CARTON_TEMPLATE_ID`. It does not persist generated catalog template id, slug, generator id, resolved parameters, or generated graph for normal template source projects.
-
----
-
-### supabase/
-
-**Purpose**
-
-Expected location for database schema and Supabase setup.
-
-**Current state**
-
-Not found in the inspected branch diff. `server/projects/service.ts` references `supabase/schema.sql` in error messages, but the schema file was not present in the inspected changed-file list. Needs deeper full-tree inspection if the base branch contains it.
-
-**Whether it supports dynamic graphs and dynamic face assets**
-
-The server expects a JSON-like `workspace` column, which can support dynamic graphs and dynamic face assets if the schema exists with the required columns. Schema support is **Present but usage not confirmed**.
-
----
-
-### fixtures/ or tests/
-
-**Purpose**
-
-Verification references and smoke tests.
-
-**Found files**
-
-- `fixtures/dielines/food-sleeve-with-flaps.svg`
-- `fixtures/dielines/references/README.md`
-- Empty reference folders for `cefbox`, `ecma`, `fefco`, `newprint`, `pacdora`, `packmage`, `templatemaker`
-- `scripts/verify-catalog.mjs`
-- `scripts/verify-dieline-graph.mjs`
-- `scripts/verify-visual.mjs`
-
-**Missing tests**
-
-- No confirmed golden Reverse Tuck End reference fixture.
-- No confirmed visual pixel comparison against a trusted dieline reference.
-- No confirmed 3D fold snapshot/geometry tests.
-- No confirmed DXF/PDF export verification.
-
----
-
-## 4. File-by-File Analysis
-
-| File | Purpose | Inputs | Outputs | Used By | Risk Level | Notes |
-|---|---|---|---|---|---|---|
-| `package.json` | Declares Next/React/Three/Redux/Supabase stack and verification scripts | npm scripts/dependencies | Build/runtime commands | Whole app | Medium | Good scripts exist: `verify:catalog`, `verify:dieline`, `verify:visual`. |
-| `app/dielines/foldingBox/[templateSlug]/page.tsx` | Route for folding box template page | `templateSlug` route param | `DielineBuilderShell` | Next router | Low | Thin route; correct ownership. |
-| `app/dielines/foldingBox/reverseTuckEnd/page.tsx` | Direct RTE route | None/route | likely redirects or shell | Next router | Low | Present but usage not deeply confirmed. |
-| `app/api/dielines/route.ts` | Dieline library API | HTTP request | JSON response | Dieline UI | Medium | Present but not deeply inspected. |
-| `app/api/dielines/[id]/route.ts` | Single dieline CRUD API | Dieline id/request | JSON response | Dieline UI | Medium | Present but not deeply inspected. |
-| `app/api/dielines/[id]/export/route.ts` | Export route | Dieline id/format | exported file | ExportActions | High | Export production correctness not confirmed. |
-| `domain/dieline/types.ts` | Core graph/type model | None | TypeScript types | All dieline systems | Low | Strong central model. |
-| `domain/dieline/geometry.ts` | Polygon helpers and exterior cut path extraction | Faces/points | bounds, centroid, paths | Generators/renderers | High | Exact edge matching and segmented cut paths are risky for production export. |
-| `domain/dieline/canonicalGeometry.ts` | Converts primitives/graph to SVG paths/fallback primitives | Geometry primitives or graph | SVG path primitives | 2D renderers | Medium | Present but not deeply inspected. |
-| `domain/dieline/fold3d.ts` | Solves faceTree into folded 3D model | DielineGraph | FoldedModel3D | DielineCartonStage | High | Fold direction inferred, not semantically explicit. |
-| `domain/dieline/validation.ts` | Sanitizes persisted/imported graphs | unknown graph | normalized graph/null | server persistence | High | Good safety layer, but can silently drop invalid graph data. |
-| `domain/dieline/validation/validateDielineGraph.ts` | Strict generated graph validation | DielineGraph | validation result/errors | catalog generation/scripts | Critical | Conflicts with internal self-creases. |
-| `domain/dieline/templateRegistry.ts` | Runtime template registry from catalog | catalog templates | RegisteredDielineTemplate | DielineBuilderShell | High | Correct bridge, but catalog/generator mismatch is large. |
-| `domain/dieline/generators/generatorRegistry.ts` | Maps generator ids to TS functions | generatorId/values | DielineGraph | catalog graph generation | High | Only `reverseTuckEnd` and `straightTuckEnd` registered. |
-| `domain/dieline/catalog/foldingBoxCatalog.json` | Large folding-box metadata database | JSON | catalog templates | catalog loader/UI | High | Should drive UI/metadata only, not trusted geometry. |
-| `domain/dieline/catalog/catalogTypes.ts` | Catalog schema types | None | TS types | catalog utilities | Medium | Broad schema; good separation. |
-| `domain/dieline/catalog/formulaEngine.ts` | Safe formula evaluator | formula/context | numeric value/warnings | parameter resolution | Medium | Supports arithmetic/min/max/clamp only. Good safety. |
-| `domain/dieline/catalog/generateGraphFromCatalogTemplate.ts` | Catalog-to-generator flow | template id/user values | graph + metadata/warnings | template registry | Critical | Calls strict validation; may fail if graph semantics conflict. |
-| `domain/dieline/catalog/loadTemplateCatalog.ts` | Loads normalized catalog singleton | JSON import | catalog accessors | registry/UI | Low | Clear ownership. |
-| `domain/dieline/catalog/resolveTemplateParameters.ts` | Resolves catalog params to generator params | template/user/global defaults | specs/values/warnings | registry/generator flow | High | Critical for L/W/H/aliases correctness. |
-| `domain/dieline/catalog/validateTemplateCatalog.ts` | Validates catalog references | catalog/template | messages | generation/scripts | Medium | Good layer; needs stronger runtime coverage. |
-| `domain/dieline/templates/reverseTuckEnd.ts` | Primary Reverse Tuck End generator | RTE parameters | DielineGraph | generator registry | Critical | Strong attempt, but internal lip creases/self-creases are suspicious. |
-| `domain/dieline/templates/straightTuckEnd.ts` | Straight Tuck End generator | dimensions/params | DielineGraph | generator registry | High | Registered but not deeply inspected. |
-| `domain/dieline/templates/foldingCartonGraph.ts` | Legacy six-face carton graph | width/height/depth | DielineGraph | packaging domain | Medium | Useful baseline, not production folding carton. |
-| `domain/dieline/templates/foldingBoxVariants.ts` | Generic CEFBox variant approximation | variant definition | DielineGraph | maybe library/seeds | Critical | Should not be production geometry for complex templates. |
-| `domain/packaging/index.ts` | Legacy packaging/domain/project types | dimensions/template id | specs/model/graph | old builder/project persistence | Critical | Still hardcodes `folding-carton` and six-face assumptions. |
-| `features/dieline-builder/DielineBuilderShell.tsx` | New template builder UI | category/template slug, parameter values | 2D/3D UI/export | route pages | High | New builder not integrated with artwork/save workflow. |
-| `features/dieline-builder/DielineViewport.tsx` | 2D template viewport | DielineGraph/layers | SVG preview | builder shell | High | RTE measurement overlay uses formula inconsistent with generator. |
-| `features/dieline-builder/TemplateParameterPanel.tsx` | Parameter editor | specs/values/unit | user changes | builder shell | Medium | Present but not deeply inspected. |
-| `features/dieline-builder/ExportActions.tsx` | Export buttons | graph/formats | downloads/API calls | builder shell | High | Export correctness not confirmed. |
-| `features/builder/components/DielineRenderer.tsx` | Existing 2D artwork renderer | graph/faces/uploads | SVG + hotspots | builder | High | Dynamic face ids good; guide offsets are rectangular approximations. |
-| `features/builder/DielineCartonStage.tsx` | 3D folded preview | graph + face textures | Three.js model | builder/template mockup | High | UV mapping is bounds-based; crop/rotation semantics limited. |
-| `features/builder/components/CropModal.tsx` | Artwork crop UI | source/face/crop | cropped face asset | artwork workflow | Medium | Modified; not deeply inspected. |
-| `features/artwork/artwork.ts` | Artwork/crop helpers | images/pdf/crop | normalized crop/rendered data | builder/store | Medium | Modified; not deeply inspected. |
-| `store/artworkSlice.ts` | Artwork state | sources/face assets | Redux state/selectors | builder | Medium | Dynamic `Record<string, FaceAsset>` is good. |
-| `store/builderSlice.ts` | Project/builder state | actions/project load | Redux state | builder/persistence | Critical | Does not hydrate generated template graph as canonical graph. |
-| `utils/projectPayload.ts` | Save/patch payload builder | live Redux state | ProjectSavePayload/Patch | persistence hook/API | Critical | Hardcodes legacy template id and omits template-generated graph. |
-| `server/projects/service.ts` | Project persistence | ProjectInput | Project records/assets | API routes | High | Capable of workspace graph storage, but client may not send it. |
-| `server/dielines/service.ts` | Dieline library persistence | DielineTemplateInput | local stored templates | API routes | Medium | Local only; normalizes graphs. |
-| `utils/migrateProject.ts` | Project migration | old project | new shape | load flow | High | Present but not deeply inspected. Important for legacy data. |
-| `scripts/verify-dieline-graph.mjs` | Graph verification script | generated graphs | validation result | npm script | High | Present; should become gate before fixes. |
-| `scripts/verify-catalog.mjs` | Catalog verification script | JSON catalog | validation result | npm script | Medium | Good catalog safety. |
-| `scripts/verify-visual.mjs` | Visual verification | graph/render output | smoke screenshots/png | npm script | High | Needs trusted golden refs. |
-| `features/viewer/ProjectViewer.tsx` | Project/public viewer | Project | rendered project | viewer route | High | Modified but not deeply inspected; depends on persistence correctness. |
-
----
-
-## 5. Core Data Models
-
-### DielineGraph
-
-`DielineGraph` is the central runtime object.
-
-- `size`: global 2D canvas/viewBox size in millimeters-like units.
-- `faces`: all printable/structural polygons.
-- `creases`: fold hinges between faces.
-- `cutPaths`: cut geometry, usually generated from exterior face edges.
-- `geometry`: optional canonical geometry primitives with explicit layers such as cut, crease, perf, window, hole, bleed, safe, label.
-- `faceTree`: folding hierarchy used by 3D.
-- `metadata`: category, family, parts, parameter specs, resolved values, catalog source data.
-- `source`: template or uploaded SVG source.
-
-### DielineFace
-
-- `id`: dynamic stable face identifier, such as `front`, `top-tuck`, `glue-tab`.
-- `label`: UI label.
-- `vertices`: polygon points in 2D graph coordinates.
-- `bounds`: axis-aligned bounds computed from vertices.
-- `centroid`: polygon centroid.
-- `role`: `panel`, `flap`, `glue`, or `unknown`.
-- `artworkEnabled`: whether artwork can be assigned.
-
-### DielineCrease
-
-- `id`: stable crease identifier.
-- `faceA` / `faceB`: connected face ids.
-- `edgeStart` / `edgeEnd`: hinge line in 2D graph coordinates.
-- `foldAngle`: usually `Math.PI / 2`.
-- `direction`: `1` or `-1`.
-
-Current limitation: this model does not distinguish structural face-to-face creases from internal crease/score lines on one face. Reverse Tuck End currently uses self-referencing creases for tuck lips.
-
-### DielineFaceNode / faceTree
-
-`faceTree` is an array of root nodes. The strict validator expects exactly one root. Each node contains:
-
-- `faceId`
-- `creaseId` connecting it to parent, or `null` for root
-- `children`
-
-`fold3d.ts` traverses this tree and rotates child faces around the parent-child crease. This is the source of 3D folding behavior.
-
-### Project
-
-From `domain/packaging/index.ts`:
-
-- `id`, `name`, `status`
-- `templateId`
-- `dimensions`
-- `faces`: rendered face image URLs keyed by dynamic face id
-- `workspace`: sources, selected source, faceAssets, optional `dieline`
-- timestamps
-
-Current limitation: `TemplateId` is still only `folding-carton`, which conflicts with the catalog template system.
-
-### ArtworkSource / FaceAsset
-
-`ArtworkSource`:
-
-- `id`
-- `dataUrl`
-- `fileName`
-- `mimeType`
-- `sourceType`
-
-`FaceAsset`:
-
-- `sourceId`
-- `dataUrl`
-- `fileName`
-- `sourceType`
-- `crop`
-
-Face assets are keyed by dynamic face id, which is good for non-six-face cartons.
-
----
-
-## 6. End-to-End Data Flow
+### Important flow
 
 ```text
-User chooses template
-  → app/dielines/foldingBox/[templateSlug]/page.tsx
-  → features/dieline-builder/DielineBuilderShell.tsx
-  → domain/dieline/templateRegistry.ts:getDielineTemplateByRoute
-  → domain/dieline/catalog/loadTemplateCatalog.ts
-  → domain/dieline/catalog/resolveTemplateParameters.ts
-  → domain/dieline/generators/generatorRegistry.ts
-  → domain/dieline/templates/reverseTuckEnd.ts or straightTuckEnd.ts
-  → DielineGraph created
-  → domain/dieline/validation/validateDielineGraph.ts through generateGraphFromCatalogTemplate
-  → features/dieline-builder/DielineViewport.tsx renders 2D
-  → features/builder/DielineCartonStage.tsx renders 3D through domain/dieline/fold3d.ts
-```
-
-Artwork flow in the existing builder:
-
-```text
-User uploads artwork
-  → features/builder/components/DielineRenderer.tsx
-  → hooks/useArtworkWorkspace.ts / CropModal / features/artwork/artwork.ts
-  → store/artworkSlice.ts stores source + FaceAsset by dynamic face id
-  → DielineRenderer clips image to 2D face polygon
-  → selectPreviewFaces creates Record<faceId, dataUrl>
-  → DielineCartonStage applies texture to matching solved 3D face
-```
-
-Save/load flow:
-
-```text
-Live Redux state
-  → utils/projectPayload.ts:createFullProjectPayload
-  → hooks/useProjectPersistence.ts
-  → app/api/projects routes (not inspected in this branch diff)
-  → server/projects/service.ts
-  → local file storage or Supabase
-  → readProject/updateProject/listProjects
-  → hydrateBuilder/hydrateArtwork
-  → builder/viewer renders project again
-```
-
-Current break in the flow:
-
-```text
-Generated catalog template graph
-  → NOT reliably saved by createFullProjectPayload when dielineSource is template
-  → templateId remains folding-carton
-  → viewer/load may lose exact generated graph
-```
-
----
-
-## 7. Template System Analysis
-
-### How templates are registered
-
-`templateRegistry.ts` loads catalog templates and maps each one into a `RegisteredDielineTemplate`. A template is considered implemented only if `hasDielineGenerator(template.runtime.generatorId)` returns true.
-
-### How template IDs/slugs work
-
-Catalog templates have both `id` and `slug`. Route lookup uses category slug plus template slug. `getDielineTemplateById` accepts id or slug.
-
-### How parameter specs work
-
-Catalog editable parameters are converted into runtime `ParameterSpec[]` through `resolveTemplateParameters.ts` and exposed to UI panels.
-
-### How default values work
-
-`createRegisteredTemplate` resolves default generator parameters from catalog defaults, global defaults, and aliases.
-
-### How generators are selected
-
-The catalog template has `runtime.generatorId`. That id is looked up in `DIELINE_GENERATOR_REGISTRY`.
-
-Current registered generators:
-
-- `reverseTuckEnd`
-- `straightTuckEnd`
-
-### How CEFBox definitions are used
-
-There are two CEFBox-related systems:
-
-1. `foldingBoxCatalog.json`: large catalog/database.
-2. `foldingBoxVariants.ts`: hardcoded CEFBox variant definitions and a generic graph generator.
-
-They are not the same source of truth. This duplication is risky.
-
-### Exact template generator vs generic generator
-
-- Exact generator: `reverseTuckEnd.ts` creates a specific graph with named parts and custom flap shapes.
-- Generic generator: `generateCefBoxFoldingBoxGraph` approximates many templates from high-level top/bottom closure types and feature flags.
-
-### Safe templates
-
-- Reverse Tuck End is the most complete, but still needs verification.
-- Straight Tuck End is registered but needs deeper inspection.
-
-### Experimental templates
-
-All non-registered catalog entries and most outputs from `foldingBoxVariants.ts` should be treated as experimental/catalog-only until verified with fixtures.
-
-### Catalog-only templates
-
-Any catalog template whose `runtime.generatorId` is not registered is catalog-only in the current runtime.
-
----
-
-## 8. Reverse Tuck End Deep Analysis
-
-### Which file generates it
-
-`domain/dieline/templates/reverseTuckEnd.ts`.
-
-### Parameters used
-
-- `L`: length
-- `W`: width/depth
-- `H`: height
-- `TFW`: tuck flap lip
-- `TFR`: tuck flap radius
-- `GFW`: glue tab width
-- `DFW`: dust flap depth
-- `closureMode`: auto/manual
-- `outputSizeMode`: inner/outer
-- `materialThickness`
-- `material`
-- `bleeds`
-- `pdfExport`
-- `dxfExport`
-- aliases: `width`, `height`, `depth`
-
-### Faces created
-
-1. `left`
-2. `front`
-3. `right`
-4. `back`
-5. `glue-tab`
-6. `top-dust-left`
-7. `top-dust-right`
-8. `top-tuck`
-9. `bottom-dust-left`
-10. `bottom-dust-right`
-11. `bottom-tuck`
-
-### Creases created
-
-Body creases:
-
-- `cr-left-front`
-- `cr-front-right`
-- `cr-right-back`
-- `cr-back-glue`
-
-Top closure creases:
-
-- `cr-left-topdust`
-- `cr-front-toptuck`
-- `cr-right-topdust`
-
-Bottom closure creases:
-
-- `cr-left-bottomdust`
-- `cr-right-bottomdust`
-- `cr-back-bottomtuck`
-
-Internal lip creases:
-
-- `cr-toptuck-lip`
-- `cr-bottomtuck-lip`
-
-### Cut paths created
-
-`createExteriorCutPaths(faces)` computes exterior edges by grouping identical edges and returning edges that appear only once.
-
-Risk: cut paths are emitted as individual segments, not joined continuous contours.
-
-### faceTree created
-
-Root is `front`.
-
-- `front`
-  - `left`
-    - `top-dust-left`
-    - `bottom-dust-left`
-  - `right`
-    - `back`
-      - `glue-tab`
-      - `bottom-tuck`
-    - `top-dust-right`
-    - `bottom-dust-right`
-  - `top-tuck`
-
-All faces are included. Internal lip creases are not in the tree.
-
-### Top closure modeled
-
-Top dust flaps attach to left and right panels. Top tuck flap attaches to the front panel. This matches the “reverse” relationship if the bottom tuck attaches to the opposite panel.
-
-### Bottom closure modeled
-
-Bottom dust flaps attach to left and right panels. Bottom tuck attaches to back panel.
-
-### Dust flaps modeled
-
-Dust flaps use tapered six-point polygons.
-
-Suspicious area: top and bottom `dustFlap` branches currently return the same vertex sequence shape. This may still be geometrically mirrored because `topY`, `lidY`, and `shoulderY` change by direction, but it needs visual verification.
-
-### Tuck flaps modeled
-
-Tuck flaps use polygon approximations with sampled quarter arcs for curved lip/slit details. Top and bottom use different arc angle ranges.
-
-Suspicious area: bottom tuck arc sampling uses descending angle ranges; verify no self-intersection or reversed curve artifacts.
-
-### Glue tab modeled
-
-Glue tab is a beveled four-point polygon attached to the back panel.
-
-### Whether 2D graph is structurally correct
-
-Partially implemented. The body panel order and main closure placement are coherent. However, the internal lip creases are represented as creases connecting a face to itself, which violates the current strict crease semantics.
-
-### Whether 3D graph is likely correct
-
-Partially implemented. Main body and closure hierarchy are foldable because all structural faces exist in `faceTree`. But all crease directions are `1`, and actual fold sign is inferred from child centroid side. This can produce wrong fold direction even if the 2D layout looks correct.
-
-### Suspicious areas
-
-1. Self-referencing internal lip creases.
-2. Strict validation expecting creases on boundaries of both connected faces.
-3. `DielineViewport` measurement overlay uses `bodyTop = TFW + DFW`, while generator uses `bodyTop = max(W + TFW, DFW)`.
-4. Fold direction is inferred instead of explicit mountain/valley.
-5. Exterior cut paths are line segments, not joined die-cut contours.
-6. No trusted reference fixture found for Reverse Tuck End.
-
-### Evidence needed to confirm the real bug
-
-- A trusted CEFBox or packaging-engineer reference SVG/PDF/DXF for the same dimensions.
-- A generated JSON snapshot of `generateReverseTuckEnd(defaults)`.
-- A visual overlay comparison of graph cut/crease paths against the reference.
-- A graph validation result from `assertValidDielineGraph` for RTE.
-- A 3D fold snapshot with named face positions.
-
-### Reverse Tuck End Verification Checklist
-
-- Required faces:
-  - `front`, `back`, `left`, `right`, `glue-tab`
-  - `top-tuck`, `top-dust-left`, `top-dust-right`
-  - `bottom-tuck`, `bottom-dust-left`, `bottom-dust-right`
-- Required creases:
-  - vertical body creases between each body panel
-  - glue crease on back/glue edge
-  - top dust/tuck hinge lines
-  - bottom dust/tuck hinge lines
-  - internal tuck lip score lines represented separately from face-to-face creases
-- Expected parent-child relationships:
-  - root body panel should be stable, usually `front` or `back`
-  - side panels fold from root
-  - back folds from side panel
-  - closures fold from their owning body panels
-- Expected fold directions:
-  - body panels fold into rectangular prism
-  - dust flaps fold inward
-  - tuck flaps fold inward opposite each other
-  - glue tab folds inward to join side seam
-- Expected 2D visual structure:
-  - panel strip order should match RTE manufacturing layout
-  - top tuck and bottom tuck should be on opposite major panels
-  - dust flaps should align with side panels
-  - glue tab should be outside last major panel
-- Expected 3D folded result:
-  - four side panels form a box tube
-  - top and bottom closures fold toward openings
-  - glue tab is on side seam
-  - no closure folds outside the box in the wrong direction
-
----
-
-## 9. Generic Folding Box Generator Analysis
-
-`domain/dieline/templates/foldingBoxVariants.ts` tries to create many CEFBox-like folding carton variants from a compact definition object.
-
-### What it tries to do
-
-It defines high-level template properties:
-
-- `top` closure type
-- `bottom` closure type
-- dimensions
-- parameter names
-- feature flags such as handle, hang-hole, window, divider, insert, tear-strip
-
-Then it generates a generic body strip and attaches generic flaps/features.
-
-### Templates it supports
-
-It contains definitions for many folding-box variants including Reverse Tuck End, Straight Tuck End, Auto Lock Bottom, Snap Lock Bottom, handle boxes, hang-hole boxes, hang-tab boxes, divider/window cartons, crash-bottom cartons, skillet boxes, tear-strip variants, and more.
-
-### What is generic approximation
-
-Everything except the Reverse Tuck End delegation should be treated as approximation. The generator uses generic rectangles, trapezoids, arc-top faces, and feature cut paths. It does not encode every true locking, crash-bottom, gusset, insert, or partition mechanical structure.
-
-### What is risky
-
-- Complex bottoms are simplified.
-- Locking tabs and crash bottoms need exact geometry but are approximated.
-- Feature cutouts may not match source templates.
-- faceTree may be structurally valid but mechanically wrong.
-- 3D folding can look plausible while being production-invalid.
-
-### Whether it should be used for production templates
-
-No. It should be used for placeholder previews, catalog exploration, or smoke testing only.
-
-### How it differs from `reverseTuckEnd.ts`
-
-`reverseTuckEnd.ts` is a specific named generator with exact-ish flap construction, metadata, and local validation. `foldingBoxVariants.ts` is a broad approximation engine.
-
-### Whether it can create correct 3D or only placeholder structures
-
-It can create foldable placeholder structures if the faceTree and creases are valid. That does not mean the generated dieline is production-correct.
-
----
-
-## 10. JSON Catalog / Database Analysis
-
-### What it contains
-
-`foldingBoxCatalog.json` is a large catalog containing database info, units, line type legend, global defaults, manufacturing rules, global validation rules, schema version, and many templates. Each template can contain dimensions, derived dimensions, editable parameters, components, geometry formulas, paths, folding logic, mockup3D info, variants, manufacturing rules, validation rules, formulas, warnings, runtime status, and verification status.
-
-### What it should be used for
-
-- Template listing UI
-- Parameter panel schema
-- Manufacturing notes
-- Warnings and verification status
-- Runtime generator routing
-- Catalog-only documentation
-
-### What it should NOT be used for
-
-- As the source of production geometry unless each formula/path is verified.
-- As a replacement for TypeScript generators.
-- As proof that a template is production-ready.
-
-### Whether it should drive UI only
-
-Mostly yes. For now: JSON catalog = metadata and UI schema. TypeScript generator = real geometry.
-
-### Whether it should call TypeScript generators
-
-Yes, through `runtime.generatorId` and `generatorRegistry.ts`, exactly as the current architecture attempts.
-
-### How it should connect to template registry
-
-The current route is correct:
-
-```text
+recipe JSON
+  → validateRecipe
+  → resolveRecipeParameters
+  → evaluateRecipeConstraints
+  → partRegistry generators
+  → assembleGraphFromContext
+  → assertValidDielineGraph
+  → DielineGraph
+Current strengths
+Better long-term architecture than one-off template generators.
+Reusable part system makes templates composable.
+Validation is called immediately after graph assembly.
+Current risks
+Component recipes can look correct in JSON while generating invalid geometry if part anchors are wrong.
+Face-tree assembly derives from hints/creases; if hints are missing or ambiguous, 3D can fold incorrectly.
+Recipe-based geometry must be checked against golden fixtures before being trusted.
+domain/dieline/parts/
+Purpose
+
+Reusable generator parts for the component engine.
+
+Known part families
+body strip
+glue tab
+tuck flap
+slotted tuck flap
+dust flap
+custom dust flap
+panel flap
+lock tab
+cutouts
+hang tab
+guide/score-line parts
+Current problems
+
+Reusable parts are the correct long-term direction, but every part needs a reference fixture and strict geometric tests. Otherwise one broken generic part can break many templates.
+
+domain/dieline/recipes/
+Purpose
+
+JSON recipes used by the v2 component engine.
+
+Important recipes
+reverseTuckEnd.v2.json
+straightTuckEnd.v2.json
+tuckEndFoldingCarton.v2.json
+centeredTuckEndCarton.v2.json
+lockingTabTopBottom.v2.json
+circularHangHole.v2.json
+hangTab.v2.json
+Current Reverse Tuck End v2 recipe
+
+The v2 recipe defines:
+
+body strip
+glue tab attached to back.right
+top tuck attached to front.top
+top dust flaps attached to left.top and right.top
+bottom tuck attached to back.bottom
+bottom dust flaps attached to left.bottom and right.bottom
+folding root face: front
+
+This is structurally reasonable for Reverse Tuck End.
+
+Current risks
+
+The recipe says productionReady: false and verificationStatus: geometry-needs-verification. This should be respected. It should not be marketed or treated as a real production-ready dieline yet.
+
+domain/dieline/catalog/
+Purpose
+
+Catalog metadata, UI parameters, template discovery, generator selection, and runtime status.
+
+Important files
 foldingBoxCatalog.json
-  → loadTemplateCatalog
-  → normalizeTemplateCatalog
-  → templateRegistry
+catalogTypes.ts
+loadTemplateCatalog.ts
+normalizeTemplateCatalog.ts
+resolveTemplateParameters.ts
+generateGraphFromCatalogTemplate.ts
+validateTemplateCatalog.ts
+formulaEngine.ts
+parameterAliases.ts
+Correct usage
+
+The JSON catalog should be used for:
+
+template list
+labels
+descriptions
+UI parameter definitions
+variants
+warnings
+production status
+generator ID routing
+metadata
+What it should NOT be used for
+
+The JSON catalog should not be treated as full real geometry unless it contains exact part-level geometry definitions and has fixtures. Real production geometry should come from:
+
+TypeScript generator or component-engine recipe
+Current problem
+
+There are more catalog entries than truly verified generator outputs. UI must clearly distinguish:
+
+implemented
+experimental
+catalog-only
+production-ready
+needs manual verification
+features/
+Purpose
+
+User-facing workflows.
+
+Important modules
+features/dieline-builder/
+features/builder/
+features/artwork/
+features/dielines/
+features/projects/
+features/viewer/
+features/dieline-builder/
+Purpose
+
+Template-specific dieline generator UI.
+
+Key files
+DielineBuilderShell.tsx
+DielineViewport.tsx
+TemplateParameterPanel.tsx
+LayerControls.tsx
+ExportActions.tsx
+Current flow
+route category + slug
+  → get template from registry
+  → merge parameter values
+  → template.generate(...)
+  → graph
+  → 2D viewport or 3D mockup
+  → export actions
+Current problems
+The “Create Artwork” button is disabled.
+This new builder is not fully unified with the main artwork/project builder.
+It can generate and preview a dieline, but it is not clearly connected to save/load/publish as a project workflow.
+features/builder/
+Purpose
+
+Main project builder: artwork, crop, 2D preview, 3D stage, save/share.
+
+Important files
+DielineCartonStage.tsx
+components/DielineRenderer.tsx
+components/CropModal.tsx
+builder panels and shells
+Current 3D flow
+
+DielineCartonStage.tsx receives:
+
+graph
+faces: Record<string, string>
+
+Then:
+
+graph
+  → buildFoldedModel(graph)
+  → solved 3D faces
+  → THREE.ShapeGeometry
+  → UVs from local bounds
+  → optional texture per faceId
+Current 3D risks
+UV mapping is simple bounds-based mapping.
+Texture rotation/crop may not match all arbitrary polygons.
+Fold direction is inferred from geometry.
+If faceTree is wrong, 3D is wrong even if 2D looks correct.
+If crease endpoints are not exactly on both connected face boundaries, folding can still render but may be structurally wrong.
+store/
+Purpose
+
+Redux state for project builder and artwork.
+
+Key files
+builderSlice.ts
+artworkSlice.ts
+uiSlice.ts
+Dynamic face support
+
+artworkSlice.ts uses:
+
+type FaceAssets = Record<string, FaceAsset>
+
+This is correct because dynamic graph face IDs are supported.
+
+Current risks
+builderSlice.ts supports setTemplateDieline, setImportedDieline, and setLibraryDieline, which is good.
+The real risk is whether every UI flow actually dispatches setTemplateDieline before saving.
+If a generated template graph is only previewed in DielineBuilderShell and never placed into builder state, it will not be saved as a project.
+hooks/
+Purpose
+
+Builder orchestration.
+
+Important hooks
+useArtworkWorkspace.ts
+useDimensionSync.ts
+useInitialDieline.ts
+useProjectPersistence.ts
+Current risk
+
+Hooks are likely where old builder state and new graph state meet. This area should be inspected before changing persistence or artwork assignment.
+
+server/
+Purpose
+
+Project and dieline persistence.
+
+Important files
+server/projects/service.ts
+server/dielines/service.ts
+server/dielines/seedDielines.ts
+Project persistence
+
+server/projects/service.ts supports:
+
+local file storage
+Supabase storage
+project metadata
+face images
+source artwork
+dynamic workspace
+optional workspace dieline graph
+Current strengths
+
+The server can store a dynamic workspace.dieline.
+
+Current risk
+
+The server only persists what the client sends. If the client does not send generated-template graph data, persistence cannot recover it.
+
+utils/
+Purpose
+
+Project payloads, migration, helper logic.
+
+Important files
+projectPayload.ts
+migrateProject.ts
+Current state
+
+projectPayload.ts is much better than a purely legacy version because it can include:
+
+dielineSource
+dielineTemplateId
+templateSlug
+generatorId
+userParameters
+resolvedParameters
+graph
+Current risk
+
+The payload still falls back to FOLDING_CARTON_TEMPLATE_ID when no dielineTemplateId is present. Therefore every generated template workflow must ensure the builder state includes the correct template graph and template ID before save.
+
+supabase/
+Purpose
+
+Database schema and Supabase setup.
+
+Current risk
+
+Supabase can support dynamic graphs if workspace is stored as JSON. But schema verification is required. A real test should save and reload:
+
+project status
+template ID
+dimensions
+workspace.dieline.graph
+workspace.faceAssets
+source artwork
+published viewer output
+fixtures/ and scripts/
+Purpose
+
+Verification.
+
+Important scripts
+verify:catalog
+verify:dieline
+verify:visual
+Current missing tests
+Reverse Tuck End golden SVG fixture
+Reverse Tuck End expected face/crease/tree JSON fixture
+3D folded bounding snapshot
+save/load/publish roundtrip test
+generated template viewer test
+dynamic face artwork persistence test
+production export comparison
+4. File-by-File Analysis
+File	Purpose	Inputs	Outputs	Used By	Risk	Notes
+domain/dieline/types.ts	Core model	none	TypeScript types	all graph systems	Low	Strong central model.
+domain/dieline/templates/reverseTuckEnd.ts	Compatibility export	none	re-export	legacy imports	Medium	Not real implementation now.
+domain/dieline/generators/foldingCarton/recipes/reverseTuckEnd.ts	Legacy reusable RTE recipe	dimensions	graph via engine	legacy registry fallback	High	Marked geometry-needs-verification.
+domain/dieline/generators/foldingCarton/generateFoldingCarton.ts	Folding carton engine	input + recipe	DielineGraph	legacy generator	High	Good architecture; formulas need proof.
+domain/dieline/generators/foldingCarton/bodyStrip.ts	Body panels + glue tab	normalized params	body faces/columns	folding engine	High	Panel order assumes alternating W/L/W/L.
+domain/dieline/generators/foldingCarton/closures/tuckEnd.ts	Tuck flap geometry	closure params	flap face + score line	folding engine	Critical	Approximate tuck/lip/arc geometry.
+domain/dieline/generators/foldingCarton/closures/dustFlaps.ts	Dust/panel flaps	closure params	flap faces	folding engine	High	Approximate taper.
+domain/dieline/generators/foldingCarton/faceTree.ts	Legacy engine face tree	recipe + creases	faceTree	folding engine	Critical	3D depends on this.
+domain/dieline/generators/foldingCarton/validation.ts	Legacy engine validator	graph	throws/errors	folding engine	Critical	Requires structural crease correctness.
+domain/dieline/generators/generatorRegistry.ts	Generator map	generator ID	graph generator	catalog/template registry	Critical	Public aliases now point to v2 recipes.
+domain/dieline/recipes/foldingBox/reverseTuckEnd.v2.json	v2 RTE recipe	parameter values	recipe config	component engine	Critical	Current main RTE path.
+domain/dieline/componentEngine/generateFromRecipe.ts	v2 recipe runner	JSON recipe + values	DielineGraph	generator registry	Critical	Correct future direction.
+domain/dieline/componentEngine/graphAssembler.ts	Creates final graph	faces/creases/hints	graph + tree	v2 engine	Critical	Tree correctness depends on hints/creases.
+domain/dieline/componentEngine/partRegistry.ts	Part registry	part type	part generator	v2 engine	High	Broad reusable system.
+domain/dieline/validation/validateDielineGraph.ts	Strict graph validator	graph	result / throws	v2 engine/scripts	Critical	Internal scores must not be creases.
+domain/dieline/fold3d.ts	3D fold solver	graph	solved 3D model	DielineCartonStage	Critical	Fold direction is inferred.
+features/dieline-builder/DielineBuilderShell.tsx	Template builder UI	route slug + params	2D/3D/export UI	template pages	High	Not integrated with project save/artwork.
+features/builder/DielineCartonStage.tsx	3D renderer	graph + face textures	Three.js scene	builder/viewer	High	UV mapping is bounds-based.
+store/artworkSlice.ts	Artwork state	sources/assets	Redux state	builder	Medium	Dynamic face IDs supported.
+store/builderSlice.ts	Builder/project state	actions/project	Redux state	builder/persistence	High	Good graph fields; must be used consistently.
+utils/projectPayload.ts	Save/patch payload	builder state	API payload	persistence hook	High	Can save graph if state has it.
+server/projects/service.ts	Project persistence	project input	stored project	API routes	High	Supports workspace graph; client must send it.
+features/viewer/ProjectViewer.tsx	Public viewer	project ID	readonly 3D preview	/view/:id	High	Renders dynamic graph if project contains one.
+5. Core Data Models
+DielineGraph
+
+The central runtime object.
+
+Expected fields:
+
+size
+faces
+creases
+cutPaths
+geometry
+faceTree
+metadata
+source
+sourceSvg
+
+Ownership:
+
+Generators create it.
+Validators verify it.
+2D renderers draw it.
+3D solver folds it.
+Persistence stores it.
+Viewer should render it read-only.
+DielineFace
+
+Represents a printable or structural polygon.
+
+Important fields:
+
+id
+label
+vertices
+bounds
+centroid
+role
+artworkEnabled
+
+Critical rule:
+
+id must be stable because artwork assignment is keyed by face ID.
+
+DielineCrease
+
+Represents only structural hinges between two faces.
+
+Important fields:
+
+id
+faceA
+faceB
+edgeStart
+edgeEnd
+foldAngle
+direction
+optional foldSemantic
+
+Critical rule:
+
+Internal score lines should be stored in geometry, not creases.
+
+DielineFaceNode / faceTree
+
+Defines 3D parent-child folding hierarchy.
+
+Important fields:
+
+faceId
+creaseId
+children
+
+Critical rule:
+
+A graph can look good in 2D and still fold badly if faceTree is wrong.
+
+Project
+
+Current project model includes:
+
+identity
+status
+template ID
+dimensions
+faces
+workspace
+optional dynamic workspace.dieline
+
+Critical risk:
+
+The project is correct only if the dynamic graph is saved in workspace.dieline.graph.
+
+ArtworkSource / FaceAsset
+
+Artwork flow supports:
+
+source uploaded artwork
+crop settings
+rendered face image
+assignment by dynamic face ID
+
+This is a strong part of the architecture.
+
+6. End-to-End Data Flow
+Template generation flow
+User opens template page
+  → app/dielines/foldingBox/[templateSlug]/page.tsx
+  → DielineBuilderShell
+  → getDielineTemplateByRoute
+  → catalog/template registry
   → generatorRegistry
-  → TypeScript generator
-```
+  → v2 recipe generator OR legacy generator
+  → DielineGraph
+  → validateDielineGraph
+  → DielineViewport / DielineCartonStage
+v2 recipe flow
+recipe JSON
+  → validateRecipe
+  → resolveRecipeParameters
+  → evaluateRecipeConstraints
+  → partRegistry
+  → reusable part generators
+  → graphAssembler
+  → assertValidDielineGraph
+  → DielineGraph
+2D preview flow
+DielineGraph
+  → graph.geometry if available
+  → cut primitives
+  → crease primitives
+  → labels/guides
+  → SVG viewport
+3D mockup flow
+DielineGraph
+  → buildFoldedModel
+  → traverse faceTree
+  → rotate children around crease line
+  → FoldedFace3D[]
+  → ShapeGeometry per face
+  → UV from local bounds
+  → texture from faces[faceId]
+Artwork flow
+User uploads artwork
+  → ArtworkSource
+  → crop modal
+  → rendered face asset
+  → artworkSlice.faces[faceId]
+  → selectPreviewFaces
+  → DielineCartonStage textures
+Save/load/publish flow
+Redux builder + artwork state
+  → createFullProjectPayload
+  → API route
+  → server/projects/service.ts
+  → local JSON or Supabase
+  → read project
+  → migrate project
+  → hydrate builder/artwork
+  → viewer renders workspace.dieline.graph
+7. Template System Analysis
+How templates are registered
 
-### Whether it contains enough data for real geometry
+generatorRegistry.ts maps generator IDs to actual generator functions.
 
-Not safely. It contains geometry/formula-like fields, but real geometry correctness requires fixtures, reference overlays, and packaging-engineer verification.
+Current important generator IDs include:
 
-### Missing fields
+reverseTuckEnd
+straightTuckEnd
+reverseTuckEndV2
+straightTuckEndV2
+tuckEndFoldingCartonV2
+centeredTuckEndCartonV2
+lockingTabTopBottomV2
+circularHangHoleV2
+hangTabV2
+legacy fallback aliases
 
-- Stable mapping from catalog components to graph face ids.
-- Explicit semantic distinction between cut, crease, internal score, glue zone, safe zone, bleed zone.
-- Golden reference fixture ids.
-- Expected faceTree for production 3D.
-- Expected fold direction/mountain-valley semantics.
-- Verified export contour requirements.
+Important observation:
 
-### Duplications
+The public aliases reverseTuckEnd and straightTuckEnd now call v2 recipe generators, not the older TypeScript folding-carton recipe directly.
 
-- Catalog template list duplicates concepts from `foldingBoxVariants.ts`.
-- Parameter aliases duplicate legacy `width/height/depth` and catalog `L/W/H` concepts.
-- Template status exists in both catalog runtime and verification fields.
+How template IDs/slugs work
 
-### Risky fields
+The catalog gives the user-facing identity and route identity. The generator registry gives the runtime geometry identity.
 
-- `productionReady`
-- `supports3D`
-- `mappingConfidence`
-- geometry formula fields marked as if usable before verification
+These must remain connected but not confused.
 
-### Suggested normalized schema
+Parameter specs
 
-```text
-TemplateCatalogEntry
+Parameters can come from:
+
+catalog JSON
+v2 recipe JSON
+legacy TypeScript specs
+
+This is flexible, but can create mismatches. Parameter resolution should be tested per template.
+
+CEFBox definitions
+
+CEFBox-style information should be treated as reference/metadata unless converted into verified generator parts.
+
+Exact generator vs generic generator
+
+Exact / intended production path:
+
+catalog entry
+  → generatorId
+  → v2 recipe or exact TypeScript generator
+  → validated DielineGraph
+
+Risky path:
+
+catalog entry
+  → generic approximation
+  → visually plausible but not verified
+Safe templates
+
+No template should be called production-safe until it has:
+
+golden 2D fixture
+graph fixture
+3D fold verification
+save/load test
+export test
+
+Current RTE is implemented but still explicitly marked not production-ready.
+
+8. Reverse Tuck End Deep Analysis
+Current implementation path
+
+Main public generator path:
+
+generatorRegistry.reverseTuckEnd
+  → generateReverseTuckEndV2
+  → reverseTuckEnd.v2.json
+  → componentEngine.generateFromRecipe
+  → graphAssembler
+  → assertValidDielineGraph
+
+Compatibility path:
+
+templates/reverseTuckEnd.ts
+  → generators/foldingCarton/recipes/reverseTuckEnd.ts
+  → generateFoldingCarton
+
+This means there are at least two RTE-capable systems:
+
+v2 recipe system
+legacy reusable folding-carton engine
+
+The registry currently favors the v2 recipe system.
+
+RTE v2 parts
+
+The v2 recipe creates:
+
+body strip
+left
+front
+right
+back
+glue tab
+attached to back.right
+top tuck
+attached to front.top
+top dust left
+attached to left.top
+top dust right
+attached to right.top
+bottom tuck
+attached to back.bottom
+bottom dust left
+attached to left.bottom
+bottom dust right
+attached to right.bottom
+Top closure
+
+Top closure is modeled as:
+
+front top tuck flap
+left top dust flap
+right top dust flap
+Bottom closure
+
+Bottom closure is modeled as:
+
+back bottom tuck flap
+left bottom dust flap
+right bottom dust flap
+
+That matches the basic idea of a Reverse Tuck End box: top and bottom tuck flaps are on opposite main panels.
+
+Glue tab
+
+Glue tab is attached to the right edge of the back panel.
+
+2D structural correctness
+
+Likely structurally close, but not proven.
+
+Reasons:
+
+recipe structure is good
+validation is called
+geometry is marked geometry-needs-verification
+closure proportions are formula-based and approximate
+3D correctness
+
+Not guaranteed.
+
+Reasons:
+
+fold direction is inferred
+crease.direction may not carry enough semantic intent
+tuck and dust flap order in 3D is not necessarily physically staged
+a mockup can look acceptable while still being geometrically inaccurate
+Suspicious areas
+Tuck flap geometry proportions
+Dust flap taper
+Glue tab bevel
+Generated cut path exterior union
+Fold direction for top vs bottom closure
+UV mapping on non-rectangular faces
+Export paths from sampled arcs
+Whether v2 and legacy RTE produce different structures
+Reverse Tuck End Verification Checklist
+Required faces
+left
+front
+right
+back
+glue-tab
+top-tuck
+top-dust-left
+top-dust-right
+bottom-tuck
+bottom-dust-left
+bottom-dust-right
+Required structural creases
+left/front
+front/right
+right/back
+back/glue-tab
+front/top-tuck
+left/top-dust-left
+right/top-dust-right
+back/bottom-tuck
+left/bottom-dust-left
+right/bottom-dust-right
+Required internal geometry
+tuck lip score line on top tuck
+tuck lip score line on bottom tuck
+optional notches/reliefs if recipe includes them
+Expected parent-child relationships
+
+Root should be front.
+
+Expected tree:
+
+front
+  left
+    top-dust-left
+    bottom-dust-left
+  right
+    back
+      glue-tab
+      bottom-tuck
+    top-dust-right
+    bottom-dust-right
+  top-tuck
+
+Exact nesting may vary, but every face must appear once and every child must be connected by a valid crease.
+
+Expected 2D visual structure
+Four body panels in strip order: left, front, right, back
+Glue tab after back
+Top tuck above front
+Bottom tuck below back
+Dust flaps above/below side panels
+No accidental duplicate face overlap
+Cut path follows exterior perimeter only
+Creases lie on shared boundaries
+Expected 3D folded result
+Front is the root/visible main panel
+Side panels fold 90°
+Back panel closes the tube
+Glue tab folds inward/outward consistently
+Dust flaps fold inward
+Top tuck and bottom tuck fold into opposite ends
+No panel floats away from hinge
+No panel folds through the box body
+9. Generic Folding Box Generator Analysis
+
+The generic generator approach is useful for exploring catalog variants, but it should not be trusted for production dielines.
+
+What it tries to do
+Create reusable patterns for folding box variants
+Avoid writing a fully custom generator for every template
+Approximate panels and closures from high-level metadata
+What is risky
+Real packaging templates often have small structural differences.
+Tuck flaps, locks, dust flaps, reliefs, shoulders, notches, and glue panels are not interchangeable.
+A visually plausible 2D outline can still fail in manufacturing.
+A generic faceTree can be valid but physically wrong.
+Recommendation
+
+Generic generator output should be labeled:
+
+experimental / preview only / requires manual verification
+
+Use it for UI and prototyping, not production export.
+
+10. JSON Catalog / Database Analysis
+What it contains
+
+The catalog likely contains:
+
+template IDs
+slugs
+labels
+descriptions
+categories
+parameter definitions
+variant info
+source info
+runtime generator ID
+production status
+warnings
+manufacturing notes
+What it should be used for
+UI catalog
+template discovery
+parameter panel
+routing
+warnings
+metadata
+generator lookup
+What it should NOT be used for
+production geometry unless it contains verified parametric part geometry
+automatic manufacturing claims
+exact clone claims
+replacing TypeScript/component generators
+Missing or risky fields
+
+Each production template should eventually include:
+
+productionReady
+verificationStatus
+generatorId
+generatorVersion
+goldenFixtureId
+expectedFaceIds
+expectedCreaseIds
+expectedPartIds
+referenceSource
+knownLimitations
+lastVerifiedAt
+Suggested normalized schema
+TemplateCatalogEntry {
   id
   slug
-  name
   category
-  source
-  uiParameters[]
-  manufacturingNotes
-  runtime
+  label
+  description
+  parameters
+  runtime: {
     generatorId
-    geometrySource: typescript-generator | catalog-only | fixture
+    generatorVersion
     status
-  verification
-    referenceFixtureId
-    graphValidated
-    visualCompared
-    exportCompared
-    prototypeTested
-  componentMap
-    catalogComponentId -> graphFaceId | graphGeometryId
-```
+  }
+  productionStatus: {
+    productionReady
+    verificationStatus
+    riskLevel
+    warning
+  }
+  references: {
+    goldenSvg?
+    goldenGraph?
+    sourceNotes?
+  }
+}
+11. 2D Rendering Pipeline
+Inputs
+DielineGraph
+visible layer settings
+optional face artwork
+Drawn layers
+cut
+crease
+perf
+window
+hole
+bleed
+safe
+label
+Current strengths
+geometry primitives allow more explicit layer rendering.
+Cut paths can come from exterior path extraction.
+Labels are generated from face centroids.
+Layer controls exist in the template builder.
+Current issues
+Cut path correctness depends on robust exterior-edge extraction.
+Sampled arcs become polyline geometry unless export supports curves.
+Bleed/safe/glue zones are data-supported but not necessarily complete for every template.
+Visual rendering is not the same as production export.
+12. 3D Rendering Pipeline
+Flow
+DielineGraph
+  → fold3d.buildFoldedModel
+  → FoldedFace3D[]
+  → DielineCartonStage
+  → THREE.ShapeGeometry
+  → mesh material or texture
+How folding works
+Start from faceTree root.
+For each child face, find the crease.
+Convert crease endpoints to 3D.
+Infer fold sign from child face position.
+Rotate child subtree around crease line.
+Generate local face geometry and world matrix.
+Current issues
+Fold direction is mostly inferred.
+foldSemantic exists in type but is not central enough.
+UV mapping is rectangular-bounds-based.
+Physical folding order is not modeled.
+3D can be wrong even when 2D is correct.
+13. Artwork Assignment Flow
+Current flow
+User uploads image/PDF.
+Source is stored as ArtworkSource.
+Crop modal creates rendered face asset.
+Asset is stored in artworkSlice.faces[faceId].
+Preview faces are derived as Record<faceId, dataUrl>.
+3D stage applies texture by faces[face.faceId].
+Strength
+
+Dynamic face IDs are supported in Redux state.
+
+Risks
+UI must always use actual graph face IDs.
+Crop/UV mapping is basic for non-rectangular faces.
+Legacy six-face UI assumptions may still exist in some panels.
+Face ID changes will break saved artwork assignments.
+14. Persistence / Save / Load / Publish Flow
+Current capabilities
+
+The save payload can include:
+
+project name
+status
+template ID
+dimensions
+artwork sources
+selected source ID
+dynamic face assets
+workspace dieline with graph
+template slug
+generator ID
+user/resolved parameters
+Server capabilities
+
+server/projects/service.ts can store:
+
+local JSON project
+Supabase row
+source artwork assets
+rendered face images
+dynamic workspace
+Viewer
 
----
+ProjectViewer.tsx now renders DielineCartonStage only if:
 
-## 11. 2D Rendering Pipeline
+project.workspace?.dieline?.graph
 
-### Which component renders the flat dieline
+That is the correct direction.
 
-Two components render 2D:
+Main risk
 
-- `features/dieline-builder/DielineViewport.tsx`: template builder preview.
-- `features/builder/components/DielineRenderer.tsx`: artwork builder/editor preview.
+If generated template flows do not save the graph into workspace.dieline.graph, the public viewer has nothing dynamic to render.
 
-### How faces are drawn
+15. Validation System
+Existing layers
+Parameter validation
+recipe parameters
+catalog parameters
+constraints/warnings
+formula resolver
+Catalog validation
+validates catalog structure and runtime references
+Graph validation
+checks size
+faces
+duplicate IDs
+self-intersections
+structural creases
+faceTree
+cut paths
+geometry layers
+3D diagnostics
 
-Faces are SVG `<polygon>` elements generated from `face.vertices`.
+fold3d.ts produces diagnostics for:
 
-### How cut paths are drawn
+missing tree
+missing faces
+duplicate faces
+missing crease
+crease mismatch
+crease not on both face edges
+non-finite bounds
+Missing validation
+template-specific expected face list
+expected crease list
+expected part list
+physical fold direction verification
+golden SVG comparison
+public viewer roundtrip
+production export validation
+geometry equivalence between v2 and legacy RTE
+16. Current Technical Debt
+Critical
+1. RTE has two generation paths
 
-If `graph.geometry` exists, `primitiveToSvgPath` draws geometry primitives. Otherwise renderers fall back to `graph.cutPaths`.
+Problem: v2 recipe path and legacy TypeScript recipe path can diverge.
 
-### How crease/fold lines are drawn
+Files:
 
-Creases are either geometry primitives with layer `crease`, or fallback `<line>` elements from `graph.creases`.
+generatorRegistry.ts
+templates/reverseTuckEnd.ts
+recipes/foldingBox/reverseTuckEnd.v2.json
+generators/foldingCarton/recipes/reverseTuckEnd.ts
 
-### How labels are drawn
+Risk: fixing the wrong file changes nothing or introduces mismatch.
 
-Labels come from geometry primitives of type `label`, or fallback to face centroids and labels.
+Next action: declare one active RTE source of truth.
 
-### How coordinates are interpreted
+2. No golden reference for Reverse Tuck End
 
-Graph coordinates are used directly in the SVG viewBox. Units are effectively millimeters.
+Problem: geometry is marked needs verification.
 
-### SVG coordinate system
+Risk: random fixes can make visual output worse.
 
-`viewBox="0 0 width height"`, x right, y down. This matters for fold sign inference later.
+Next action: create golden RTE fixture with expected faces, creases, cut paths, and 3D result.
 
-### Whether bleed/safe/glue zones are implemented
+3. 3D fold direction is inferred
 
-Partially implemented:
+Problem: fold correctness depends on geometry side and crease direction.
 
-- Bleed/safe are rendered as rectangular guide offsets per face bounds in `DielineRenderer.tsx`.
-- Glue exists as face role and metadata part.
-- True offset bleed/safe polygons for non-rectangular flaps are not implemented.
+Risk: top/bottom flaps can fold wrong direction.
 
-### Current issues
+Next action: make fold semantics explicit in generator output.
 
-- RTE measurements in `DielineViewport.tsx` use a different body top formula than the generator.
-- Bleed/safe guides are rectangular bounds-based, not true face offsets.
-- Cut paths are not joined loops.
-- Internal score lines are modeled as creases, which confuses validation.
+4. Catalog entries can imply support before generators are verified
 
----
+Problem: catalog may contain more templates than real verified generators.
 
-## 12. 3D Rendering Pipeline
+Risk: users assume production support.
 
-### Which component renders 3D
+Next action: strict status badges and disabled production export for unverified templates.
 
-`features/builder/DielineCartonStage.tsx`.
+High
+5. Template builder not unified with project builder
 
-### How faces become THREE.ShapeGeometry
+Problem: user can generate preview/export but not create artwork/project cleanly.
 
-`DielineCartonStage.tsx` receives solved folded faces from `buildFoldedModel`, creates a `THREE.Shape`, adds each local vertex, closes the shape, and creates `ShapeGeometry`.
+Next action: add a controlled “Start project from this graph” flow.
 
-### How UV mapping works
+6. Bounds-based UV mapping
 
-UVs are computed from local geometry position:
+Problem: non-rectangular faces can distort or misalign textures.
 
-```text
-u = x / localBounds.width
-v = 1 - y / localBounds.height
-```
+Next action: add face-local coordinate mapping tests.
 
-This is simple and works for rectangular-ish face textures, but may not handle rotation, non-rectangular mapping expectations, or per-face crop transforms precisely.
+7. Generic generator risk
 
-### How textures/artwork are applied
+Problem: approximate templates may look correct but be physically wrong.
 
-A texture URL is looked up by `faces[face.faceId]`. If found, a `TextureLoader` loads it and applies it to `meshStandardMaterial`. Otherwise a role-based material color is used.
+Next action: keep them experimental.
 
-### How faceTree drives folding
+Medium
+8. Cut path generation needs production-grade testing
 
-`fold3d.ts` traverses `faceTree`. Root remains flat. Child faces are rotated around the connecting crease line.
+Problem: exterior edge extraction is sensitive.
 
-### How crease pivots are calculated
+Next action: visual and geometric fixtures.
 
-Crease endpoints are converted from flat graph coordinates to 3D coordinates, transformed through the parent matrix, then used as the axis for `rotationAroundLine`.
+9. Supabase schema needs roundtrip verification
 
-### How fold direction is handled
+Problem: dynamic workspace support depends on actual schema.
 
-Angle is:
+Next action: save/load/publish integration test.
 
-```text
-crease.foldAngle * crease.direction * inferredSign
-```
+Low
+10. Cleanup old docs and duplicate architecture notes
 
-`inferredSign` is based on which side of the crease the child centroid is on. This is convenient but risky because it substitutes geometry inference for explicit fold semantics.
+Problem: repo already has an audit file that may describe an older branch state.
 
-### How coordinate conversion works
+Next action: update docs after source-of-truth decisions.
 
-2D x maps to 3D x, 2D y maps to 3D z, and vertical 3D y is introduced by rotations.
+17. Current Bug Risk Map
+Area	Risk	Symptoms	Likely files	How to verify
+Reverse Tuck End geometry	High	wrong flap shape / bad cut	v2 recipe, tuck/dust parts	golden SVG comparison
+RTE source-of-truth	Critical	fixes do nothing	generatorRegistry, templates/RTE	trace active generator ID
+Generic generator	High	plausible but incorrect boxes	foldingBoxVariants / recipes	fixture per template
+faceTree correctness	Critical	panels rotate wrong	graphAssembler, faceTree	tree snapshot
+fold direction	Critical	flaps fold inside/outside wrong	fold3d, crease direction	3D snapshot
+cut paths	High	duplicated/missing cuts	geometry, graphAssembler	exterior-edge test
+dynamic face assets	Medium	artwork missing after save	artworkSlice, payload	save/load test
+catalog mismatch	High	UI says supported but generator missing	catalog/registry	catalog verification
+UV mapping	Medium	artwork stretched	DielineCartonStage	textured polygon test
+public viewer	High	blank or default preview	ProjectViewer, payload	publish roundtrip
+18. What Should Be Fixed First
+Priority 1 — Architecture / validation / observability
+Decide active source of truth for Reverse Tuck End: v2 recipe or legacy engine.
+Add generator debug output for faces, creases, faceTree, geometry primitives.
+Add template-specific validation fixture for RTE.
+Priority 2 — Reverse Tuck End exact verification
+Generate RTE with default dimensions.
+Export graph JSON.
+Compare to trusted reference.
+Verify all face IDs and crease IDs.
+Verify top/bottom tuck panel placement.
+Verify cut path perimeter.
+Priority 3 — Template catalog integration
+Ensure catalog runtime.generatorId maps to the intended generator.
+Mark non-verified entries as experimental.
+Disable production export for unverified templates.
+Priority 4 — 3D folding corrections
+Add explicit fold semantics.
+Verify fold direction per crease.
+Add 3D snapshot diagnostics.
+Priority 5 — More templates
 
-### Current issues
+Only after RTE is stable.
 
-- Fold direction may be wrong even if the 2D graph is correct.
-- There is no material thickness.
-- Internal self-creases are not represented as foldable child faces.
-- Texture UVs are bounds-based.
-- No 3D golden snapshot test found.
+19. What Should NOT Be Done Yet
 
-### Whether wrong 3D can happen even if 2D is correct
+Do not:
 
-Yes. A correct flat dieline can fold incorrectly if `faceTree`, crease direction, parent-child relationship, or inferred fold sign is wrong.
+add more templates
+copy more website data
+randomly change RTE geometry formulas
+patch only the 3D renderer before verifying 2D graph
+patch only the JSON catalog before verifying generator path
+change face IDs again
+claim production-ready
+build DXF/PDF production export before golden fixtures
+refactor persistence before confirming generated graph save/load
+merge generic approximations into production flow
+20. Recommended Future Architecture
 
----
+Use this principle:
 
-## 13. Artwork Assignment Flow
-
-### How artwork sources are uploaded
-
-The builder uploads images/PDFs through `DielineRenderer.tsx` and related artwork hooks/helpers.
-
-### How artwork is stored
-
-`artworkSlice.ts` stores source files as `ArtworkSource[]` and assigned/cropped faces as `FaceAssets`.
-
-### How a source is assigned to a face
-
-`setFace({ face, asset })` stores an asset at `state.faces[face]` where `face` is a dynamic face id.
-
-### How crop data is stored
-
-Each `FaceAsset` contains `crop: CropSettings`.
-
-### How faceAssets are keyed
-
-By dynamic face id string.
-
-### Whether dynamic face IDs are correctly used
-
-Mostly yes in `artworkSlice.ts` and `DielineRenderer.tsx`.
-
-### Whether any legacy six-face assumptions remain
-
-Yes. `domain/packaging/index.ts` still defines `FACE_KEYS` and `TEMPLATE_IDS = [folding-carton]`, and `projectPayload.ts` still saves the legacy template id.
-
----
-
-## 14. Persistence / Save / Load / Publish Flow
-
-### API routes
-
-Dieline API routes are present. Project API routes likely existed before this branch but were not part of the inspected diff. Dieline route behavior is **Present but usage not confirmed**.
-
-### Project payload
-
-`utils/projectPayload.ts` creates full and patch payloads from live builder state.
-
-### Database schema
-
-Supabase schema file was not found in the inspected branch diff. Server error messages reference `supabase/schema.sql`.
-
-### Local fallback
-
-`server/projects/service.ts` writes `storage/projects-db.json` and per-project folders.
-
-### Supabase flow
-
-If configured, `server/projects/service.ts` uses a `projects` table and `project-faces` bucket.
-
-### Asset storage
-
-- Rendered face images are stored by face id.
-- Source artwork images are stored by asset id.
-- Workspace `faceAssets` store source/crop metadata.
-
-### Draft vs published
-
-`ProjectStatus` is `draft` or `published`.
-
-### Public viewer
-
-`features/viewer/ProjectViewer.tsx` exists and was modified. It depends on project data correctness.
-
-### Migration of old projects
-
-`utils/migrateProject.ts` exists but was not deeply inspected.
-
-### Whether DielineGraph is saved
-
-Only partially. `ProjectDieline` can include `graph`, and the server can store it in `workspace`. But `createFullProjectPayload` only includes `workspace.dieline` when source is `svg-upload` or `library`, not for normal generated template projects.
-
-### Whether graph can be reproduced later
-
-Partially. If the exact graph is saved, yes. If only dimensions and legacy `templateId` are saved, the exact catalog-generated graph may not be reproducible.
-
----
-
-## 15. Validation System
-
-### Parameter validation
-
-Catalog parameter resolution and generator normalization clamp values. Reverse Tuck End has local parameter constraints.
-
-### Catalog validation
-
-`validateTemplateCatalog.ts` validates catalog references before generation.
-
-### DielineGraph validation
-
-`validateDielineGraph.ts` strictly validates generator output.
-
-### Face/crease validation
-
-Faces are checked for duplicate ids, finite points, self-intersections, tiny edges. Creases are checked for duplicate ids, face references, finite endpoints, nonzero length, and boundary alignment.
-
-### faceTree validation
-
-Strict validator expects exactly one root, no cycles, no duplicate faces, all faces covered, and each child crease connecting parent to child.
-
-### SVG/path validation
-
-`validation.ts` sanitizes cut path `d` length and point data. `svgImporter.ts` is present but not deeply inspected.
-
-### Visual smoke tests
-
-`verify-visual.mjs` exists and was modified. Golden reference use is not confirmed.
-
-### Missing validation
-
-- Semantic validation for internal score lines vs structural creases.
-- Mountain/valley fold validation.
-- Joined cut contour validation.
-- Template-specific required part validation.
-- RTE reference overlay validation.
-- 3D expected bounds/orientation validation.
-- Export file validation.
-
----
-
-## 16. Current Technical Debt
-
-### Critical
-
-**Problem:** Internal tuck lip creases are modeled as self-referencing `DielineCrease` objects.  
-**Files involved:** `reverseTuckEnd.ts`, `validateDielineGraph.ts`, `fold3d.ts`.  
-**Risk:** Graph validation and fold semantics are confused.  
-**Recommended next action:** Add semantic distinction between structural creases and internal score/guide lines before changing RTE geometry.
-
-**Problem:** Generated template graph is not reliably persisted.  
-**Files involved:** `projectPayload.ts`, `builderSlice.ts`, `domain/packaging/index.ts`, `server/projects/service.ts`.  
-**Risk:** Save/load/viewer can lose exact template geometry.  
-**Recommended next action:** Define canonical project dieline persistence for generated templates.
-
-**Problem:** Legacy six-face template id remains central.  
-**Files involved:** `domain/packaging/index.ts`, `utils/projectPayload.ts`.  
-**Risk:** Dynamic catalog templates are forced into `folding-carton`.  
-**Recommended next action:** Introduce a catalog-aware project template identity model.
-
-**Problem:** Generic generator can appear production-ready.  
-**Files involved:** `foldingBoxVariants.ts`, `foldingBoxCatalog.json`, `templateRegistry.ts`.  
-**Risk:** Incorrect dielines for real printing/manufacturing.  
-**Recommended next action:** Mark generic outputs as placeholder unless fixture-verified.
-
-### High
-
-**Problem:** Fold direction is inferred rather than explicit.  
-**Files involved:** `fold3d.ts`, template generators.  
-**Risk:** 3D can fold wrong while 2D is correct.  
-**Recommended next action:** Add explicit fold semantic metadata.
-
-**Problem:** RTE measurement overlay uses inconsistent formula.  
-**Files involved:** `DielineViewport.tsx`, `reverseTuckEnd.ts`.  
-**Risk:** UI dimension guides do not match real generated graph.  
-**Recommended next action:** Derive measurements from graph geometry or metadata positions.
-
-**Problem:** No confirmed golden fixtures.  
-**Files involved:** `fixtures/dielines/references/*`, `scripts/verify-visual.mjs`.  
-**Risk:** Visual fixes cannot be trusted.  
-**Recommended next action:** Add one verified RTE reference before fixing geometry.
-
-### Medium
-
-**Problem:** Cut paths are segmented exterior edges.  
-**Files involved:** `geometry.ts`, export routes.  
-**Risk:** DXF/PDF export may not be production-friendly.  
-**Recommended next action:** Add contour joining and export validation later.
-
-**Problem:** Bleed/safe guides are rectangular bounds-based.  
-**Files involved:** `DielineRenderer.tsx`.  
-**Risk:** Non-rectangular flaps get inaccurate guides.  
-**Recommended next action:** Add polygon offset strategy later.
-
-**Problem:** Two builder experiences are not unified.  
-**Files involved:** `features/builder/*`, `features/dieline-builder/*`.  
-**Risk:** Features work in one flow but not another.  
-**Recommended next action:** Define one graph-first builder flow.
-
-### Low
-
-**Problem:** Some present files are not confirmed in runtime flow.  
-**Files involved:** `fullSealEnd.ts`, `mailerBox.ts`, `sleeve.ts`, `stickers.ts`, `trayWithLid.ts`.  
-**Risk:** Confusion during maintenance.  
-**Recommended next action:** Add registry/usage documentation.
-
----
-
-## 17. Current Bug Risk Map
-
-| Area | Risk | Symptoms | Likely Files | How to Verify |
-|---|---|---|---|---|
-| Reverse Tuck End geometry | Critical | Flaps/creases appear in wrong places or validation fails | `reverseTuckEnd.ts` | Compare generated SVG to trusted RTE reference |
-| Generic generator accuracy | Critical | Many templates look plausible but print wrong | `foldingBoxVariants.ts` | Mark generic outputs and compare each with references |
-| faceTree correctness | High | 3D folds from wrong parent or detached faces | `reverseTuckEnd.ts`, `fold3d.ts` | Print faceTree and inspect parent-child crease connections |
-| Fold direction | High | 3D folds outward/inward incorrectly | `fold3d.ts`, generator crease directions | Snapshot folded face normals/positions |
-| Cut path generation | High | Export has broken/unjoined cut contours | `geometry.ts`, export route | Join contours and inspect DXF/PDF in CAD |
-| Dynamic face assets | Medium | Artwork lost or applied to wrong face | `artworkSlice.ts`, `DielineRenderer.tsx`, `projectPayload.ts` | Save/load project with non-six-face template |
-| JSON catalog mismatch | High | Template shown as available but generator missing/wrong | `foldingBoxCatalog.json`, `templateRegistry.ts`, `generatorRegistry.ts` | List catalog entries vs registered generator ids |
-| Template registry mismatch | High | Wrong generator called for slug/id | `templateRegistry.ts`, `parameterAliases.ts` | Unit test id/slug/generator mapping |
-| 3D pivot folding | High | 2D correct but mockup wrong | `fold3d.ts`, `DielineCartonStage.tsx` | Validate crease axis and world vertices per face |
-| Save/load graph persistence | Critical | Published/viewer project renders old carton instead of generated graph | `projectPayload.ts`, `builderSlice.ts`, `server/projects/service.ts` | Save generated RTE project, reload, compare graph JSON |
-
----
-
-## 18. What Should Be Fixed First
-
-### Priority 1
-
-Architecture / validation / observability before fixes:
-
-1. Add a generated graph debug export for RTE.
-2. Run strict validation on RTE and record actual errors.
-3. Separate structural creases from internal score/guide lines.
-4. Add graph snapshot fixtures for default RTE.
-
-### Priority 2
-
-Reverse Tuck End exact verification:
-
-1. Add trusted reference SVG/PDF/DXF.
-2. Overlay generated RTE against reference.
-3. Verify face ids, crease ids, cut paths, and closure positions.
-
-### Priority 3
-
-Template catalog integration:
-
-1. Confirm catalog `reverse-tuck-end` maps to `reverseTuckEnd` generator.
-2. Mark all missing generators as catalog-only.
-3. Remove or clearly label generic placeholders.
-
-### Priority 4
-
-3D folding corrections:
-
-1. Add explicit fold direction/mountain-valley metadata.
-2. Validate folded body panel positions.
-3. Only fix 3D after 2D graph is confirmed.
-
-### Priority 5
-
-More templates:
-
-Only after RTE is verified end-to-end and persistence is graph-first.
-
----
-
-## 19. What Should NOT Be Done Yet
-
-- Do not add more templates.
-- Do not modify random geometry formulas.
-- Do not copy more website data into JSON.
-- Do not claim production-ready output.
-- Do not build production DXF/PDF export before graph correctness.
-- Do not fix 3D before confirming 2D.
-- Do not change face IDs again without a migration plan.
-- Do not use the generic folding box generator as production geometry.
-- Do not refactor the whole builder until save/load graph ownership is decided.
-
----
-
-## 20. Recommended Future Architecture
-
-Principle:
-
-```text
-JSON catalog = template metadata and UI schema
-TypeScript generators = real geometry
-DielineGraph = runtime source for 2D/3D
+JSON catalog = template metadata + UI schema
+TypeScript/component recipes = real geometry
+DielineGraph = runtime source for 2D/3D/save/viewer
 fixtures = verification references
 validation = safety layer
 viewer = readonly rendering
-```
 
-Recommended folder structure:
+Recommended folders:
 
-```text
 domain/dieline/
   catalog/
-    foldingBoxCatalog.json
-    schema.ts
-    normalize.ts
-    resolveParameters.ts
-    validateCatalog.ts
+  recipes/
+  componentEngine/
+  parts/
   generators/
-    registry.ts
-    reverseTuckEnd.generator.ts
-    straightTuckEnd.generator.ts
-  templates/
-    metadata-only exports or generator wrappers
   validation/
-    validateGraph.ts
-    validateTemplateSemantics.ts
-    validateExportContours.ts
   fixtures/
+  renderModel/
+
+features/
+  dielines/
+  dieline-builder/
+  builder/
+  viewer/
+
+server/
+  projects/
+  dielines/
+
+tests/
+  dieline/
     reverse-tuck-end/
-      reference.svg
-      expected.graph.json
-      expected.preview.png
-  geometry/
-    polygon.ts
-    contours.ts
-    offsets.ts
-  folding/
-    fold3d.ts
-    foldSemantics.ts
+      expected-graph.json
+      expected-svg.svg
+      expected-fold-snapshot.json
+21. Concrete Next Tasks
+Task 1 — Confirm active RTE generator
 
-features/dielines/
-  catalog pages
-  library dashboard
+Goal: prove exactly which code path generates /dielines/foldingBox/reverseTuckEnd.
 
-features/builder/
-  graph-first artwork builder
-  2d renderer
-  3d renderer
-  save/load integration
+Output:
 
-features/viewer/
-  readonly graph renderer
-  published project renderer
-```
+generator ID
+recipe file
+graph output path
+old files that are only compatibility wrappers
+Task 2 — Export RTE graph snapshot
 
-Key architecture change:
+Goal: generate default RTE graph and save:
 
-`ProjectWorkspace.dieline.graph` should become the canonical saved graph for every non-legacy generated template project, including catalog templates.
+faces
+creases
+cut paths
+geometry
+faceTree
+metadata
+Task 3 — Create RTE expected-structure validator
 
----
+Goal: assert required face IDs, crease IDs, and parent-child relationships.
 
-## 21. Concrete Next Tasks
+Task 4 — Add 2D golden visual fixture
 
-### Task 1: Export RTE graph snapshot
+Goal: compare generated 2D output against a trusted RTE reference.
 
-- **Goal:** See exact generated faces, creases, geometry, metadata.
-- **Files to inspect:** `reverseTuckEnd.ts`, `scripts/verify-dieline-graph.mjs`.
-- **Files to modify later:** verification script only.
-- **Expected output:** `fixtures/dielines/references/cefbox/reverse-tuck-end.generated.graph.json`.
-- **Risk:** Low.
+Task 5 — Add 3D fold diagnostic test
 
-### Task 2: Run strict validation on RTE
+Goal: ensure no face is missing, duplicated, detached, or folded through the body.
 
-- **Goal:** Confirm whether self lip creases fail validation.
-- **Files to inspect:** `validateDielineGraph.ts`, `generateGraphFromCatalogTemplate.ts`.
-- **Files to modify later:** none at first.
-- **Expected output:** exact validation error list.
-- **Risk:** Low.
+Task 6 — Verify save/load/publish
 
-### Task 3: Define crease semantics
+Goal: create a generated RTE project, save it, reload it, publish it, and confirm the public viewer uses the same graph.
 
-- **Goal:** Separate structural face hinges from internal score/guide lines.
-- **Files to inspect:** `types.ts`, `reverseTuckEnd.ts`, `DielineViewport.tsx`, `fold3d.ts`.
-- **Files to modify later:** `types.ts`, generators, validators, renderers.
-- **Expected output:** model proposal for `DielineCrease` vs `GeometryPrimitive layer=crease/perf`.
-- **Risk:** Medium.
+Task 7 — Freeze catalog-only templates
 
-### Task 4: Add trusted RTE reference fixture
+Goal: prevent unverified catalog entries from being treated as production generators.
 
-- **Goal:** Stop guessing about geometry.
-- **Files to inspect:** `fixtures/dielines/references/README.md`, `verify-visual.mjs`.
-- **Files to modify later:** fixtures and visual script.
-- **Expected output:** reference SVG and overlay comparison.
-- **Risk:** Medium.
+22. Final Assessment
 
-### Task 5: Fix save/load graph persistence design
+The project is moving in the correct direction architecturally. The most important improvement is the dynamic DielineGraph model and the newer component-engine recipe system.
 
-- **Goal:** Make generated template projects reload the same graph.
-- **Files to inspect:** `projectPayload.ts`, `builderSlice.ts`, `server/projects/service.ts`, `ProjectViewer.tsx`.
-- **Files to modify later:** payload builder, builder hydration, project types, viewer.
-- **Expected output:** project stores `templateId`, `templateSlug`, `generatorId`, user parameters, resolved parameters, and graph snapshot.
-- **Risk:** High.
+But the project is still in a dangerous transition phase:
 
-### Task 6: Catalog/generator status audit
+old template architecture still exists
+v2 recipe architecture exists
+generic approximations exist
+catalog metadata exists
+production verification does not yet exist
 
-- **Goal:** Prevent users from trusting missing/generic templates.
-- **Files to inspect:** `foldingBoxCatalog.json`, `generatorRegistry.ts`, `templateRegistry.ts`, `foldingBoxVariants.ts`.
-- **Files to modify later:** catalog runtime status and UI badges.
-- **Expected output:** table of catalog-only, implemented, generic-placeholder, verified.
-- **Risk:** Medium.
+For Reverse Tuck End, the correct next move is not a random geometry patch. The correct next move is to freeze the source of truth, generate a graph snapshot, validate the exact structure, compare against a reference, and only then adjust geometry formulas.
 
-### Task 7: 3D fold verification
-
-- **Goal:** Confirm 3D only after 2D is correct.
-- **Files to inspect:** `fold3d.ts`, `DielineCartonStage.tsx`.
-- **Files to modify later:** fold semantics and 3D renderer.
-- **Expected output:** folded face position checks for RTE.
-- **Risk:** High.
-
----
-
-## 22. Final Conclusion
-
-FoldView has moved in the right direction by introducing a graph-first architecture. `DielineGraph`, catalog normalization, generator registry, 2D rendering, 3D folding, and dynamic face assets are all strong foundations.
-
-The weak part is that the old six-face carton system still controls important save/load and project identity behavior. At the same time, the JSON catalog is much larger than the implemented generator set, and the generic folding box generator can create plausible but not production-safe structures.
-
-The Reverse Tuck End issue should not be treated as only a generator bug, only a 3D bug, or only a JSON bug. The current evidence points to a deeper modeling issue: internal crease/score lines are represented using the same `DielineCrease` structure as face-to-face hinges, while validators and 3D folding expect creases to connect two faces along boundaries.
-
-Fixes are going wrong because the system lacks a verified reference and because multiple layers are still competing as sources of truth: legacy packaging, JSON catalog, TypeScript generator, and saved project payload.
-
-The correct next move is to pause new templates and random formula edits, generate/validate the Reverse Tuck End graph, compare it with a trusted reference, then update the architecture so the graph model clearly separates structural hinges from print/score guide lines and is saved as the canonical project artifact.
+Until that happens, every fix risks moving the system in the wrong direction.

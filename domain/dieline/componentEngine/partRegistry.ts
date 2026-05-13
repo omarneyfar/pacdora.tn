@@ -15,36 +15,189 @@ import { hangTabPart } from "../parts/features/hangTab";
 import { sideGlueTabPart } from "../parts/glue/sideGlueTab";
 import { partialEdgeAnchorPart } from "../parts/guides/partialEdgeAnchor";
 import { scoreLinePart } from "../parts/guides/scoreLine";
-import type { DielinePartGenerator } from "./types";
+import { createOutputExpectations, getPartContract } from "../partLibrary/partContracts";
+import type { ComponentRecipePart, DielinePartGenerator, PartRegistryEntry } from "./types";
+
+type PartRegistrationSpec = {
+  contractId: string;
+  allowedContractIds?: string[];
+  outputExpectations: PartRegistryEntry["outputExpectations"];
+};
 
 const PARTS = [
-  bodyStripPart,
-  sideGlueTabPart,
-  tuckFlapPart,
-  slottedTuckFlapPart,
-  lockTabPart,
-  dustFlapPart,
-  customDustFlapPart,
-  panelFlapPart,
-  slotCutoutPart,
-  roundedSlotCutoutPart,
-  circularHoleCutoutPart,
-  euroSlotCutoutPart,
-  windowCutoutPart,
-  reliefNotchPart,
-  hangTabPart,
-  partialEdgeAnchorPart,
-  scoreLinePart,
+  registerPart(bodyStripPart, {
+    contractId: "body-strip",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(sideGlueTabPart, {
+    contractId: "side-glue-tab",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(tuckFlapPart, {
+    contractId: "reverse-tuck-flap",
+    allowedContractIds: ["straight-tuck-flap", "centered-tuck-flap"],
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(slottedTuckFlapPart, {
+    contractId: "slotted-tuck-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(lockTabPart, {
+    contractId: "lock-tab",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(dustFlapPart, {
+    contractId: "dust-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(customDustFlapPart, {
+    contractId: "custom-dust-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "optional",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(panelFlapPart, {
+    contractId: "panel-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(slotCutoutPart, {
+    contractId: "slot-cutout",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(roundedSlotCutoutPart, {
+    contractId: "rounded-slot-cutout",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(circularHoleCutoutPart, {
+    contractId: "circular-hole-cutout",
+    allowedContractIds: ["circular-hang-hole"],
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(euroSlotCutoutPart, {
+    contractId: "euro-slot-cutout",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(windowCutoutPart, {
+    contractId: "window-cutout",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(reliefNotchPart, {
+    contractId: "relief-notch",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
+  registerPart(hangTabPart, {
+    contractId: "hang-tab",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(partialEdgeAnchorPart, {
+    contractId: "partial-edge-anchor",
+    outputExpectations: createOutputExpectations({
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(scoreLinePart, {
+    contractId: "score-line",
+    outputExpectations: createOutputExpectations({
+      geometryPrimitives: "one-or-more",
+    }),
+  }),
 ];
 
-export const partRegistry = new Map<string, DielinePartGenerator>(
+export const partRegistry = new Map<string, PartRegistryEntry>(
   PARTS.map((part) => [part.type, part]),
 );
 
-export function getPartGenerator(type: string): DielinePartGenerator {
-  const generator = partRegistry.get(type);
-  if (!generator) {
+function registerPart<Config extends ComponentRecipePart>(
+  implementation: DielinePartGenerator<Config>,
+  spec: PartRegistrationSpec,
+): PartRegistryEntry<Config> {
+  const allowedContractIds = Array.from(new Set([spec.contractId, ...(spec.allowedContractIds ?? [])]));
+  for (const contractId of allowedContractIds) {
+    getPartContract(contractId);
+  }
+
+  return {
+    type: implementation.type,
+    implementation,
+    contractId: spec.contractId,
+    allowedContractIds,
+    outputExpectations: spec.outputExpectations,
+  };
+}
+
+export function getPartRegistration(type: string): PartRegistryEntry {
+  const registration = partRegistry.get(type);
+  if (!registration) {
     throw new Error(`Unknown v2 dieline part type: ${type}`);
   }
-  return generator;
+  return registration;
+}
+
+export function getPartGenerator(type: string): DielinePartGenerator {
+  return getPartRegistration(type).implementation;
+}
+
+export function resolvePartContractId(part: ComponentRecipePart, registration = getPartRegistration(part.type)): string {
+  return part.contract ?? registration.contractId;
+}
+
+export function getPartContractForRecipePart(part: ComponentRecipePart, registration = getPartRegistration(part.type)) {
+  const contractId = resolvePartContractId(part, registration);
+
+  if (!registration.allowedContractIds.includes(contractId)) {
+    throw new Error(
+      `Part ${part.id || "(unknown)"} uses contract "${contractId}", but type "${part.type}" only supports: ${registration.allowedContractIds.join(", ")}`,
+    );
+  }
+
+  return getPartContract(contractId);
 }

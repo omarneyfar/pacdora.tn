@@ -22,6 +22,8 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
   const warnings: string[] = [];
   const faceIds = new Set<string>();
   const creaseIds = new Set<string>();
+  const cutPathIds = new Set<string>();
+  const geometryIds = new Set<string>();
   const facesById = new Map<string, DielineFace>();
   const creasesById = new Map<string, DielineCrease>();
 
@@ -74,6 +76,10 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
       errors.push(`Crease "${crease.id}" connects face "${crease.faceA}" to itself. Structural creases must connect two distinct faces. Internal score/guide lines belong in graph.geometry, not graph.creases.`);
     }
 
+    if (isNonStructuralCreaseId(crease.id)) {
+      errors.push(`Crease "${crease.id}" looks like non-structural geometry. Slots, holes, windows, relief cuts, perforations, internal score lines, glue zones, safe areas, and bleed areas belong in graph.geometry, not graph.creases.`);
+    }
+
     if (!isFinitePoint(crease.edgeStart) || !isFinitePoint(crease.edgeEnd)) {
       errors.push(`Crease "${crease.id}" contains non-finite endpoints.`);
     }
@@ -112,6 +118,11 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
   }
 
   for (const cutPath of graph.cutPaths) {
+    if (cutPathIds.has(cutPath.id)) {
+      errors.push(`Duplicate cut path id "${cutPath.id}".`);
+    }
+    cutPathIds.add(cutPath.id);
+
     if (!cutPath.d && (!cutPath.points || cutPath.points.length < 2)) {
       errors.push(`Cut path "${cutPath.id}" is missing path data.`);
     }
@@ -126,6 +137,11 @@ export function validateDielineGraph(graph: DielineGraph): DielineGraphValidatio
   }
 
   for (const primitive of graph.geometry ?? []) {
+    if (geometryIds.has(primitive.id)) {
+      errors.push(`Duplicate geometry primitive id "${primitive.id}".`);
+    }
+    geometryIds.add(primitive.id);
+
     if (!VALID_LAYERS.has(primitive.layer)) {
       errors.push(`Geometry primitive "${primitive.id}" has invalid layer "${primitive.layer}".`);
     }
@@ -291,6 +307,20 @@ function getPrimitivePoints(primitive: GeometryPrimitive): Point[] {
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0;
+}
+
+function isNonStructuralCreaseId(id: string): boolean {
+  return [
+    /^score-/i,
+    /(^|[-_])slot([-_]|$)/i,
+    /(^|[-_])hole([-_]|$)/i,
+    /(^|[-_])window([-_]|$)/i,
+    /(^|[-_])relief([-_]|$)/i,
+    /(^|[-_])perf(oration)?([-_]|$)/i,
+    /(^|[-_])safe([-_]|$)/i,
+    /(^|[-_])bleed([-_]|$)/i,
+    /(^|[-_])glue-zone([-_]|$)/i,
+  ].some((pattern) => pattern.test(id));
 }
 
 function isFinitePoint(point: Point): boolean {

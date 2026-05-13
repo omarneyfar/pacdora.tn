@@ -69,6 +69,7 @@
     {
       "id": "body",
       "type": "body-strip",
+      "contract": "body-strip",
       "topBand": "max(W + TFW, DFW, HTH)",
       "bottomBand": "max(W + TFW, DFW)",
       "offsetX": "GFW",
@@ -79,16 +80,16 @@
         { "id": "back", "label": "Back", "width": "L", "height": "H" }
       ]
     },
-    { "id": "glue-tab", "type": "glue-tab", "attachTo": "left.left", "width": "GFW" },
-    { "id": "top-tuck", "type": "tuck-flap", "attachTo": "front.top", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
-    { "id": "top-hang-anchor", "type": "partial-edge-anchor", "attachTo": "back.top", "anchorId": "top-hang-anchor", "length": "HTW", "centered": true, "margin": "max(1, L * 0.12)" },
-    { "id": "top-hang-tab", "type": "hang-tab", "attachTo": "top-hang-anchor", "faceId": "top-hang-tab", "side": "top", "height": "HTH", "topWidth": "HTW * 0.78", "shoulder": "HTH * 0.22" },
-    { "id": "circular-hang-hole", "type": "circular-hole-cutout", "attachToFace": "top-hang-tab", "radius": "HHR", "centerY": "HTH * 0.55", "margin": "SDS" },
-    { "id": "top-dust-left", "type": "dust-flap", "attachTo": "left.top", "height": "DFW" },
-    { "id": "top-dust-right", "type": "dust-flap", "attachTo": "right.top", "height": "DFW" },
-    { "id": "bottom-tuck", "type": "tuck-flap", "attachTo": "back.bottom", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
-    { "id": "bottom-dust-left", "type": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
-    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
+    { "id": "glue-tab", "type": "glue-tab", "contract": "side-glue-tab", "attachTo": "left.left", "width": "GFW" },
+    { "id": "top-tuck", "type": "tuck-flap", "contract": "reverse-tuck-flap", "attachTo": "front.top", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
+    { "id": "top-hang-anchor", "type": "partial-edge-anchor", "contract": "partial-edge-anchor", "attachTo": "back.top", "anchorId": "top-hang-anchor", "length": "HTW", "centered": true, "margin": "max(1, L * 0.12)" },
+    { "id": "top-hang-tab", "type": "hang-tab", "contract": "hang-tab", "attachTo": "top-hang-anchor", "faceId": "top-hang-tab", "side": "top", "height": "HTH", "topWidth": "HTW * 0.78", "shoulder": "HTH * 0.22" },
+    { "id": "circular-hang-hole", "type": "circular-hole-cutout", "contract": "circular-hang-hole", "attachToFace": "top-hang-tab", "radius": "HHR", "centerY": "HTH * 0.55", "margin": "SDS" },
+    { "id": "top-dust-left", "type": "dust-flap", "contract": "dust-flap", "attachTo": "left.top", "height": "DFW" },
+    { "id": "top-dust-right", "type": "dust-flap", "contract": "dust-flap", "attachTo": "right.top", "height": "DFW" },
+    { "id": "bottom-tuck", "type": "tuck-flap", "contract": "reverse-tuck-flap", "attachTo": "back.bottom", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
+    { "id": "bottom-dust-left", "type": "dust-flap", "contract": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
+    { "id": "bottom-dust-right", "type": "dust-flap", "contract": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
   ],
   "folding": {
     "rootFace": "front",

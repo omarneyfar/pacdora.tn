@@ -10,6 +10,7 @@ import type {
   ParameterValueMap,
   Point,
 } from "../types";
+import type { PartContract, PartOutputExpectations } from "../partLibrary/partContracts";
 
 export type RecipeVerificationStatus =
   | "none"
@@ -59,6 +60,7 @@ export type DielineComponentRecipe = {
 export type ComponentRecipePart = {
   id: string;
   type: string;
+  contract?: string;
   attachTo?: string;
   [key: string]: unknown;
 };
@@ -111,6 +113,28 @@ export type ComponentLayoutContext = {
 export type DielinePartGenerator<Config extends ComponentRecipePart = ComponentRecipePart> = {
   type: string;
   build(ctx: ComponentLayoutContext, config: Config): PartResult;
+};
+
+export type PartRegistryEntry<Config extends ComponentRecipePart = ComponentRecipePart> = {
+  type: string;
+  implementation: DielinePartGenerator<Config>;
+  contractId: string;
+  allowedContractIds: string[];
+  outputExpectations: PartOutputExpectations;
+};
+
+export type ResolvedPartContract = {
+  part: ComponentRecipePart;
+  registration: PartRegistryEntry;
+  contract: PartContract;
+};
+
+export type ComponentEngineValidationIssue = {
+  severity: "error" | "warning";
+  code: string;
+  message: string;
+  partId?: string;
+  contractId?: string;
 };
 
 export type ResolvedRecipeParameters = {
