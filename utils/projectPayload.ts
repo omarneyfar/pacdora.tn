@@ -5,7 +5,6 @@ import {
   type Project,
   type ProjectDieline,
   type ProjectStatus,
-  type TemplateId,
 } from "@/domain/packaging";
 
 import { normalizeCropSettings, type CropSettings } from "@/features/artwork/artwork";

@@ -1,4 +1,4 @@
-import type { DielineFace, DielineCrease, GeometryPrimitive, ParameterSpec } from "../../types";
+import type { DielineFace, GeometryPrimitive, ParameterSpec } from "../../types";
 
 // ── Closure types ──────────────────────────────────────────────
 

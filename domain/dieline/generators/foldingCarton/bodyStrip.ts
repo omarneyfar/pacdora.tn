@@ -10,7 +10,7 @@ import type { BodyStripColumn, BodyStripResult, FoldingCartonRecipe, NormalizedP
  * The glue tab is placed before or after the specified panel.
  */
 export function createBodyStrip(params: NormalizedParams, recipe: FoldingCartonRecipe): BodyStripResult {
-  const { L, W, H, GFW, TFW, DFW } = params;
+  const { L, W, H, GFW } = params;
   const panelWidths = recipe.body.panelOrder.map((_, i) => (i % 2 === 0 ? W : L));
 
   // Determine the closure band heights

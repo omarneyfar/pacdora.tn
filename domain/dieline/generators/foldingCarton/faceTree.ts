@@ -1,5 +1,5 @@
 import type { DielineCrease, DielineFace, DielineFaceNode } from "../../types";
-import type { BodyStripResult, ClosureSpec, FoldingCartonRecipe } from "./types";
+import type { ClosureSpec, FoldingCartonRecipe } from "./types";
 
 /**
  * Build a DielineFaceNode tree from the recipe structure.
@@ -68,7 +68,7 @@ export function buildFaceTree(
   // Build the tree outward from the root panel
   function buildBranch(startIndex: number, direction: -1 | 1, parentPanelId: string): DielineFaceNode[] {
     const nodes: DielineFaceNode[] = [];
-    let currentIndex = startIndex;
+    const currentIndex = startIndex;
 
     while (currentIndex >= 0 && currentIndex < panelOrder.length) {
       const panelId = panelOrder[currentIndex];
