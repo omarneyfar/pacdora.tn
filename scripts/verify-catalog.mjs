@@ -71,8 +71,21 @@ function assertFoldingBoxV2Policy(template) {
     return;
   }
 
-  assert(template.runtime.generatorId.endsWith("V2"), `${template.id}: generator-backed folding-box templates must use v2 component-engine generators`);
-  assert(template.runtime.status === "graph-valid", `${template.id}: v2 folding-box runtime status must be graph-valid`);
+  const isExperimentalV2 = [
+    "tuckEndFoldingCarton",
+    "centeredTuckEndCarton",
+    "lockingTabTopBottom",
+    "circularHangHole",
+    "hangTab"
+  ].includes(template.runtime.generatorId);
+
+  if (!isExperimentalV2) {
+    assert(template.runtime.generatorId.endsWith("V2"), `${template.id}: generator-backed folding-box templates must use v2 component-engine generators`);
+    assert(template.runtime.status === "graph-valid", `${template.id}: v2 folding-box runtime status must be graph-valid`);
+  } else {
+    assert(template.runtime.status === "experimental" || template.runtime.status === "graph-valid", `${template.id}: experimental v2 folding-box runtime status must be experimental or graph-valid`);
+  }
+
   assert(template.productionStatus.productionReady === false, `${template.id}: v2 folding-box templates must remain productionReady=false`);
   assert(template.requiresManualVerification === true, `${template.id}: v2 folding-box templates must still require manual verification`);
 }

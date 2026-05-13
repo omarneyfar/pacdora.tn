@@ -20,31 +20,31 @@ const IMPLEMENTED_GENERATOR_HINTS: Record<string, Pick<TemplateRuntime, "generat
   },
 
   "tuck-end-folding-carton": {
-    generatorId: "tuckEndFoldingCartonV2",
+    generatorId: "tuckEndFoldingCarton",
     status: "experimental",
     supports2D: true,
     supports3D: true,
   },
   "centered-tuck-end-carton": {
-    generatorId: "centeredTuckEndCartonV2",
+    generatorId: "centeredTuckEndCarton",
     status: "experimental",
     supports2D: true,
     supports3D: true,
   },
-  "folding-carton-box-with-locking-tab-on-top-and-bottom": {
-    generatorId: "lockingTabTopBottomV2",
+  "with-locking-tab-on-top-and-bottom": {
+    generatorId: "lockingTabTopBottom",
     status: "experimental",
     supports2D: true,
     supports3D: true,
   },
-  "folding-carton-box-with-circular-hang-hole": {
-    generatorId: "circularHangHoleV2",
+  "with-circular-hang-hole": {
+    generatorId: "circularHangHole",
     status: "experimental",
     supports2D: true,
     supports3D: true,
   },
-  "folding-carton-box-with-hang-tab": {
-    generatorId: "hangTabV2",
+  "with-hang-tab": {
+    generatorId: "hangTab",
     status: "experimental",
     supports2D: true,
     supports3D: true,
