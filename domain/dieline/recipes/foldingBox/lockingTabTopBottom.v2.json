@@ -1,0 +1,101 @@
+{
+  "id": "locking-tab-top-bottom-v2",
+  "schemaVersion": "dieline-recipe-1.0",
+  "category": "folding-box",
+  "family": "folding-carton-box-with-locking-tab-on-top-and-bottom",
+  "label": "Folding Carton with Locking Tab on Top and Bottom (experimental)",
+  "productionReady": false,
+  "verificationStatus": "geometry-needs-verification",
+  "experimentalStatus": "reference-pending",
+  "implementationStatus": "experimental-scaffold",
+  "referenceNotes": [
+    "This hidden recipe uses real lock-tab and rounded-slot-cutout parts, but slot ownership and locking behavior require reference review.",
+    "The tabs are attached through partial-edge-anchor parts so their structural creases are true sub-edge hinges."
+  ],
+  "parameters": {
+    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120, "step": 1, "unit": "mm" },
+    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 60, "step": 1, "unit": "mm" },
+    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 160, "step": 1, "unit": "mm" },
+    "closureMode": {
+      "label": "Closure dimensions",
+      "kind": "closure",
+      "input": "select",
+      "default": "auto",
+      "options": [
+        { "label": "Auto", "value": "auto" },
+        { "label": "Manual", "value": "manual" }
+      ]
+    },
+    "TFW": { "label": "Tuck flap lip", "kind": "closure", "input": "number", "default": "clamp(W * 0.32, max(1, min(W, L, H) * 0.08), max(2, min(W, L, H) * 0.5))", "step": 0.5, "unit": "mm" },
+    "TFR": { "label": "Tuck flap radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.18, 0.5, min(W * 0.25, L * 0.18, H * 0.18))", "step": 0.5, "unit": "mm" },
+    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(min(W, L, H) * 0.25, 1.5, max(3, min(W, L, H) * 0.35))", "step": 0.5, "unit": "mm" },
+    "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, max(1, W * 0.25), max(2, min(W * 0.75, H * 0.75, L * 0.75)))", "step": 0.5, "unit": "mm" },
+    "LTW": { "label": "Lock tab base width", "kind": "closure", "input": "number", "default": "clamp(L * 0.28, max(8, L * 0.16), max(10, L * 0.42))", "step": 0.5, "unit": "mm" },
+    "LTH": { "label": "Lock tab height", "kind": "closure", "input": "number", "default": "clamp(W * 0.24, max(5, W * 0.12), max(6, W * 0.34))", "step": 0.5, "unit": "mm" },
+    "LSW": { "label": "Lock slot width", "kind": "closure", "input": "number", "default": "clamp(LTW * 0.82, max(6, LTW * 0.6), LTW)", "step": 0.5, "unit": "mm" },
+    "LSH": { "label": "Lock slot height", "kind": "closure", "input": "number", "default": "clamp(W * 0.05, 2, max(3, W * 0.08))", "step": 0.25, "unit": "mm" },
+    "SDS": { "label": "Cutout safe distance", "kind": "closure", "input": "number", "default": "clamp(min(L, W, H) * 0.03, 1.5, 4)", "step": 0.25, "unit": "mm" }
+  },
+  "constraints": [
+    {
+      "id": "reference-pending-template",
+      "severity": "warning",
+      "condition": "1",
+      "message": "Lock-tab placement and receiving slots need reference comparison.",
+      "affectedParameters": []
+    },
+    {
+      "id": "height-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "H / W > 6",
+      "message": "Height is very large compared to width. Review lock-tab reach and closure proportions.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "height-width-ratio-too-small",
+      "severity": "warning",
+      "condition": "H / W < 0.7",
+      "message": "Height is very small compared to width. Review lock-tab closure clearance.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "lock-tab-large-for-tuck",
+      "severity": "warning",
+      "condition": "LTH > W * 0.34",
+      "message": "Lock tab is large relative to width. Reference comparison is required.",
+      "affectedParameters": ["LTH", "W"]
+    }
+  ],
+  "parts": [
+    {
+      "id": "body",
+      "type": "body-strip",
+      "topBand": "max(W + TFW + LTH, DFW)",
+      "bottomBand": "max(W + TFW + LTH, DFW)",
+      "offsetX": "GFW",
+      "panels": [
+        { "id": "left", "label": "Left", "width": "W", "height": "H" },
+        { "id": "front", "label": "Front", "width": "L", "height": "H" },
+        { "id": "right", "label": "Right", "width": "W", "height": "H" },
+        { "id": "back", "label": "Back", "width": "L", "height": "H" }
+      ]
+    },
+    { "id": "glue-tab", "type": "glue-tab", "attachTo": "left.left", "width": "GFW" },
+    { "id": "top-locking-tuck", "type": "tuck-flap", "attachTo": "front.top", "faceId": "top-locking-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
+    { "id": "top-lock-tab-anchor", "type": "partial-edge-anchor", "attachTo": "top-locking-tuck.top", "anchorId": "top-lock-tab-anchor", "length": "LTW", "centered": true, "margin": "max(1, L * 0.08)" },
+    { "id": "top-lock-tab", "type": "lock-tab", "attachTo": "top-lock-tab-anchor", "faceId": "top-lock-tab", "side": "top", "height": "LTH", "tipWidth": "LTW * 0.72", "shoulder": "LTH * 0.32" },
+    { "id": "top-lock-slot", "type": "rounded-slot-cutout", "attachTo": "back.top", "width": "LSW", "height": "LSH", "radius": "LSH / 2", "orientation": "horizontal", "offsetFromBase": "SDS + LSH * 2", "centeredOnAnchor": true, "margin": "SDS", "referencePending": true },
+    { "id": "top-dust-left", "type": "dust-flap", "attachTo": "left.top", "height": "DFW" },
+    { "id": "top-dust-right", "type": "dust-flap", "attachTo": "right.top", "height": "DFW" },
+    { "id": "bottom-locking-tuck", "type": "tuck-flap", "attachTo": "front.bottom", "faceId": "bottom-locking-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
+    { "id": "bottom-lock-tab-anchor", "type": "partial-edge-anchor", "attachTo": "bottom-locking-tuck.bottom", "anchorId": "bottom-lock-tab-anchor", "length": "LTW", "centered": true, "margin": "max(1, L * 0.08)" },
+    { "id": "bottom-lock-tab", "type": "lock-tab", "attachTo": "bottom-lock-tab-anchor", "faceId": "bottom-lock-tab", "side": "bottom", "height": "LTH", "tipWidth": "LTW * 0.72", "shoulder": "LTH * 0.32" },
+    { "id": "bottom-lock-slot", "type": "rounded-slot-cutout", "attachTo": "back.bottom", "width": "LSW", "height": "LSH", "radius": "LSH / 2", "orientation": "horizontal", "offsetFromBase": "SDS + LSH * 2", "centeredOnAnchor": true, "margin": "SDS", "referencePending": true },
+    { "id": "bottom-dust-left", "type": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
+    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
+  ],
+  "folding": {
+    "rootFace": "front",
+    "strategy": "derive-from-attachments"
+  }
+}

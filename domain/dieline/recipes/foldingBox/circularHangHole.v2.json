@@ -1,0 +1,97 @@
+{
+  "id": "circular-hang-hole-v2",
+  "schemaVersion": "dieline-recipe-1.0",
+  "category": "folding-box",
+  "family": "folding-carton-box-with-circular-hang-hole",
+  "label": "Folding Carton with Circular Hang Hole (experimental)",
+  "productionReady": false,
+  "verificationStatus": "geometry-needs-verification",
+  "experimentalStatus": "reference-pending",
+  "implementationStatus": "experimental-scaffold",
+  "referenceNotes": [
+    "This hidden recipe adds a real hang-tab face and circular-hole-cutout primitive.",
+    "The hang tab is attached to the back top edge; exact ownership requires reference comparison."
+  ],
+  "parameters": {
+    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120, "step": 1, "unit": "mm" },
+    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 60, "step": 1, "unit": "mm" },
+    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 160, "step": 1, "unit": "mm" },
+    "closureMode": {
+      "label": "Closure dimensions",
+      "kind": "closure",
+      "input": "select",
+      "default": "auto",
+      "options": [
+        { "label": "Auto", "value": "auto" },
+        { "label": "Manual", "value": "manual" }
+      ]
+    },
+    "TFW": { "label": "Tuck flap lip", "kind": "closure", "input": "number", "default": "clamp(W * 0.32, max(1, min(W, L, H) * 0.08), max(2, min(W, L, H) * 0.5))", "step": 0.5, "unit": "mm" },
+    "TFR": { "label": "Tuck flap radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.18, 0.5, min(W * 0.25, L * 0.18, H * 0.18))", "step": 0.5, "unit": "mm" },
+    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(min(W, L, H) * 0.25, 1.5, max(3, min(W, L, H) * 0.35))", "step": 0.5, "unit": "mm" },
+    "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, max(1, W * 0.25), max(2, min(W * 0.75, H * 0.75, L * 0.75)))", "step": 0.5, "unit": "mm" },
+    "HTW": { "label": "Hang tab width", "kind": "closure", "input": "number", "default": "clamp(L * 0.45, max(24, L * 0.28), max(28, L * 0.62))", "step": 0.5, "unit": "mm" },
+    "HTH": { "label": "Hang tab height", "kind": "closure", "input": "number", "default": "clamp(W * 0.55, max(20, W * 0.35), max(24, W * 0.72))", "step": 0.5, "unit": "mm" },
+    "HHR": { "label": "Circular hole radius", "kind": "closure", "input": "number", "default": "clamp(min(W, L) * 0.07, 2.5, max(3, min(W, L) * 0.12))", "step": 0.25, "unit": "mm" },
+    "SDS": { "label": "Cutout safe distance", "kind": "closure", "input": "number", "default": "clamp(min(L, W, H) * 0.03, 1.5, 4)", "step": 0.25, "unit": "mm" }
+  },
+  "constraints": [
+    {
+      "id": "reference-pending-template",
+      "severity": "warning",
+      "condition": "1",
+      "message": "Circular hang hole and tab proportions need reference comparison.",
+      "affectedParameters": []
+    },
+    {
+      "id": "hang-hole-large-for-tab",
+      "severity": "warning",
+      "condition": "HHR * 2 > HTH * 0.55",
+      "message": "Circular hang hole is large relative to hang tab height.",
+      "affectedParameters": ["HHR", "HTH"]
+    },
+    {
+      "id": "height-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "H / W > 6",
+      "message": "Height is very large compared to width. Review hang-tab stability.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "height-width-ratio-too-small",
+      "severity": "warning",
+      "condition": "H / W < 0.7",
+      "message": "Height is very small compared to width. Review hang-tab layout.",
+      "affectedParameters": ["H", "W"]
+    }
+  ],
+  "parts": [
+    {
+      "id": "body",
+      "type": "body-strip",
+      "topBand": "max(W + TFW, DFW, HTH)",
+      "bottomBand": "max(W + TFW, DFW)",
+      "offsetX": "GFW",
+      "panels": [
+        { "id": "left", "label": "Left", "width": "W", "height": "H" },
+        { "id": "front", "label": "Front", "width": "L", "height": "H" },
+        { "id": "right", "label": "Right", "width": "W", "height": "H" },
+        { "id": "back", "label": "Back", "width": "L", "height": "H" }
+      ]
+    },
+    { "id": "glue-tab", "type": "glue-tab", "attachTo": "left.left", "width": "GFW" },
+    { "id": "top-tuck", "type": "tuck-flap", "attachTo": "front.top", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
+    { "id": "top-hang-anchor", "type": "partial-edge-anchor", "attachTo": "back.top", "anchorId": "top-hang-anchor", "length": "HTW", "centered": true, "margin": "max(1, L * 0.12)" },
+    { "id": "top-hang-tab", "type": "hang-tab", "attachTo": "top-hang-anchor", "faceId": "top-hang-tab", "side": "top", "height": "HTH", "topWidth": "HTW * 0.78", "shoulder": "HTH * 0.22" },
+    { "id": "circular-hang-hole", "type": "circular-hole-cutout", "attachToFace": "top-hang-tab", "radius": "HHR", "centerY": "HTH * 0.55", "margin": "SDS" },
+    { "id": "top-dust-left", "type": "dust-flap", "attachTo": "left.top", "height": "DFW" },
+    { "id": "top-dust-right", "type": "dust-flap", "attachTo": "right.top", "height": "DFW" },
+    { "id": "bottom-tuck", "type": "tuck-flap", "attachTo": "back.bottom", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
+    { "id": "bottom-dust-left", "type": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
+    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
+  ],
+  "folding": {
+    "rootFace": "front",
+    "strategy": "derive-from-attachments"
+  }
+}

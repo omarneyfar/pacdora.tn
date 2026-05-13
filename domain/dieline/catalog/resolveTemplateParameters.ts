@@ -9,7 +9,24 @@ import { evaluateFormula } from "./formulaEngine";
 import { toGeneratorParameterKey } from "./parameterAliases";
 
 const CLOSURE_PARAMETER_IDS = new Set(["TFW", "TFR", "GFW", "DFW"]);
-const V2_AUTO_CLOSURE_GENERATOR_IDS = new Set(["reverseTuckEndV2", "straightTuckEndV2"]);
+const V2_AUTO_CLOSURE_GENERATOR_IDS = new Set([
+  "reverseTuckEnd",
+  "straightTuckEnd",
+  "reverseTuckEndV2",
+  "straightTuckEndV2",
+
+  "tuckEndFoldingCarton",
+  "centeredTuckEndCarton",
+  "lockingTabTopBottom",
+  "circularHangHole",
+  "hangTab",
+
+  "tuckEndFoldingCartonV2",
+  "centeredTuckEndCartonV2",
+  "lockingTabTopBottomV2",
+  "circularHangHoleV2",
+  "hangTabV2",
+]);
 const DIMENSION_PARAMETER_IDS = new Set(["L", "W", "H"]);
 const EXPORT_PARAMETER_IDS = new Set(["pdfExport", "dxfExport", "outputSizeMode"]);
 

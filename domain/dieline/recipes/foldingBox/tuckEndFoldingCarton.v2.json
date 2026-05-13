@@ -1,0 +1,188 @@
+{
+  "id": "tuck-end-folding-carton-v2",
+  "schemaVersion": "dieline-recipe-1.0",
+  "category": "folding-box",
+  "family": "tuck-end-folding-carton",
+  "label": "Tuck End Folding Carton (reference-pending scaffold)",
+  "productionReady": false,
+  "verificationStatus": "geometry-needs-verification",
+  "experimentalStatus": "reference-pending",
+  "implementationStatus": "custom-closure-scaffold",
+  "referenceNotes": [
+    "This hidden recipe uses the custom slotted-tuck-flap, custom-dust-flap, relief-notch, and slot primitives, but it is still not a production/CAD-verified CefBox match.",
+    "Body order and closure ownership are inferred from the supplied black/white reference images.",
+    "Keep this recipe out of the catalog/product UI until the reference decomposition is compared against a trusted fixture."
+  ],
+  "parameters": {
+    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 180.5, "step": 1, "unit": "mm" },
+    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 98, "step": 1, "unit": "mm" },
+    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 280, "step": 1, "unit": "mm" },
+    "closureMode": {
+      "label": "Closure dimensions",
+      "kind": "closure",
+      "input": "select",
+      "default": "auto",
+      "options": [
+        { "label": "Auto", "value": "auto" },
+        { "label": "Manual", "value": "manual" }
+      ]
+    },
+    "FTH": { "label": "Full tuck flap height", "kind": "closure", "input": "number", "default": "clamp(W * 1.3, max(28, W * 0.95), max(36, W * 1.55))", "step": 0.5, "unit": "mm" },
+    "FLH": { "label": "Outer lip score offset", "kind": "closure", "input": "number", "default": "clamp(W * 0.26, 8, max(10, W * 0.36))", "step": 0.5, "unit": "mm" },
+    "FCR": { "label": "Tuck flap corner radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.08, 2, max(3, W * 0.16))", "step": 0.5, "unit": "mm" },
+    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(min(W, L, H) * 0.22, 8, 24)", "step": 0.5, "unit": "mm" },
+    "DFW": { "label": "Custom dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.37, max(12, W * 0.26), max(18, W * 0.48))", "step": 0.5, "unit": "mm" },
+    "DSH": { "label": "Dust flap shoulder", "kind": "closure", "input": "number", "default": "clamp(W * 0.08, 2, max(3, W * 0.16))", "step": 0.5, "unit": "mm" },
+    "DTP": { "label": "Dust flap taper", "kind": "closure", "input": "number", "default": "clamp(W * 0.1, 2, max(3, W * 0.18))", "step": 0.5, "unit": "mm" },
+    "SL": { "label": "Rounded slot length", "kind": "closure", "input": "number", "default": "clamp(L * 0.697, max(12, L * 0.45), max(18, L * 0.78))", "step": 0.5, "unit": "mm" },
+    "SW": { "label": "Rounded slot width", "kind": "closure", "input": "number", "default": "clamp(W * 0.06, 2, max(3, W * 0.09))", "step": 0.25, "unit": "mm" },
+    "SOF": { "label": "Slot offset from flap base", "kind": "closure", "input": "number", "default": "clamp(W * 0.37, max(6, SW * 2), max(8, FTH * 0.46))", "step": 0.5, "unit": "mm" },
+    "RFW": { "label": "Relief notch width", "kind": "closure", "input": "number", "default": "clamp(W * 0.08, 2, max(3, W * 0.16))", "step": 0.5, "unit": "mm" },
+    "RFD": { "label": "Relief notch depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.05, 1.5, max(2, W * 0.1))", "step": 0.5, "unit": "mm" },
+    "SDS": { "label": "Cutout safe distance", "kind": "closure", "input": "number", "default": "clamp(min(L, W, H) * 0.03, 1.5, 4)", "step": 0.25, "unit": "mm" }
+  },
+  "constraints": [
+    {
+      "id": "reference-pending-template",
+      "severity": "warning",
+      "condition": "1",
+      "message": "This tuck-end folding carton recipe is a hidden reference-pending scaffold and must be visually compared before use.",
+      "affectedParameters": []
+    },
+    {
+      "id": "width-very-small-for-handling",
+      "severity": "warning",
+      "condition": "W < 15",
+      "message": "Width is very small. Geometry can be generated, but slot and closure handling should be reviewed.",
+      "affectedParameters": ["W"]
+    },
+    {
+      "id": "length-very-small-for-handling",
+      "severity": "warning",
+      "condition": "L < 20",
+      "message": "Length is very small. Review body-panel usability before using this dieline.",
+      "affectedParameters": ["L"]
+    },
+    {
+      "id": "height-very-small-for-handling",
+      "severity": "warning",
+      "condition": "H < 25",
+      "message": "Height is very small. Folding and loading may need manual review.",
+      "affectedParameters": ["H"]
+    },
+    {
+      "id": "tuck-flap-too-large-for-body-height",
+      "severity": "warning",
+      "condition": "FTH > H * 0.6",
+      "message": "Full tuck flap depth is large compared to body height. The reference-pending closure should be reviewed visually.",
+      "affectedParameters": ["FTH", "H"]
+    },
+    {
+      "id": "height-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "H / W > 6",
+      "message": "Height is very large compared to width. The carton may be unstable or visually unrealistic.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "height-width-ratio-too-small",
+      "severity": "warning",
+      "condition": "H / W < 0.7",
+      "message": "Height is very small compared to width. The carton may look too shallow for a tuck-end structure.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "length-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "L / W > 5",
+      "message": "Length is very large compared to width. Review body panel proportions before using this dieline.",
+      "affectedParameters": ["L", "W"]
+    },
+    {
+      "id": "width-length-ratio-too-large",
+      "severity": "warning",
+      "condition": "W / L > 2.5",
+      "message": "Width is very large compared to length. Review side-panel proportions before using this dieline.",
+      "affectedParameters": ["W", "L"]
+    },
+    {
+      "id": "slot-length-needs-review",
+      "severity": "warning",
+      "condition": "SL > L * 0.75",
+      "message": "Slot length is large relative to the tuck flap width. Review locking behavior against a reference.",
+      "affectedParameters": ["SL", "L"]
+    }
+  ],
+  "parts": [
+    {
+      "id": "body",
+      "type": "body-strip",
+      "topBand": "max(FTH, DFW)",
+      "bottomBand": "max(FTH, DFW)",
+      "offsetX": "GFW",
+      "panels": [
+        { "id": "front", "label": "Front", "width": "L", "height": "H" },
+        { "id": "right", "label": "Right", "width": "W", "height": "H" },
+        { "id": "back", "label": "Back", "width": "L", "height": "H" },
+        { "id": "left", "label": "Left", "width": "W", "height": "H" }
+      ]
+    },
+    { "id": "glue-tab", "type": "glue-tab", "attachTo": "front.left", "width": "GFW" },
+    {
+      "id": "top-slotted-tuck",
+      "type": "slotted-tuck-flap",
+      "attachTo": "front.top",
+      "side": "top",
+      "faceId": "top-tuck",
+      "height": "FTH",
+      "lipHeight": "FLH",
+      "cornerRadius": "FCR",
+      "scoreOffsetFromBase": "FTH - FLH",
+      "margin": "SDS",
+      "slot": {
+        "enabled": true,
+        "id": "top-rounded-slot",
+        "width": "SL",
+        "height": "SW",
+        "radius": "SW / 2",
+        "offsetFromBase": "SOF",
+        "centeredOnAnchor": true
+      },
+      "relief": { "enabled": false }
+    },
+    { "id": "top-tuck-left-relief", "type": "relief-notch", "attachTo": "top-tuck.left", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "top-tuck-right-relief", "type": "relief-notch", "attachTo": "top-tuck.right", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "top-dust-right", "type": "custom-dust-flap", "attachTo": "right.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "top-dust-left", "type": "custom-dust-flap", "attachTo": "left.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    {
+      "id": "bottom-slotted-tuck",
+      "type": "slotted-tuck-flap",
+      "attachTo": "back.bottom",
+      "side": "bottom",
+      "faceId": "bottom-tuck",
+      "height": "FTH",
+      "lipHeight": "FLH",
+      "cornerRadius": "FCR",
+      "scoreOffsetFromBase": "FTH - FLH",
+      "margin": "SDS",
+      "slot": {
+        "enabled": true,
+        "id": "bottom-rounded-slot",
+        "width": "SL",
+        "height": "SW",
+        "radius": "SW / 2",
+        "offsetFromBase": "SOF",
+        "centeredOnAnchor": true
+      },
+      "relief": { "enabled": false }
+    },
+    { "id": "bottom-tuck-left-relief", "type": "relief-notch", "attachTo": "bottom-tuck.left", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "bottom-tuck-right-relief", "type": "relief-notch", "attachTo": "bottom-tuck.right", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
+    { "id": "bottom-dust-right", "type": "custom-dust-flap", "attachTo": "right.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "bottom-dust-left", "type": "custom-dust-flap", "attachTo": "left.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } }
+  ],
+  "folding": {
+    "rootFace": "front",
+    "strategy": "derive-from-attachments"
+  }
+}

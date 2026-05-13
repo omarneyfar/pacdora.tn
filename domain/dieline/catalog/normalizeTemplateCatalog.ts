@@ -6,8 +6,49 @@ import type {
 } from "./catalogTypes";
 
 const IMPLEMENTED_GENERATOR_HINTS: Record<string, Pick<TemplateRuntime, "generatorId" | "status" | "supports2D" | "supports3D">> = {
-  reverseTuckEnd: { generatorId: "reverseTuckEndV2", status: "graph-valid", supports2D: true, supports3D: true },
-  straightTuckEnd: { generatorId: "straightTuckEndV2", status: "graph-valid", supports2D: true, supports3D: true },
+  reverseTuckEnd: {
+    generatorId: "reverseTuckEndV2",
+    status: "graph-valid",
+    supports2D: true,
+    supports3D: true,
+  },
+  straightTuckEnd: {
+    generatorId: "straightTuckEndV2",
+    status: "graph-valid",
+    supports2D: true,
+    supports3D: true,
+  },
+
+  "tuck-end-folding-carton": {
+    generatorId: "tuckEndFoldingCartonV2",
+    status: "experimental",
+    supports2D: true,
+    supports3D: true,
+  },
+  "centered-tuck-end-carton": {
+    generatorId: "centeredTuckEndCartonV2",
+    status: "experimental",
+    supports2D: true,
+    supports3D: true,
+  },
+  "folding-carton-box-with-locking-tab-on-top-and-bottom": {
+    generatorId: "lockingTabTopBottomV2",
+    status: "experimental",
+    supports2D: true,
+    supports3D: true,
+  },
+  "folding-carton-box-with-circular-hang-hole": {
+    generatorId: "circularHangHoleV2",
+    status: "experimental",
+    supports2D: true,
+    supports3D: true,
+  },
+  "folding-carton-box-with-hang-tab": {
+    generatorId: "hangTabV2",
+    status: "experimental",
+    supports2D: true,
+    supports3D: true,
+  },
 };
 
 export function normalizeTemplateCatalog(value: unknown): DielineTemplateCatalog {

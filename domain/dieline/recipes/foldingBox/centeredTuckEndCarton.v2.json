@@ -1,0 +1,100 @@
+{
+  "id": "centered-tuck-end-carton-v2",
+  "schemaVersion": "dieline-recipe-1.0",
+  "category": "folding-box",
+  "family": "centered-tuck-end-carton",
+  "label": "Centered Tuck End Carton (experimental)",
+  "productionReady": false,
+  "verificationStatus": "geometry-needs-verification",
+  "experimentalStatus": "reference-pending",
+  "implementationStatus": "experimental-scaffold",
+  "referenceNotes": [
+    "This hidden recipe models centered tuck ownership with partial-edge-anchor parts.",
+    "Panel order and centered tuck widths require reference comparison before catalog exposure."
+  ],
+  "parameters": {
+    "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120, "step": 1, "unit": "mm" },
+    "W": { "label": "Width(W)", "kind": "dimension", "input": "number", "default": 60, "step": 1, "unit": "mm" },
+    "H": { "label": "Height(H)", "kind": "dimension", "input": "number", "default": 160, "step": 1, "unit": "mm" },
+    "closureMode": {
+      "label": "Closure dimensions",
+      "kind": "closure",
+      "input": "select",
+      "default": "auto",
+      "options": [
+        { "label": "Auto", "value": "auto" },
+        { "label": "Manual", "value": "manual" }
+      ]
+    },
+    "TFW": { "label": "Tuck flap lip", "kind": "closure", "input": "number", "default": "clamp(W * 0.32, max(1, min(W, L, H) * 0.08), max(2, min(W, L, H) * 0.5))", "step": 0.5, "unit": "mm" },
+    "TFR": { "label": "Tuck flap radius", "kind": "closure", "input": "number", "default": "clamp(W * 0.18, 0.5, min(W * 0.25, L * 0.18, H * 0.18))", "step": 0.5, "unit": "mm" },
+    "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(min(W, L, H) * 0.25, 1.5, max(3, min(W, L, H) * 0.35))", "step": 0.5, "unit": "mm" },
+    "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, max(1, W * 0.25), max(2, min(W * 0.75, H * 0.75, L * 0.75)))", "step": 0.5, "unit": "mm" },
+    "CTW": { "label": "Centered tuck width", "kind": "closure", "input": "number", "default": "clamp(L * 0.68, max(8, L * 0.35), max(10, L * 0.9))", "step": 0.5, "unit": "mm" }
+  },
+  "constraints": [
+    {
+      "id": "reference-pending-template",
+      "severity": "warning",
+      "condition": "1",
+      "message": "Centered tuck-end ownership is experimental and needs reference comparison.",
+      "affectedParameters": []
+    },
+    {
+      "id": "height-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "H / W > 6",
+      "message": "Height is very large compared to width. Review closure proportions.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "height-width-ratio-too-small",
+      "severity": "warning",
+      "condition": "H / W < 0.7",
+      "message": "Height is very small compared to width. Review closure proportions.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "length-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "L / W > 5",
+      "message": "Length is very large compared to width. Review body proportions.",
+      "affectedParameters": ["L", "W"]
+    },
+    {
+      "id": "width-length-ratio-too-large",
+      "severity": "warning",
+      "condition": "W / L > 2.5",
+      "message": "Width is very large compared to length. Review side-panel proportions.",
+      "affectedParameters": ["W", "L"]
+    }
+  ],
+  "parts": [
+    {
+      "id": "body",
+      "type": "body-strip",
+      "topBand": "max(W + TFW, DFW)",
+      "bottomBand": "max(W + TFW, DFW)",
+      "offsetX": "GFW",
+      "panels": [
+        { "id": "left", "label": "Left", "width": "W", "height": "H" },
+        { "id": "front", "label": "Front", "width": "L", "height": "H" },
+        { "id": "right", "label": "Right", "width": "W", "height": "H" },
+        { "id": "back", "label": "Back", "width": "L", "height": "H" }
+      ]
+    },
+    { "id": "glue-tab", "type": "glue-tab", "attachTo": "left.left", "width": "GFW" },
+    { "id": "top-centered-tuck-anchor", "type": "partial-edge-anchor", "attachTo": "front.top", "anchorId": "top-centered-tuck-anchor", "length": "CTW", "centered": true, "margin": "max(1, L * 0.04)" },
+    { "id": "bottom-centered-tuck-anchor", "type": "partial-edge-anchor", "attachTo": "back.bottom", "anchorId": "bottom-centered-tuck-anchor", "length": "CTW", "centered": true, "margin": "max(1, L * 0.04)" },
+    { "id": "top-centered-tuck", "type": "tuck-flap", "attachTo": "top-centered-tuck-anchor", "faceId": "top-centered-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
+    { "id": "top-dust-left", "type": "dust-flap", "attachTo": "left.top", "height": "DFW" },
+    { "id": "top-dust-right", "type": "dust-flap", "attachTo": "right.top", "height": "DFW" },
+    { "id": "bottom-centered-tuck", "type": "tuck-flap", "attachTo": "bottom-centered-tuck-anchor", "faceId": "bottom-centered-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
+    { "id": "bottom-dust-left", "type": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
+    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
+  ],
+  "folding": {
+    "rootFace": "front",
+    "strategy": "derive-from-attachments"
+  }
+}
