@@ -42,12 +42,15 @@ for (const template of implemented) {
 
   assert(result.graph.metadata?.catalog?.templateId === template.id, `${template.id}: generated graph is missing catalog metadata`);
   assert(result.graph.metadata.catalog.generatorId === template.runtime.generatorId, `${template.id}: graph generator metadata mismatch`);
+  assertFoldingBoxV2Policy(template);
 }
 
 for (const template of catalogOnly) {
   assert(template.productionStatus.productionReady === false, `${template.id}: catalog-only template must not be production-ready`);
   assert(template.requiresManualVerification === true, `${template.id}: catalog-only template must require manual verification`);
 }
+
+assertCatalogMigrationPolicy(catalog.templates);
 
 console.log(
   `Catalog verification passed: ${catalog.templates.length} templates, ${implemented.length} generator-backed, ${catalogOnly.length} catalog-only, ${validation.messages.length} warning(s).`,
@@ -60,6 +63,37 @@ function formatMessage(message) {
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
+  }
+}
+
+function assertFoldingBoxV2Policy(template) {
+  if (template.category !== "Folding Box") {
+    return;
+  }
+
+  assert(template.runtime.generatorId.endsWith("V2"), `${template.id}: generator-backed folding-box templates must use v2 component-engine generators`);
+  assert(template.runtime.status === "graph-valid", `${template.id}: v2 folding-box runtime status must be graph-valid`);
+  assert(template.productionStatus.productionReady === false, `${template.id}: v2 folding-box templates must remain productionReady=false`);
+  assert(template.requiresManualVerification === true, `${template.id}: v2 folding-box templates must still require manual verification`);
+}
+
+function assertCatalogMigrationPolicy(templates) {
+  const reverse = templates.find((template) => template.slug === "reverseTuckEnd");
+  const straight = templates.find((template) => template.slug === "straightTuckEnd");
+
+  assert(reverse?.runtime.generatorId === "reverseTuckEndV2", "Reverse Tuck End catalog runtime must use reverseTuckEndV2");
+  assert(straight?.runtime.generatorId === "straightTuckEndV2", "Straight Tuck End catalog runtime must use straightTuckEndV2");
+
+  for (const template of templates) {
+    if (template === reverse || template === straight) {
+      continue;
+    }
+
+    assert(template.productionStatus.productionReady === false, `${template.id}: non-migrated templates must not be production-ready`);
+    assert(
+      template.runtime.status === "catalog-only" || template.runtime.status === "experimental",
+      `${template.id}: non-migrated templates must remain catalog-only or experimental`,
+    );
   }
 }
 

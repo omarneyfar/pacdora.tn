@@ -23,6 +23,32 @@ const stressCases = [
   { name: "80x40x120", input: { L: 80, W: 40, H: 120 } },
   { name: "200x80x250", input: { L: 200, W: 80, H: 250 } },
 ];
+const extremeCases = [
+  {
+    name: "very-tall-narrow",
+    input: { L: 80, W: 20, H: 240 },
+    expected: "warning",
+    expectedMessage: "height-width-ratio-too-large",
+  },
+  {
+    name: "very-wide-shallow",
+    input: { L: 300, W: 120, H: 60 },
+    expected: "warning",
+    expectedMessage: "tuck-flap-too-large-for-body-height",
+  },
+  {
+    name: "very-small-W",
+    input: { L: 80, W: 12, H: 120 },
+    expected: "error",
+    expectedMessage: "width-too-small-for-tuck-closures",
+  },
+  {
+    name: "very-large-HW-ratio",
+    input: { L: 120, W: 24, H: 220 },
+    expected: "warning",
+    expectedMessage: "height-width-ratio-too-large",
+  },
+];
 const summaryRows = [];
 const invariantNames = new Set();
 const outputFiles = [];
@@ -35,6 +61,8 @@ assertRecipeLoads(straightRecipe, "Straight Tuck End v2");
 
 runStressSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
 runStressSuite("STE v2", straightRecipe, "straight-tuck-end");
+runConstraintSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
+runConstraintSuite("STE v2", straightRecipe, "straight-tuck-end");
 
 printSummaryTable(summaryRows);
 console.log(`Invariant checks passed: ${Array.from(invariantNames).sort().join(", ")}`);
@@ -73,8 +101,10 @@ function runStressSuite(templateLabel, recipe, filePrefix) {
     const result = generateFromRecipeDebug(recipe, input);
     const v2 = result.graph;
     const validation = validateDielineGraph(v2);
+    const warningCount = [...result.warnings, ...validation.warnings].length;
 
     assert(validation.ok, `${caseLabel}: v2 graph invalid: ${validation.errors.join("; ")}`);
+    assert(warningCount === 0, `${caseLabel}: normal stress case should not produce warnings`);
     assertInvariants(caseLabel, recipe, result);
 
     const outputPath = path.join(outputDir, `${filePrefix}-v2-${name}.debug.svg`);
@@ -88,8 +118,53 @@ function runStressSuite(templateLabel, recipe, filePrefix) {
       creases: v2.creases.length,
       geometry: v2.geometry?.length ?? 0,
       anchors: result.anchors.length,
-      warnings: [...result.warnings, ...validation.warnings].length,
+      warnings: warningCount,
       status: "pass",
+    });
+  }
+}
+
+function runConstraintSuite(templateLabel, recipe, filePrefix) {
+  for (const current of extremeCases) {
+    const caseLabel = `${templateLabel} ${current.name}`;
+
+    if (current.expected === "error") {
+      expectConstraintError(() => generateFromRecipeDebug(recipe, current.input), current.expectedMessage, caseLabel);
+      summaryRows.push({
+        template: templateLabel,
+        size: current.name,
+        faces: "-",
+        creases: "-",
+        geometry: "-",
+        anchors: "-",
+        warnings: "blocked",
+        status: "error",
+      });
+      continue;
+    }
+
+    const result = generateFromRecipeDebug(recipe, current.input);
+    const validation = validateDielineGraph(result.graph);
+    const warnings = [...result.warnings, ...validation.warnings];
+
+    assert(validation.ok, `${caseLabel}: warning case should still generate a valid graph`);
+    assert(warnings.length > 0, `${caseLabel}: expected constraint warnings`);
+    assert(warnings.some((warning) => warning.includes(current.expectedMessage)), `${caseLabel}: expected warning ${current.expectedMessage}`);
+    assertInvariants(caseLabel, recipe, result);
+
+    const outputPath = path.join(outputDir, `${filePrefix}-v2-extreme-${current.name}.debug.svg`);
+    fs.writeFileSync(outputPath, renderDebugSvg(result), "utf8");
+    outputFiles.push(outputPath);
+
+    summaryRows.push({
+      template: templateLabel,
+      size: current.name,
+      faces: result.graph.faces.length,
+      creases: result.graph.creases.length,
+      geometry: result.graph.geometry?.length ?? 0,
+      anchors: result.anchors.length,
+      warnings: warnings.length,
+      status: "warning",
     });
   }
 }
@@ -412,6 +487,18 @@ function expectThrow(fn, label) {
     return;
   }
   throw new Error(`${label}: expected an error`);
+}
+
+function expectConstraintError(fn, expectedMessage, label) {
+  try {
+    fn();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    assert(message.includes(expectedMessage), `${label}: expected error containing ${expectedMessage}, got ${message}`);
+    return;
+  }
+
+  throw new Error(`${label}: expected constraint error`);
 }
 
 function assert(condition, message) {

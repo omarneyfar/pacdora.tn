@@ -1,6 +1,11 @@
 import { evaluateFormula } from "../catalog/formulaEngine";
 import type { ParameterSpec, ParameterValueMap } from "../types";
-import type { DielineComponentRecipe, RecipeParameterDefinition, ResolvedRecipeParameters } from "./types";
+import type {
+  DielineComponentRecipe,
+  RecipeConstraintEvaluation,
+  RecipeParameterDefinition,
+  ResolvedRecipeParameters,
+} from "./types";
 
 const DIMENSION_IDS = new Set(["L", "W", "H"]);
 
@@ -45,6 +50,81 @@ export function resolveNumberExpression(
   }
 
   throw new Error(`${label} must be a number or formula string.`);
+}
+
+export function evaluateRecipeConstraints(
+  recipe: DielineComponentRecipe,
+  context: Record<string, unknown>,
+): RecipeConstraintEvaluation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const constraint of recipe.constraints ?? []) {
+    let triggered = false;
+    try {
+      triggered = evaluateConditionExpression(constraint.condition, context);
+    } catch (error) {
+      errors.push(`${constraint.id}: ${error instanceof Error ? error.message : "Invalid constraint condition."}`);
+      continue;
+    }
+
+    if (!triggered) {
+      continue;
+    }
+
+    const message = `${constraint.id}: ${constraint.message}`;
+    if (constraint.severity === "error") {
+      errors.push(message);
+    } else {
+      warnings.push(message);
+    }
+  }
+
+  return { errors, warnings };
+}
+
+function evaluateConditionExpression(condition: string, context: Record<string, unknown>): boolean {
+  const operator = findComparisonOperator(condition);
+
+  if (!operator) {
+    return resolveNumberExpression(condition, context, `constraint condition ${condition}`) !== 0;
+  }
+
+  const left = condition.slice(0, operator.index).trim();
+  const right = condition.slice(operator.index + operator.value.length).trim();
+
+  if (!left || !right) {
+    throw new Error(`Constraint condition must compare two expressions: ${condition}`);
+  }
+
+  const leftValue = resolveNumberExpression(left, context, `constraint left side ${condition}`);
+  const rightValue = resolveNumberExpression(right, context, `constraint right side ${condition}`);
+
+  switch (operator.value) {
+    case ">":
+      return leftValue > rightValue;
+    case ">=":
+      return leftValue >= rightValue;
+    case "<":
+      return leftValue < rightValue;
+    case "<=":
+      return leftValue <= rightValue;
+    case "==":
+      return Math.abs(leftValue - rightValue) <= 0.000001;
+    case "!=":
+      return Math.abs(leftValue - rightValue) > 0.000001;
+  }
+}
+
+function findComparisonOperator(condition: string): { value: ">" | ">=" | "<" | "<=" | "==" | "!="; index: number } | null {
+  for (const value of [">=", "<=", "==", "!=", ">", "<"] as const) {
+    const index = condition.indexOf(value);
+    if (index >= 0) {
+      return { value, index };
+    }
+  }
+
+  return null;
 }
 
 function resolveParameterValue(

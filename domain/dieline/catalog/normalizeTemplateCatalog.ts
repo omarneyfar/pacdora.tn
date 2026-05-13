@@ -5,9 +5,9 @@ import type {
   TemplateVerification,
 } from "./catalogTypes";
 
-const IMPLEMENTED_GENERATOR_HINTS: Record<string, Pick<TemplateRuntime, "status" | "supports2D" | "supports3D">> = {
-  reverseTuckEnd: { status: "ready", supports2D: true, supports3D: true },
-  straightTuckEnd: { status: "beta", supports2D: true, supports3D: true },
+const IMPLEMENTED_GENERATOR_HINTS: Record<string, Pick<TemplateRuntime, "generatorId" | "status" | "supports2D" | "supports3D">> = {
+  reverseTuckEnd: { generatorId: "reverseTuckEndV2", status: "graph-valid", supports2D: true, supports3D: true },
+  straightTuckEnd: { generatorId: "straightTuckEndV2", status: "graph-valid", supports2D: true, supports3D: true },
 };
 
 export function normalizeTemplateCatalog(value: unknown): DielineTemplateCatalog {
@@ -46,7 +46,7 @@ function normalizeTemplate(value: unknown): DielineTemplateDefinition {
   const slug = String(template.slug ?? template.id ?? "");
   const runtimeHint = IMPLEMENTED_GENERATOR_HINTS[slug];
   const runtime: TemplateRuntime = {
-    generatorId: template.runtime?.generatorId ?? slug,
+    generatorId: template.runtime?.generatorId ?? runtimeHint?.generatorId ?? slug,
     geometrySource: template.runtime?.geometrySource ?? "typescript-generator",
     supports2D: template.runtime?.supports2D ?? runtimeHint?.supports2D ?? false,
     supports3D: template.runtime?.supports3D ?? runtimeHint?.supports3D ?? false,
@@ -56,7 +56,7 @@ function normalizeTemplate(value: unknown): DielineTemplateDefinition {
     catalogNormalized: true,
     generatorImplemented: runtime.status !== "catalog-only",
     catalogReferencesValid: false,
-    graphValidationPassed: false,
+    graphValidationPassed: runtime.status === "graph-valid",
     visualComparedWithReference: false,
     dxfComparedWithReference: false,
     physicalPrototypeTested: Boolean(template.productionStatus?.prototypeTested),

@@ -21,6 +21,20 @@ export function validateRecipe(
     errors.push("Recipe must declare at least one part.");
   }
 
+  for (const constraint of recipe.constraints ?? []) {
+    if (!constraint.id) {
+      errors.push("Every recipe constraint must have an id.");
+    }
+
+    if (constraint.severity !== "error" && constraint.severity !== "warning") {
+      errors.push(`Constraint "${constraint.id}" must use severity "error" or "warning".`);
+    }
+
+    if (!constraint.condition || !constraint.message) {
+      errors.push(`Constraint "${constraint.id}" must declare condition and message.`);
+    }
+  }
+
   for (const part of recipe.parts ?? []) {
     if (!part.id) {
       errors.push("Every recipe part must have an id.");

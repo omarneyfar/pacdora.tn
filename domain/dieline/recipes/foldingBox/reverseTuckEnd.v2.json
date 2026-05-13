@@ -60,6 +60,92 @@
     "GFW": { "label": "Glue tab width", "kind": "closure", "input": "number", "default": "clamp(W * 0.25, 10, 22)", "min": 10, "max": 22, "step": 0.5, "unit": "mm" },
     "DFW": { "label": "Dust flap depth", "kind": "closure", "input": "number", "default": "clamp(W * 0.58, W * 0.45, W * 0.75)", "min": "W * 0.25", "max": "W * 0.9", "step": 0.5, "unit": "mm" }
   },
+  "constraints": [
+    {
+      "id": "width-too-small-for-tuck-closures",
+      "severity": "error",
+      "condition": "W < 20",
+      "message": "Width is too small for stable tuck-end closure geometry.",
+      "affectedParameters": ["W"]
+    },
+    {
+      "id": "length-too-small-for-body-panel",
+      "severity": "error",
+      "condition": "L < 35",
+      "message": "Length is too small for a usable folding-carton body panel.",
+      "affectedParameters": ["L"]
+    },
+    {
+      "id": "height-too-small-for-carton",
+      "severity": "error",
+      "condition": "H < 60",
+      "message": "Height is too small for this tuck-end carton recipe.",
+      "affectedParameters": ["H"]
+    },
+    {
+      "id": "height-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "H / W > 6",
+      "message": "Height is very large compared to width. The carton may be unstable or visually unrealistic.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "height-width-ratio-too-small",
+      "severity": "warning",
+      "condition": "H / W < 0.7",
+      "message": "Height is very small compared to width. The carton may look too shallow for a tuck-end structure.",
+      "affectedParameters": ["H", "W"]
+    },
+    {
+      "id": "length-width-ratio-too-large",
+      "severity": "warning",
+      "condition": "L / W > 5",
+      "message": "Length is very large compared to width. Review body panel proportions before using this dieline.",
+      "affectedParameters": ["L", "W"]
+    },
+    {
+      "id": "width-length-ratio-too-large",
+      "severity": "warning",
+      "condition": "W / L > 2.5",
+      "message": "Width is very large compared to length. Review side-panel proportions before using this dieline.",
+      "affectedParameters": ["W", "L"]
+    },
+    {
+      "id": "tuck-flap-too-large-for-body-height",
+      "severity": "warning",
+      "condition": "W + TFW > H * 0.85",
+      "message": "Tuck flap height is large compared to body height. Closure proportions may be visually unrealistic.",
+      "affectedParameters": ["W", "TFW", "H"]
+    },
+    {
+      "id": "dust-flap-too-small",
+      "severity": "warning",
+      "condition": "DFW < W * 0.4",
+      "message": "Dust flap depth is small compared to width. Closure support may be weak.",
+      "affectedParameters": ["DFW", "W"]
+    },
+    {
+      "id": "dust-flap-too-large",
+      "severity": "warning",
+      "condition": "DFW > W * 0.8",
+      "message": "Dust flap depth is large compared to width. Closure proportions may look crowded.",
+      "affectedParameters": ["DFW", "W"]
+    },
+    {
+      "id": "glue-tab-too-small",
+      "severity": "error",
+      "condition": "GFW < 10",
+      "message": "Glue tab width is below the safe minimum.",
+      "affectedParameters": ["GFW"]
+    },
+    {
+      "id": "glue-tab-too-large",
+      "severity": "error",
+      "condition": "GFW > 22",
+      "message": "Glue tab width is above the safe maximum.",
+      "affectedParameters": ["GFW"]
+    }
+  ],
   "parts": [
     {
       "id": "body",

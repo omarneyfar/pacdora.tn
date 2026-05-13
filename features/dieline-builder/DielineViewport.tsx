@@ -1,7 +1,7 @@
 "use client";
 
 import { fallbackPrimitivesFromGraph, primitiveToSvgPath } from "@/domain/dieline/canonicalGeometry";
-import type { DielineGraph, DielineLayer, GeometryPrimitive } from "@/domain/dieline/types";
+import type { DielineFace, DielineGraph, DielineLayer, GeometryPrimitive, Point } from "@/domain/dieline/types";
 
 type DielineViewportProps = {
   graph: DielineGraph;
@@ -20,14 +20,14 @@ export function DielineViewport({ graph, visibleLayers }: DielineViewportProps) 
         aria-label={`${graph.metadata?.familyLabel ?? "Dieline"} preview`}
         className="template-viewport-svg"
         preserveAspectRatio="xMidYMid meet"
-        viewBox={`0 0 ${graph.size.width} ${graph.size.height}`}
+        viewBox={`0 0 ${formatSvgNumber(graph.size.width)} ${formatSvgNumber(graph.size.height)}`}
       >
         <g className="template-viewport-faces">
           {graph.faces.map((face) => (
             <polygon
               className={`template-viewport-face dieline-face-role-${face.role}`}
               key={face.id}
-              points={face.vertices.map((vertex) => `${vertex.x},${vertex.y}`).join(" ")}
+              points={getPolygonPoints(face)}
             />
           ))}
         </g>
@@ -45,7 +45,12 @@ export function DielineViewport({ graph, visibleLayers }: DielineViewportProps) 
         {visibleLayers.label ? (
           <g>
             {labels.map((label) => (
-              <text className="dieline-guide-label template-viewport-label" key={label.id} x={label.position.x} y={label.position.y}>
+              <text
+                className="dieline-guide-label template-viewport-label"
+                key={label.id}
+                x={formatSvgNumber(label.position.x)}
+                y={formatSvgNumber(label.position.y)}
+              >
                 {label.text}
               </text>
             ))}
@@ -56,11 +61,16 @@ export function DielineViewport({ graph, visibleLayers }: DielineViewportProps) 
           <g className="template-measurements">
             {measurements.map((measurement) => (
               <g key={measurement.id}>
-                <line x1={measurement.start.x} x2={measurement.end.x} y1={measurement.start.y} y2={measurement.end.y} />
+                <line
+                  x1={formatSvgNumber(measurement.start.x)}
+                  x2={formatSvgNumber(measurement.end.x)}
+                  y1={formatSvgNumber(measurement.start.y)}
+                  y2={formatSvgNumber(measurement.end.y)}
+                />
                 <text
-                  transform={measurement.vertical ? `rotate(-90 ${measurement.label.x} ${measurement.label.y})` : undefined}
-                  x={measurement.label.x}
-                  y={measurement.label.y}
+                  transform={measurement.vertical ? `rotate(-90 ${formatSvgNumber(measurement.label.x)} ${formatSvgNumber(measurement.label.y)})` : undefined}
+                  x={formatSvgNumber(measurement.label.x)}
+                  y={formatSvgNumber(measurement.label.y)}
                 >
                   {measurement.text}
                 </text>
@@ -121,6 +131,21 @@ function getLayerClassName(layer: DielineLayer): string {
   if (layer === "window" || layer === "hole") return "dieline-guide-line dieline-guide-window";
   if (layer === "perf") return "dieline-guide-line template-guide-perf";
   return "dieline-guide-line dieline-guide-cut";
+}
+
+function getPolygonPoints(face: DielineFace): string {
+  return face.vertices.map(formatSvgPoint).join(" ");
+}
+
+function formatSvgPoint(point: Point): string {
+  return `${formatSvgNumber(point.x)},${formatSvgNumber(point.y)}`;
+}
+
+function formatSvgNumber(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+
+  const normalized = Math.abs(value) < 0.0005 ? 0 : value;
+  return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function getReverseTuckEndMeasurements(graph: DielineGraph) {
@@ -193,4 +218,3 @@ function verticalMeasurement(id: string, x: number, y1: number, y2: number, valu
 function formatMeasurement(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
-

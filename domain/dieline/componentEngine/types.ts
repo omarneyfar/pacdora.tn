@@ -31,6 +31,14 @@ export type RecipeParameterDefinition = {
   options?: Array<{ label: string; value: string | number | boolean }>;
 };
 
+export type RecipeConstraint = {
+  id: string;
+  severity: "error" | "warning";
+  condition: string;
+  message: string;
+  affectedParameters?: string[];
+};
+
 export type DielineComponentRecipe = {
   id: string;
   label?: string;
@@ -40,6 +48,7 @@ export type DielineComponentRecipe = {
   productionReady: boolean;
   verificationStatus: RecipeVerificationStatus;
   parameters: Record<string, RecipeParameterDefinition>;
+  constraints?: RecipeConstraint[];
   parts: ComponentRecipePart[];
   folding: {
     rootFace: string;
@@ -107,6 +116,11 @@ export type DielinePartGenerator<Config extends ComponentRecipePart = ComponentR
 export type ResolvedRecipeParameters = {
   values: ParameterValueMap;
   parameterSpecs: ParameterSpec[];
+  warnings: string[];
+};
+
+export type RecipeConstraintEvaluation = {
+  errors: string[];
   warnings: string[];
 };
 

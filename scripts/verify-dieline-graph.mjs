@@ -494,12 +494,26 @@ function assertSeedPolicy(seeds) {
 function assertTemplateRegistry() {
   const reverseTuckEnd = getDielineTemplateByRoute("foldingBox", "reverseTuckEnd");
   assert(reverseTuckEnd, "Template registry should expose Reverse Tuck End by CefBox-style route");
+  assert(reverseTuckEnd.catalogTemplate.runtime.generatorId === "reverseTuckEndV2", "Reverse Tuck End should use the v2 component-engine generator");
+  assert(reverseTuckEnd.catalogTemplate.runtime.status === "graph-valid", "Reverse Tuck End should be graph-valid in the catalog runtime");
   assert(reverseTuckEnd.parameterGroups?.length >= 5, "Reverse Tuck End should expose grouped builder parameters");
   assert(reverseTuckEnd.exportFormats.includes("dxf") && reverseTuckEnd.exportFormats.includes("pdf"), "Reverse Tuck End should expose downloadable formats");
 
   const graph = reverseTuckEnd.generate({ closureMode: "manual", L: 72, W: 36, H: 104, TFW: 18, TFR: 6, GFW: 16, DFW: 20 });
   assert(graph.metadata?.family === "reverse-tuck-end", "Registered Reverse Tuck End should generate the canonical family graph");
+  assert(graph.metadata?.parameterValues?.generatorVersion === "component-engine-v2", "Registered Reverse Tuck End should generate via component-engine v2");
   assert(graph.geometry?.some((primitive) => primitive.layer === "cut"), "Registered Reverse Tuck End should generate canonical cut geometry");
+  assertFoldedModel(graph, "registered Reverse Tuck End v2");
+
+  const straightTuckEnd = getDielineTemplateByRoute("foldingBox", "straightTuckEnd");
+  assert(straightTuckEnd, "Template registry should expose Straight Tuck End by CefBox-style route");
+  assert(straightTuckEnd.catalogTemplate.runtime.generatorId === "straightTuckEndV2", "Straight Tuck End should use the v2 component-engine generator");
+  assert(straightTuckEnd.catalogTemplate.runtime.status === "graph-valid", "Straight Tuck End should be graph-valid in the catalog runtime");
+  const straightGraph = straightTuckEnd.generate({ L: 80, W: 40, H: 120 });
+  assert(straightGraph.metadata?.family === "straight-tuck-end", "Registered Straight Tuck End should generate the canonical family graph");
+  assert(straightGraph.metadata?.parameterValues?.generatorVersion === "component-engine-v2", "Registered Straight Tuck End should generate via component-engine v2");
+  assert(!straightGraph.faces.some((face) => face.id === "top-panel" || face.id === "bottom-panel"), "Standard Straight Tuck End v2 should not include panel-flap variant faces");
+  assertFoldedModel(straightGraph, "registered Straight Tuck End v2");
 
   const summaries = listDielineTemplateSummaries("foldingBox");
   assert(summaries.length === loadTemplateCatalog().templates.length, "Folding Box catalog should expose every catalog family");

@@ -1,7 +1,7 @@
 import { assertValidDielineGraph } from "../validation/validateDielineGraph";
 import { assembleGraphFromContext } from "./graphAssembler";
 import { getPartGenerator, partRegistry } from "./partRegistry";
-import { resolveNumberExpression, resolveRecipeParameters } from "./formulaResolver";
+import { evaluateRecipeConstraints, resolveNumberExpression, resolveRecipeParameters } from "./formulaResolver";
 import { validateRecipe } from "./validateRecipe";
 import type {
   Anchor,
@@ -27,8 +27,14 @@ export function generateFromRecipeDebug(
   validateRecipe(recipe, partRegistry);
 
   const resolved = resolveRecipeParameters(recipe, userValues);
+  const constraints = evaluateRecipeConstraints(recipe, resolved.values);
+  if (constraints.errors.length > 0) {
+    throw new Error(`${recipe.label ?? recipe.id} constraints failed: ${constraints.errors.join("; ")}`);
+  }
+
   const ctx = createLayoutContext(recipe, resolved.values);
   ctx.warnings.push(...resolved.warnings);
+  ctx.warnings.push(...constraints.warnings);
 
   for (const partConfig of recipe.parts) {
     const generator = getPartGenerator(partConfig.type);
