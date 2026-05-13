@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptsDir, "..");
 const outputDir = path.join(scriptsDir, "output", "component-engine");
+const partsOutputDir = path.join(outputDir, "parts");
 const moduleCache = new Map();
 const ANCHOR_EPSILON = 0.000001;
 
@@ -102,9 +103,57 @@ const experimentalTemplates = [
     cases: experimentalCases({ L: 120, W: 60, H: 160 }),
   },
 ];
+const experimentalTemplatePartRules = new Map([
+  ["tuck-end-folding-carton-v2", {
+    requiredTypes: {
+      "full-width-tuck-flap": 1,
+      "trapezoid-top-dust-flap": 2,
+      "angled-bottom-dust-flap": 2,
+      "bottom-lock-flap": 1,
+    },
+  }],
+  ["centered-tuck-end-carton-v2", {
+    requiredTypes: {
+      "locking-lip-flap": 1,
+      "trapezoid-top-dust-flap": 2,
+      "angled-bottom-dust-flap": 2,
+      "bottom-lock-flap": 1,
+    },
+  }],
+  ["locking-tab-top-bottom-v2", {
+    requiredTypes: {
+      "locking-lip-flap": 2,
+      "trapezoid-top-dust-flap": 2,
+      "angled-bottom-dust-flap": 2,
+    },
+  }],
+  ["circular-hang-hole-v2", {
+    requiredTypes: {
+      "full-width-tuck-flap": 2,
+      "trapezoid-top-dust-flap": 2,
+      "angled-bottom-dust-flap": 2,
+    },
+  }],
+  ["hang-tab-v2", {
+    requiredTypes: {
+      "full-width-tuck-flap": 2,
+      "trapezoid-top-dust-flap": 2,
+      "angled-bottom-dust-flap": 2,
+    },
+  }],
+]);
+const replacedExperimentalPartTypes = new Set([
+  "tuck-flap",
+  "dust-flap",
+  "custom-dust-flap",
+  "slotted-tuck-flap",
+  "lock-tab",
+]);
 
 fs.mkdirSync(outputDir, { recursive: true });
+fs.mkdirSync(partsOutputDir, { recursive: true });
 
+assertPriorityPartDebugSuites();
 assertEngineFailures(reverseRecipe);
 assertSlotCutoutFailures(tuckEndRecipe);
 assertRoundedSlotCutoutPart(tuckEndRecipe);
@@ -114,6 +163,7 @@ assertRecipeLoads(straightRecipe, "Straight Tuck End v2");
 for (const template of experimentalTemplates) {
   assertRecipeLoads(template.recipe, template.label);
   assertReferencePendingRecipe(template.recipe, template.label);
+  assertExperimentalTemplatePartIntent(template.recipe, template.label);
 }
 
 runStressSuite("RTE v2", reverseRecipe, "reverse-tuck-end");
@@ -150,6 +200,27 @@ function assertReferencePendingRecipe(recipe, label) {
   );
 }
 
+function assertExperimentalTemplatePartIntent(recipe, label) {
+  const rules = experimentalTemplatePartRules.get(recipe.id);
+  assert(rules, `${label}: missing experimental part-intent rules`);
+
+  const typeCounts = new Map();
+  for (const part of recipe.parts) {
+    typeCounts.set(part.type, (typeCounts.get(part.type) ?? 0) + 1);
+  }
+
+  for (const [type, expectedCount] of Object.entries(rules.requiredTypes)) {
+    const actual = typeCounts.get(type) ?? 0;
+    assert(actual === expectedCount, `${label}: expected ${expectedCount} ${type} part(s), got ${actual}`);
+  }
+
+  for (const part of recipe.parts) {
+    assert(!replacedExperimentalPartTypes.has(part.type), `${label}: ${part.id} still uses replaced generic part ${part.type}`);
+  }
+
+  trackInvariant("experimental templates use intended part-library replacements");
+}
+
 function experimentalCases(referenceInput) {
   return [
     { name: "120x40x160", input: { L: 120, W: 40, H: 160 } },
@@ -157,6 +228,170 @@ function experimentalCases(referenceInput) {
     { name: "120x90x160", input: { L: 120, W: 90, H: 160 } },
     { name: "reference-size", input: referenceInput },
   ];
+}
+
+function assertPriorityPartDebugSuites() {
+  const anchorWidths = [80, 120, 180, 250];
+  const priorityParts = [
+    {
+      id: "full-width-tuck-flap",
+      type: "full-width-tuck-flap",
+      contract: "full-width-tuck-flap",
+      attachEdge: "top",
+      expectedScore: true,
+      config: {
+        side: "top",
+        height: "max(24, A * 0.48)",
+        cornerRadius: "A * 0.08",
+        scoreOffsetFromBase: "max(8, A * 0.12)",
+      },
+    },
+    {
+      id: "locking-lip-flap",
+      type: "locking-lip-flap",
+      contract: "locking-lip-flap",
+      attachEdge: "top",
+      expectedScore: true,
+      config: {
+        side: "top",
+        bodyDepth: "max(24, A * 0.36)",
+        tabDepth: "max(6, A * 0.08)",
+        tabWidth: "A * 0.46",
+      },
+    },
+    {
+      id: "trapezoid-top-dust-flap",
+      type: "trapezoid-top-dust-flap",
+      contract: "trapezoid-top-dust-flap",
+      attachEdge: "top",
+      expectedScore: false,
+      config: {
+        height: "max(18, A * 0.34)",
+        taper: "A * 0.13",
+      },
+    },
+    {
+      id: "angled-bottom-dust-flap",
+      type: "angled-bottom-dust-flap",
+      contract: "angled-bottom-dust-flap",
+      attachEdge: "bottom",
+      expectedScore: false,
+      config: {
+        height: "max(18, A * 0.34)",
+        startInset: "A * 0.08",
+        endInset: "A * 0.16",
+      },
+    },
+    {
+      id: "bottom-lock-flap",
+      type: "bottom-lock-flap",
+      contract: "bottom-lock-flap",
+      attachEdge: "bottom",
+      expectedScore: true,
+      config: {
+        bodyDepth: "max(24, A * 0.42)",
+        tabDepth: "max(6, A * 0.08)",
+        tongueWidth: "A * 0.5",
+      },
+    },
+  ];
+
+  for (const part of priorityParts) {
+    for (const anchorWidth of anchorWidths) {
+      const recipe = createIsolatedPartRecipe(part, anchorWidth);
+      const result = generateFromRecipeDebug(recipe);
+      const validation = validateDielineGraph(result.graph);
+      const label = `${part.id} isolated ${anchorWidth}`;
+
+      assert(validation.ok, `${label}: generated graph is invalid: ${validation.errors.join("; ")}`);
+      assertIsolatedPartGeometry(label, part, result, anchorWidth);
+
+      if (anchorWidth === 250) {
+        assert(result.warnings.some((warning) => warning.includes("unusually wide")), `${label}: extreme width should produce an implementation warning`);
+      }
+
+      const outputPath = path.join(partsOutputDir, `${part.id}-${anchorWidth}.debug.svg`);
+      fs.writeFileSync(outputPath, renderDebugSvg(result), "utf8");
+      outputFiles.push(outputPath);
+    }
+  }
+}
+
+function createIsolatedPartRecipe(part, anchorWidth) {
+  const attachTo = `base.${part.attachEdge}`;
+  const faceId = `${part.id}-face`;
+
+  return {
+    id: `${part.id}-isolated-${anchorWidth}`,
+    label: `${part.id} isolated ${anchorWidth}`,
+    schemaVersion: "dieline-recipe-1.0",
+    category: "folding-box",
+    family: "isolated-part-debug",
+    productionReady: false,
+    verificationStatus: "geometry-needs-verification",
+    parameters: {
+      A: { label: "Anchor width", kind: "dimension", input: "number", default: anchorWidth, unit: "mm" },
+      H: { label: "Host panel height", kind: "dimension", input: "number", default: 90, unit: "mm" },
+    },
+    parts: [
+      {
+        id: "body",
+        type: "body-strip",
+        contract: "body-strip",
+        topBand: "A * 0.9",
+        bottomBand: "A * 0.9",
+        offsetX: 0,
+        panels: [
+          { id: "base", label: "Base", width: "A", height: "H" },
+          { id: "side", label: "Side", width: 24, height: "H" },
+        ],
+      },
+      {
+        id: part.id,
+        type: part.type,
+        contract: part.contract,
+        attachTo,
+        faceId,
+        ...part.config,
+      },
+    ],
+    folding: {
+      rootFace: "base",
+      strategy: "derive-from-attachments",
+    },
+  };
+}
+
+function assertIsolatedPartGeometry(label, part, result, anchorWidth) {
+  const graph = result.graph;
+  const faceId = `${part.id}-face`;
+  const face = graph.faces.find((candidate) => candidate.id === faceId);
+  const anchor = result.anchors.find((candidate) => candidate.id === `base.${part.attachEdge}`);
+  const crease = graph.creases.find((candidate) => creaseConnectsFaces(candidate, "base", faceId));
+
+  trackInvariant("isolated priority parts generate finite valid graphs");
+  assert(face, `${label}: missing generated face ${faceId}`);
+  assert(anchor, `${label}: missing base ${part.attachEdge} anchor`);
+  assert(crease, `${label}: missing face-to-face structural hinge`);
+  assert(face.vertices.every(isFinitePoint2D), `${label}: generated face contains non-finite points`);
+  assert(!hasSelfCrossingPolygon(face.vertices), `${label}: generated face self-intersects`);
+  assert(!hasTinyPolygonEdge(face.vertices), `${label}: generated face has a zero-length edge`);
+  assertCloseNumber(anchor.length, anchorWidth, `${label}: anchor length`, ANCHOR_EPSILON);
+  assertPointClose(crease.edgeStart, anchor.start, `${label}: structural crease start`, ANCHOR_EPSILON);
+  assertPointClose(crease.edgeEnd, anchor.end, `${label}: structural crease end`, ANCHOR_EPSILON);
+  assertPointClose(face.vertices[0], anchor.start, `${label}: base edge start`, ANCHOR_EPSILON);
+  assertPointClose(face.vertices[face.vertices.length - 1], anchor.end, `${label}: base edge end`, ANCHOR_EPSILON);
+
+  trackInvariant("isolated priority part scores are geometry-only");
+  assert(graph.creases.every((candidate) => !candidate.id.startsWith("score-")), `${label}: score line found in structural creases`);
+  if (part.expectedScore) {
+    assert((graph.geometry ?? []).some((primitive) => primitive.id.startsWith(`score-${faceId}`) && primitive.layer === "crease"), `${label}: expected score GeometryPrimitive`);
+  }
+
+  trackInvariant("isolated priority parts generate edge anchors");
+  for (const edge of ["top", "right", "bottom", "left"]) {
+    assert(result.anchors.some((candidate) => candidate.id === `${faceId}.${edge}`), `${label}: missing generated ${edge} anchor`);
+  }
 }
 
 function assertEngineFailures(recipe) {
@@ -200,8 +435,8 @@ function assertSlotCutoutFailures(recipe) {
 
 function withLegacySlotCutout(recipe) {
   const slotRecipe = clone(recipe);
-  const topIndex = slotRecipe.parts.findIndex((part) => part.id === "top-slotted-tuck");
-  assert(topIndex >= 0, "slot-cutout smoke test requires top-slotted-tuck");
+  const topIndex = slotRecipe.parts.findIndex((part) => part.id === "top-full-width-tuck" || part.id === "top-slotted-tuck");
+  assert(topIndex >= 0, "slot-cutout smoke test requires top tuck part");
   slotRecipe.parts.splice(topIndex + 1, 0, {
     id: "legacy-slot-cutout-smoke",
     type: "slot-cutout",
@@ -218,7 +453,8 @@ function withLegacySlotCutout(recipe) {
 
 function assertRoundedSlotCutoutPart(recipe) {
   const explicitSlot = clone(recipe);
-  const topIndex = explicitSlot.parts.findIndex((part) => part.id === "top-slotted-tuck");
+  const topIndex = explicitSlot.parts.findIndex((part) => part.id === "top-full-width-tuck" || part.id === "top-slotted-tuck");
+  assert(topIndex >= 0, "rounded-slot-cutout smoke test requires top tuck part");
   explicitSlot.parts.splice(topIndex + 1, 0, {
     id: "explicit-rounded-slot",
     type: "rounded-slot-cutout",
@@ -446,7 +682,7 @@ function assertInvariants(label, recipe, result) {
       assertPointClose(crease.edgeEnd, anchor.end, `${label}: glue tab seam end`, ANCHOR_EPSILON);
     }
 
-    if (part.type === "dust-flap" || part.type === "custom-dust-flap") {
+    if (isDustFlapPartType(part.type)) {
       trackInvariant("dust flaps attach exactly to side panel anchors");
       assert(anchor.faceId === "left" || anchor.faceId === "right", `${label}: dust flap ${part.id} must attach to a side panel`);
       assert(anchor.edge === "top" || anchor.edge === "bottom", `${label}: dust flap ${part.id} must attach to top/bottom anchor`);
@@ -580,27 +816,27 @@ function assertReliefNotchGeometry(label, graph, recipe) {
 function assertTuckFlapGeometry(label, graph, recipe, anchorsById) {
   const faceById = new Map(graph.faces.map((face) => [face.id, face]));
 
-  for (const part of recipe.parts.filter((candidate) => candidate.type === "tuck-flap" || candidate.type === "slotted-tuck-flap")) {
+  for (const part of recipe.parts.filter((candidate) => isMainClosureFlapPartType(candidate.type))) {
     const anchor = anchorsById.get(part.attachTo);
-    assert(anchor, `${label}: tuck flap ${part.id} missing anchor ${part.attachTo}`);
+    assert(anchor, `${label}: closure flap ${part.id} missing anchor ${part.attachTo}`);
 
     const faceId = childFaceIdForPart(part, anchor.faceId, anchor.edge);
     const face = faceById.get(faceId);
-    assert(face, `${label}: tuck flap ${part.id} missing face ${faceId}`);
-    assert(face.vertices.length >= 4, `${label}: tuck flap ${faceId} should have at least four vertices`);
-    assert(face.bounds.width > 0 && face.bounds.height > 0, `${label}: tuck flap ${faceId} must have positive bounds`);
-    assertClose(face.bounds.width, anchor.length, `${label}: tuck flap ${faceId} width`, ANCHOR_EPSILON);
+    assert(face, `${label}: closure flap ${part.id} missing face ${faceId}`);
+    assert(face.vertices.length >= 4, `${label}: closure flap ${faceId} should have at least four vertices`);
+    assert(face.bounds.width > 0 && face.bounds.height > 0, `${label}: closure flap ${faceId} must have positive bounds`);
+    assertClose(face.bounds.width, anchor.length, `${label}: closure flap ${faceId} width`, ANCHOR_EPSILON);
 
     const baseStart = anchor.edge === "top" ? face.vertices[0] : face.vertices[0];
     const baseEnd = anchor.edge === "top" ? face.vertices[face.vertices.length - 1] : face.vertices[face.vertices.length - 1];
-    assertPointClose(baseStart, anchor.start, `${label}: tuck flap ${faceId} base start`, ANCHOR_EPSILON);
-    assertPointClose(baseEnd, anchor.end, `${label}: tuck flap ${faceId} base end`, ANCHOR_EPSILON);
-    assertClose(face.vertices[1].x, anchor.start.x, `${label}: tuck flap ${faceId} left side continuity`, ANCHOR_EPSILON);
-    assertClose(face.vertices[face.vertices.length - 2].x, anchor.end.x, `${label}: tuck flap ${faceId} right side continuity`, ANCHOR_EPSILON);
+    assertPointClose(baseStart, anchor.start, `${label}: closure flap ${faceId} base start`, ANCHOR_EPSILON);
+    assertPointClose(baseEnd, anchor.end, `${label}: closure flap ${faceId} base end`, ANCHOR_EPSILON);
+    assertClose(face.vertices[1].x, anchor.start.x, `${label}: closure flap ${faceId} left side continuity`, ANCHOR_EPSILON);
+    assertClose(face.vertices[face.vertices.length - 2].x, anchor.end.x, `${label}: closure flap ${faceId} right side continuity`, ANCHOR_EPSILON);
 
     for (const point of face.vertices) {
-      assert(point.x >= face.bounds.x - ANCHOR_EPSILON, `${label}: tuck flap ${faceId} vertex extends left of bounds`);
-      assert(point.x <= face.bounds.x + face.bounds.width + ANCHOR_EPSILON, `${label}: tuck flap ${faceId} vertex extends right of bounds`);
+      assert(point.x >= face.bounds.x - ANCHOR_EPSILON, `${label}: closure flap ${faceId} vertex extends left of bounds`);
+      assert(point.x <= face.bounds.x + face.bounds.width + ANCHOR_EPSILON, `${label}: closure flap ${faceId} vertex extends right of bounds`);
     }
   }
 }
@@ -610,8 +846,8 @@ function assertScoreLinesInsideFaces(label, graph) {
   const scoreLines = (graph.geometry ?? []).filter((primitive) => primitive.id.startsWith("score-") && primitive.type === "line");
 
   for (const scoreLine of scoreLines) {
-    const faceId = scoreLine.id.replace(/^score-/, "").replace(/-lip$/, "");
-    const face = faceById.get(faceId);
+    const face = resolveScoreLineFace(scoreLine.id, faceById);
+    const faceId = face?.id ?? scoreLine.id.replace(/^score-/, "");
     const midpoint = midpointOf(scoreLine.start, scoreLine.end);
 
     assert(face, `${label}: score line ${scoreLine.id} does not map to a face`);
@@ -624,17 +860,17 @@ function assertScoreLinesInsideFaces(label, graph) {
 function assertDustFlapGeometry(label, graph, recipe, anchorsById) {
   const faceById = new Map(graph.faces.map((face) => [face.id, face]));
 
-  for (const part of recipe.parts.filter((candidate) => candidate.type === "dust-flap" || candidate.type === "custom-dust-flap")) {
+  for (const part of recipe.parts.filter((candidate) => isDustFlapPartType(candidate.type))) {
     const anchor = anchorsById.get(part.attachTo);
     assert(anchor, `${label}: dust flap ${part.id} missing anchor ${part.attachTo}`);
 
     const faceId = childFaceIdForPart(part, anchor.faceId, anchor.edge);
     const face = faceById.get(faceId);
     assert(face, `${label}: dust flap ${part.id} missing face ${faceId}`);
-    if (part.type === "dust-flap") {
-      assert(face.vertices.length === 4, `${label}: dust flap ${faceId} should be a simple four-point tapered polygon`);
-    } else {
+    if (part.type === "custom-dust-flap") {
       assert(face.vertices.length >= 4, `${label}: custom dust flap ${faceId} should have a stable polygon`);
+    } else {
+      assert(face.vertices.length === 4, `${label}: dust flap ${faceId} should be a simple four-point tapered polygon`);
     }
     assertPointClose(face.vertices[0], anchor.start, `${label}: dust flap ${faceId} base start`, ANCHOR_EPSILON);
     assertPointClose(face.vertices[face.vertices.length - 1], anchor.end, `${label}: dust flap ${faceId} base end`, ANCHOR_EPSILON);
@@ -796,13 +1032,39 @@ function trackInvariant(name) {
   invariantNames.add(name);
 }
 
+function isMainClosureFlapPartType(type) {
+  return type === "tuck-flap"
+    || type === "slotted-tuck-flap"
+    || type === "full-width-tuck-flap"
+    || type === "locking-lip-flap"
+    || type === "bottom-lock-flap";
+}
+
+function isDustFlapPartType(type) {
+  return type === "dust-flap"
+    || type === "custom-dust-flap"
+    || type === "trapezoid-top-dust-flap"
+    || type === "angled-bottom-dust-flap";
+}
+
+function resolveScoreLineFace(scoreId, faceById) {
+  const suffix = scoreId.replace(/^score-/, "");
+  const faces = Array.from(faceById.values()).sort((a, b) => b.id.length - a.id.length);
+  return faces.find((face) => suffix === face.id || suffix.startsWith(`${face.id}-`));
+}
+
 function childFaceIdForPart(part, parentFaceId, edge) {
   if (part.faceId) return part.faceId;
   if (part.type === "glue-tab") return "glue-tab";
   if (part.type === "tuck-flap") return `${edge === "top" ? "top" : "bottom"}-tuck`;
+  if (part.type === "full-width-tuck-flap") return `${edge === "top" ? "top" : "bottom"}-full-width-tuck`;
+  if (part.type === "locking-lip-flap") return `${edge === "top" ? "top" : "bottom"}-locking-lip`;
   if (part.type === "slotted-tuck-flap") return `${edge === "top" ? "top" : "bottom"}-tuck`;
   if (part.type === "lock-tab") return `${edge === "top" ? "top" : "bottom"}-lock-tab`;
   if (part.type === "hang-tab") return `${edge === "top" ? "top" : "bottom"}-hang-tab`;
+  if (part.type === "bottom-lock-flap") return "bottom-lock-flap";
+  if (part.type === "trapezoid-top-dust-flap") return `top-trapezoid-dust-${parentFaceId}`;
+  if (part.type === "angled-bottom-dust-flap") return `bottom-angled-dust-${parentFaceId}`;
   if (part.type === "dust-flap") return `${edge === "top" ? "top" : "bottom"}-dust-${parentFaceId}`;
   if (part.type === "custom-dust-flap") return `${edge === "top" ? "top" : "bottom"}-dust-${parentFaceId}`;
   if (part.type === "panel-flap") return `${edge === "top" ? "top" : "bottom"}-panel`;
@@ -862,6 +1124,43 @@ function pointOnSegment(point, start, end) {
   const dot = (point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y);
 
   return cross / length <= ANCHOR_EPSILON && dot >= -ANCHOR_EPSILON && dot <= length * length + ANCHOR_EPSILON;
+}
+
+function creaseConnectsFaces(crease, faceA, faceB) {
+  return (crease.faceA === faceA && crease.faceB === faceB) || (crease.faceA === faceB && crease.faceB === faceA);
+}
+
+function isFinitePoint2D(point) {
+  return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
+function hasTinyPolygonEdge(points) {
+  return points.some((point, index) => {
+    const next = points[(index + 1) % points.length];
+    return Math.hypot(point.x - next.x, point.y - next.y) <= ANCHOR_EPSILON;
+  });
+}
+
+function hasSelfCrossingPolygon(points) {
+  for (let a = 0; a < points.length; a += 1) {
+    const a1 = points[a];
+    const a2 = points[(a + 1) % points.length];
+
+    for (let b = a + 1; b < points.length; b += 1) {
+      if (Math.abs(a - b) <= 1 || (a === 0 && b === points.length - 1)) {
+        continue;
+      }
+
+      const b1 = points[b];
+      const b2 = points[(b + 1) % points.length];
+
+      if (segmentsIntersect2D(a1, a2, b1, b2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function slotSamplePoints(slot) {
@@ -1096,6 +1395,12 @@ function assertPointClose(actual, expected, label, epsilon) {
 
 function assertClose(actual, expected, label, epsilon) {
   assert(Math.abs(actual - expected) <= epsilon, `${label}: expected ${expected}, got ${actual}`);
+}
+
+function assertCloseNumber(actual, expected, label, epsilon) {
+  assert(Number.isFinite(actual), `${label}: actual value is not finite`);
+  assert(Number.isFinite(expected), `${label}: expected value is not finite`);
+  assertClose(actual, expected, label, epsilon);
 }
 
 function expectThrow(fn, label) {

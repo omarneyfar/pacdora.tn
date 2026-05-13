@@ -1,9 +1,14 @@
 import { bodyStripPart } from "../parts/body/bodyStrip";
+import { angledBottomDustFlapPart } from "../parts/closures/angledBottomDustFlap";
+import { bottomLockFlapPart } from "../parts/closures/bottomLockFlap";
 import { dustFlapPart } from "../parts/closures/dustFlap";
+import { fullWidthTuckFlapPart } from "../parts/closures/fullWidthTuckFlap";
 import { customDustFlapPart } from "../parts/closures/customDustFlap";
 import { lockTabPart } from "../parts/closures/lockTab";
+import { lockingLipFlapPart } from "../parts/closures/lockingLipFlap";
 import { panelFlapPart } from "../parts/closures/panelFlap";
 import { slottedTuckFlapPart } from "../parts/closures/slottedTuckFlap";
+import { trapezoidTopDustFlapPart } from "../parts/closures/trapezoidTopDustFlap";
 import { tuckFlapPart } from "../parts/closures/tuckFlap";
 import { circularHoleCutoutPart } from "../parts/cutouts/circularHoleCutout";
 import { euroSlotCutoutPart } from "../parts/cutouts/euroSlotCutout";
@@ -43,7 +48,25 @@ const PARTS = [
   }),
   registerPart(tuckFlapPart, {
     contractId: "reverse-tuck-flap",
-    allowedContractIds: ["straight-tuck-flap", "centered-tuck-flap"],
+    allowedContractIds: ["tuck-flap", "straight-tuck-flap", "centered-tuck-flap"],
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(fullWidthTuckFlapPart, {
+    contractId: "full-width-tuck-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(lockingLipFlapPart, {
+    contractId: "locking-lip-flap",
     outputExpectations: createOutputExpectations({
       faces: "one-or-more",
       structuralCreases: "one-or-more",
@@ -68,8 +91,33 @@ const PARTS = [
       anchors: "one-or-more",
     }),
   }),
+  registerPart(bottomLockFlapPart, {
+    contractId: "bottom-lock-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      geometryPrimitives: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
   registerPart(dustFlapPart, {
     contractId: "dust-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(trapezoidTopDustFlapPart, {
+    contractId: "trapezoid-top-dust-flap",
+    outputExpectations: createOutputExpectations({
+      faces: "one-or-more",
+      structuralCreases: "one-or-more",
+      anchors: "one-or-more",
+    }),
+  }),
+  registerPart(angledBottomDustFlapPart, {
+    contractId: "angled-bottom-dust-flap",
     outputExpectations: createOutputExpectations({
       faces: "one-or-more",
       structuralCreases: "one-or-more",
@@ -101,6 +149,7 @@ const PARTS = [
   }),
   registerPart(roundedSlotCutoutPart, {
     contractId: "rounded-slot-cutout",
+    allowedContractIds: ["lock-slot"],
     outputExpectations: createOutputExpectations({
       geometryPrimitives: "one-or-more",
     }),

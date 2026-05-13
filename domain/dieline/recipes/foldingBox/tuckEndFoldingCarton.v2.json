@@ -9,7 +9,7 @@
   "experimentalStatus": "reference-pending",
   "implementationStatus": "custom-closure-scaffold",
   "referenceNotes": [
-    "This hidden recipe uses the custom slotted-tuck-flap, custom-dust-flap, relief-notch, and slot primitives, but it is still not a production/CAD-verified CefBox match.",
+    "This hidden recipe uses the part-library full-width tuck flap, top trapezoid dust flaps, angled bottom dust flaps, a bottom lock flap, relief-notch cut geometry, and explicit slot primitives, but it is still not a production/CAD-verified CefBox match.",
     "Body order and closure ownership are inferred from the supplied black/white reference images.",
     "Keep this recipe out of the catalog/product UI until the reference decomposition is compared against a trusted fixture."
   ],
@@ -119,7 +119,7 @@
       "type": "body-strip",
       "contract": "body-strip",
       "topBand": "max(FTH, DFW)",
-      "bottomBand": "max(FTH, DFW)",
+      "bottomBand": "max(FTH + clamp(FLH * 0.45, 5, 10), DFW)",
       "offsetX": "GFW",
       "panels": [
         { "id": "front", "label": "Front", "width": "L", "height": "H" },
@@ -130,59 +130,34 @@
     },
     { "id": "glue-tab", "type": "glue-tab", "contract": "side-glue-tab", "attachTo": "front.left", "width": "GFW" },
     {
-      "id": "top-slotted-tuck",
-      "type": "slotted-tuck-flap",
-      "contract": "slotted-tuck-flap",
+      "id": "top-full-width-tuck",
+      "type": "full-width-tuck-flap",
+      "contract": "full-width-tuck-flap",
       "attachTo": "front.top",
       "side": "top",
       "faceId": "top-tuck",
       "height": "FTH",
-      "lipHeight": "FLH",
       "cornerRadius": "FCR",
-      "scoreOffsetFromBase": "FTH - FLH",
-      "margin": "SDS",
-      "slot": {
-        "enabled": true,
-        "id": "top-rounded-slot",
-        "width": "SL",
-        "height": "SW",
-        "radius": "SW / 2",
-        "offsetFromBase": "SOF",
-        "centeredOnAnchor": true
-      },
-      "relief": { "enabled": false }
+      "scoreOffsetFromBase": "FTH - FLH"
     },
+    { "id": "top-rounded-slot", "type": "rounded-slot-cutout", "contract": "rounded-slot-cutout", "attachTo": "top-tuck.bottom", "width": "SL", "height": "SW", "radius": "SW / 2", "orientation": "horizontal", "offsetFromBase": "SOF", "centeredOnAnchor": true, "margin": "SDS", "referencePending": true },
     { "id": "top-tuck-left-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "top-tuck.left", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
     { "id": "top-tuck-right-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "top-tuck.right", "side": "inside", "position": "end", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "top-dust-right", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "right.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
-    { "id": "top-dust-left", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "left.top", "side": "top", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
+    { "id": "top-dust-right", "type": "trapezoid-top-dust-flap", "contract": "trapezoid-top-dust-flap", "attachTo": "right.top", "height": "DFW", "taper": "DTP" },
+    { "id": "top-dust-left", "type": "trapezoid-top-dust-flap", "contract": "trapezoid-top-dust-flap", "attachTo": "left.top", "height": "DFW", "taper": "DTP" },
     {
-      "id": "bottom-slotted-tuck",
-      "type": "slotted-tuck-flap",
-      "contract": "slotted-tuck-flap",
+      "id": "bottom-lock-flap",
+      "type": "bottom-lock-flap",
+      "contract": "bottom-lock-flap",
       "attachTo": "back.bottom",
-      "side": "bottom",
-      "faceId": "bottom-tuck",
-      "height": "FTH",
-      "lipHeight": "FLH",
-      "cornerRadius": "FCR",
-      "scoreOffsetFromBase": "FTH - FLH",
-      "margin": "SDS",
-      "slot": {
-        "enabled": true,
-        "id": "bottom-rounded-slot",
-        "width": "SL",
-        "height": "SW",
-        "radius": "SW / 2",
-        "offsetFromBase": "SOF",
-        "centeredOnAnchor": true
-      },
-      "relief": { "enabled": false }
+      "faceId": "bottom-lock",
+      "bodyDepth": "FTH",
+      "tabDepth": "clamp(FLH * 0.45, 5, 10)",
+      "tongueWidth": "SL * 0.75"
     },
-    { "id": "bottom-tuck-left-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "bottom-tuck.left", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "bottom-tuck-right-relief", "type": "relief-notch", "contract": "relief-notch", "attachTo": "bottom-tuck.right", "side": "inside", "position": "start", "shape": "angled", "width": "RFW", "depth": "RFD" },
-    { "id": "bottom-dust-right", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "right.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } },
-    { "id": "bottom-dust-left", "type": "custom-dust-flap", "contract": "custom-dust-flap", "attachTo": "left.bottom", "side": "bottom", "height": "DFW", "taper": "DTP", "shoulder": "DSH", "shape": "reference-tuck-end", "notch": { "enabled": true, "width": "RFW", "depth": "RFD" } }
+    { "id": "bottom-lock-slot", "type": "rounded-slot-cutout", "contract": "lock-slot", "attachTo": "front.bottom", "width": "SL * 0.82", "height": "SW", "radius": "SW / 2", "orientation": "horizontal", "offsetFromBase": "SDS + SW * 2", "centeredOnAnchor": true, "margin": "SDS", "referencePending": true },
+    { "id": "bottom-dust-right", "type": "angled-bottom-dust-flap", "contract": "angled-bottom-dust-flap", "attachTo": "right.bottom", "height": "DFW", "startInset": "DTP * 0.7", "endInset": "DTP" },
+    { "id": "bottom-dust-left", "type": "angled-bottom-dust-flap", "contract": "angled-bottom-dust-flap", "attachTo": "left.bottom", "height": "DFW", "startInset": "DTP * 0.7", "endInset": "DTP" }
   ],
   "folding": {
     "rootFace": "front",

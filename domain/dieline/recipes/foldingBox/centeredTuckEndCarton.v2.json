@@ -9,8 +9,8 @@
   "experimentalStatus": "reference-pending",
   "implementationStatus": "experimental-scaffold",
   "referenceNotes": [
-    "This hidden recipe models centered tuck ownership with partial-edge-anchor parts.",
-    "Panel order and centered tuck widths require reference comparison before catalog exposure."
+    "This hidden recipe now models the centered top closure with a part-library locking lip attached through a partial-edge anchor.",
+    "Bottom closure is represented by the experimental bottom-lock flap until the complete snap-lock bottom panel exists."
   ],
   "parameters": {
     "L": { "label": "Length(L)", "kind": "dimension", "input": "number", "default": 120, "step": 1, "unit": "mm" },
@@ -86,13 +86,12 @@
     },
     { "id": "glue-tab", "type": "glue-tab", "contract": "side-glue-tab", "attachTo": "left.left", "width": "GFW" },
     { "id": "top-centered-tuck-anchor", "type": "partial-edge-anchor", "contract": "partial-edge-anchor", "attachTo": "front.top", "anchorId": "top-centered-tuck-anchor", "length": "CTW", "centered": true, "margin": "max(1, L * 0.04)" },
-    { "id": "bottom-centered-tuck-anchor", "type": "partial-edge-anchor", "contract": "partial-edge-anchor", "attachTo": "back.bottom", "anchorId": "bottom-centered-tuck-anchor", "length": "CTW", "centered": true, "margin": "max(1, L * 0.04)" },
-    { "id": "top-centered-tuck", "type": "tuck-flap", "contract": "centered-tuck-flap", "attachTo": "top-centered-tuck-anchor", "faceId": "top-centered-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
-    { "id": "top-dust-left", "type": "dust-flap", "contract": "dust-flap", "attachTo": "left.top", "height": "DFW" },
-    { "id": "top-dust-right", "type": "dust-flap", "contract": "dust-flap", "attachTo": "right.top", "height": "DFW" },
-    { "id": "bottom-centered-tuck", "type": "tuck-flap", "contract": "centered-tuck-flap", "attachTo": "bottom-centered-tuck-anchor", "faceId": "bottom-centered-tuck", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
-    { "id": "bottom-dust-left", "type": "dust-flap", "contract": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
-    { "id": "bottom-dust-right", "type": "dust-flap", "contract": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
+    { "id": "top-centered-locking-lip", "type": "locking-lip-flap", "contract": "locking-lip-flap", "attachTo": "top-centered-tuck-anchor", "faceId": "top-centered-tuck", "side": "top", "bodyDepth": "W", "tabDepth": "TFW", "tabWidth": "CTW * 0.72" },
+    { "id": "top-dust-left", "type": "trapezoid-top-dust-flap", "contract": "trapezoid-top-dust-flap", "attachTo": "left.top", "height": "DFW", "taper": "TFR" },
+    { "id": "top-dust-right", "type": "trapezoid-top-dust-flap", "contract": "trapezoid-top-dust-flap", "attachTo": "right.top", "height": "DFW", "taper": "TFR" },
+    { "id": "bottom-lock-flap", "type": "bottom-lock-flap", "contract": "bottom-lock-flap", "attachTo": "back.bottom", "faceId": "bottom-lock", "bodyDepth": "W", "tabDepth": "TFW", "tongueWidth": "CTW * 0.72" },
+    { "id": "bottom-dust-left", "type": "angled-bottom-dust-flap", "contract": "angled-bottom-dust-flap", "attachTo": "left.bottom", "height": "DFW", "startInset": "TFR * 0.7", "endInset": "TFR" },
+    { "id": "bottom-dust-right", "type": "angled-bottom-dust-flap", "contract": "angled-bottom-dust-flap", "attachTo": "right.bottom", "height": "DFW", "startInset": "TFR * 0.7", "endInset": "TFR" }
   ],
   "folding": {
     "rootFace": "front",

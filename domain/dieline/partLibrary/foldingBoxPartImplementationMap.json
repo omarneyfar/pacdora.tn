@@ -1,0 +1,264 @@
+{
+  "schemaVersion": "folding-box-part-implementation-map-1.0",
+  "source": "folding-box-documentation.json",
+  "policy": {
+    "productionReadyDefault": false,
+    "templateExposure": "No new templates are exposed by this map.",
+    "verificationRule": "Graph-valid means the component engine can generate a valid DielineGraph. It does not mean CAD-verified or production-ready."
+  },
+  "parts": [
+    {
+      "id": "body-strip",
+      "contractId": "body-strip",
+      "family": "body-systems",
+      "implementationFile": "domain/dieline/parts/body/bodyStrip.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["reverseTuckEnd", "straightTuckEnd"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "RTE/STE body strip is treated as the stable baseline. Wider body systems still need reference overlays."
+    },
+    {
+      "id": "side-glue-tab",
+      "contractId": "side-glue-tab",
+      "family": "glue-systems",
+      "implementationFile": "domain/dieline/parts/glue/sideGlueTab.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["reverseTuckEnd", "straightTuckEnd"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "Existing RTE/STE glue tab is stable. Glue-zone artwork primitive is intentionally not added yet to avoid changing RTE/STE output."
+    },
+    {
+      "id": "relieved-side-glue-tab",
+      "contractId": "relieved-side-glue-tab",
+      "family": "glue-systems",
+      "implementationFile": null,
+      "implementationStatus": "missing",
+      "usedByTemplates": ["tear-strip variants", "relieved-seam variants"],
+      "priority": "P3",
+      "visualTestRequired": true,
+      "notes": "Documented as a relieved glue seam for tear/opening variants. Needs separate implementation so RTE/STE side-glue-tab stays unchanged."
+    },
+    {
+      "id": "tuck-flap",
+      "contractId": "tuck-flap",
+      "family": "top-closures",
+      "implementationFile": "domain/dieline/parts/closures/tuckFlap.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["legacy v2 compatibility"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "Generic compatibility implementation. Prefer reverse-tuck-flap, straight-tuck-flap, or full-width-tuck-flap contracts."
+    },
+    {
+      "id": "reverse-tuck-flap",
+      "contractId": "reverse-tuck-flap",
+      "family": "top-closures",
+      "implementationFile": "domain/dieline/parts/closures/tuckFlap.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["reverseTuckEnd"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "Correct for current RTE. Do not alter unless RTE compatibility requires it."
+    },
+    {
+      "id": "straight-tuck-flap",
+      "contractId": "straight-tuck-flap",
+      "family": "top-closures",
+      "implementationFile": "domain/dieline/parts/closures/tuckFlap.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["straightTuckEnd"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "Correct for current STE. Do not alter unless STE compatibility requires it."
+    },
+    {
+      "id": "full-width-tuck-flap",
+      "contractId": "full-width-tuck-flap",
+      "family": "top-closures",
+      "implementationFile": "domain/dieline/parts/closures/fullWidthTuckFlap.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["tuck-end-folding-carton", "folding-carton-box-with-circular-hang-hole", "folding-carton-box-with-hang-tab"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "New isolated part. Full anchor-width flap with geometry-only internal lip score."
+    },
+    {
+      "id": "locking-lip-flap",
+      "contractId": "locking-lip-flap",
+      "family": "locking-closures",
+      "implementationFile": "domain/dieline/parts/closures/lockingLipFlap.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["centered-tuck-end-carton", "folding-carton-box-with-locking-tab-on-top-and-bottom"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Creates a face with an integrated tab. Receiving slot remains a separate GeometryPrimitive-only part."
+    },
+    {
+      "id": "dust-flap",
+      "contractId": "dust-flap",
+      "family": "dust-flaps",
+      "implementationFile": "domain/dieline/parts/closures/dustFlap.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["reverseTuckEnd", "straightTuckEnd"],
+      "priority": "P0",
+      "visualTestRequired": true,
+      "notes": "Correct for current RTE/STE simple dust flaps. More specialized templates should use explicit dust flap variants."
+    },
+    {
+      "id": "trapezoid-top-dust-flap",
+      "contractId": "trapezoid-top-dust-flap",
+      "family": "dust-flaps",
+      "implementationFile": "domain/dieline/parts/closures/trapezoidTopDustFlap.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["tuck-end-folding-carton", "centered-tuck-end-carton", "folding-carton-box-with-locking-tab-on-top-and-bottom", "folding-carton-box-with-circular-hang-hole", "folding-carton-box-with-hang-tab"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Top-only trapezoid dust flap with base edge locked to attach anchor."
+    },
+    {
+      "id": "angled-bottom-dust-flap",
+      "contractId": "angled-bottom-dust-flap",
+      "family": "dust-flaps",
+      "implementationFile": "domain/dieline/parts/closures/angledBottomDustFlap.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["tuck-end-folding-carton", "centered-tuck-end-carton", "folding-carton-box-with-locking-tab-on-top-and-bottom", "folding-carton-box-with-circular-hang-hole", "folding-carton-box-with-hang-tab", "snap-lock-bottom variants"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Bottom-only angled dust flap for bottom closure families. Still needs reference overlay."
+    },
+    {
+      "id": "bottom-lock-flap",
+      "contractId": "bottom-lock-flap",
+      "family": "bottom-closures",
+      "implementationFile": "domain/dieline/parts/closures/bottomLockFlap.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["tuck-end-folding-carton", "centered-tuck-end-carton", "snap-lock-bottom variants"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Single bottom flap with center tongue and geometry-only tongue score. Full snap-lock system is still missing."
+    },
+    {
+      "id": "lock-tab",
+      "contractId": "lock-tab",
+      "family": "locking-closures",
+      "implementationFile": "domain/dieline/parts/closures/lockTab.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["legacy locking-tab experiments"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Existing isolated lock tab remains useful, but locking-lip-flap is the preferred closure-level part."
+    },
+    {
+      "id": "lock-slot",
+      "contractId": "lock-slot",
+      "family": "cutouts",
+      "implementationFile": "domain/dieline/parts/cutouts/roundedSlotCutout.ts",
+      "implementationStatus": "implemented-experimental",
+      "usedByTemplates": ["folding-carton-box-with-locking-tab-on-top-and-bottom", "snap-lock-bottom variants"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Registered as a contract alias over rounded-slot-cutout. It must remain GeometryPrimitive-only."
+    },
+    {
+      "id": "circular-hole-cutout",
+      "contractId": "circular-hole-cutout",
+      "family": "cutouts",
+      "implementationFile": "domain/dieline/parts/cutouts/circularHoleCutout.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["generic cutout usage"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Graph-valid primitive placement exists. Display hang-hole contract remains separate."
+    },
+    {
+      "id": "euro-slot-cutout",
+      "contractId": "euro-slot-cutout",
+      "family": "cutouts",
+      "implementationFile": "domain/dieline/parts/cutouts/euroSlotCutout.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["folding-carton-box-with-hang-tab"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Geometry-only two-primitive euro slot. Needs overlay against a real hook slot reference."
+    },
+    {
+      "id": "rounded-slot-cutout",
+      "contractId": "rounded-slot-cutout",
+      "family": "cutouts",
+      "implementationFile": "domain/dieline/parts/cutouts/roundedSlotCutout.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["folding-carton-box-with-locking-tab-on-top-and-bottom"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Graph-valid cutout primitive. Also backs lock-slot until a dedicated slot implementation is needed."
+    },
+    {
+      "id": "relief-notch",
+      "contractId": "relief-notch",
+      "family": "cutouts",
+      "implementationFile": "domain/dieline/parts/cutouts/reliefNotch.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["tuck-end-folding-carton"],
+      "priority": "P1",
+      "visualTestRequired": true,
+      "notes": "Reviewed as GeometryPrimitive-only. Corner notch dimensions still need reference confirmation."
+    },
+    {
+      "id": "score-line",
+      "contractId": "score-line",
+      "family": "non-structural-guides",
+      "implementationFile": "domain/dieline/parts/guides/scoreLine.ts",
+      "implementationStatus": "graph-valid",
+      "usedByTemplates": ["internal guide usage"],
+      "priority": "P1",
+      "visualTestRequired": false,
+      "notes": "Reviewed as GeometryPrimitive-only. It must never create DielineCrease."
+    },
+    {
+      "id": "hang-tab",
+      "contractId": "hang-tab",
+      "family": "hang-display",
+      "implementationFile": "domain/dieline/parts/features/hangTab.ts",
+      "implementationStatus": "reference-pending",
+      "usedByTemplates": ["folding-carton-box-with-hang-tab", "folding-carton-box-with-circular-hang-hole"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Existing scaffold is a single face, while documentation expects folded double-thickness behavior. Risk remains high."
+    },
+    {
+      "id": "window-cutout",
+      "contractId": "window-cutout",
+      "family": "windows",
+      "implementationFile": "domain/dieline/parts/cutouts/windowCutout.ts",
+      "implementationStatus": "existing-needs-review",
+      "usedByTemplates": ["carton-with-three-windows", "with-circular-hang-hole-and-window"],
+      "priority": "P3",
+      "visualTestRequired": true,
+      "notes": "Geometry-only window primitive exists but film margins and reference placement are not verified."
+    },
+    {
+      "id": "snap-lock-bottom-panel",
+      "contractId": "snap-lock-bottom-panel",
+      "family": "bottom-closures",
+      "implementationFile": null,
+      "implementationStatus": "missing",
+      "usedByTemplates": ["snapLockBottom", "tuck-end-folding-carton", "centered-tuck-end-carton"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Not implemented as a complete bottom system. bottom-lock-flap is only a small prerequisite part."
+    },
+    {
+      "id": "auto-lock-bottom-panel",
+      "contractId": "auto-lock-bottom-panel",
+      "family": "bottom-closures",
+      "implementationFile": null,
+      "implementationStatus": "missing",
+      "usedByTemplates": ["autoLockBottom", "auto-lock-bottom-carton-with-tab-closure"],
+      "priority": "P2",
+      "visualTestRequired": true,
+      "notes": "Complex crash-lock geometry is not implemented. Diagonal score lines must be GeometryPrimitive-only when added."
+    }
+  ]
+}
