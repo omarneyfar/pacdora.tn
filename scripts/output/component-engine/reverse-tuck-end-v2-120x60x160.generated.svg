@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="375mm" height="318.4mm" viewBox="0 0 375 318.4">
+  <title>Reverse Tuck End Folding Carton Box</title>
+  <g id="dieline" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path id="cut-1" data-layer="cut" d="M 0 239.2 L 0 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-2" data-layer="cut" d="M 180 239.2 L 60 239.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-3" data-layer="cut" d="M 240 79.2 L 360 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-4" data-layer="cut" d="M 360 79.2 L 375 84.3" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-5" data-layer="cut" d="M 375 84.3 L 375 234.1" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-6" data-layer="cut" d="M 375 234.1 L 360 239.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-7" data-layer="cut" d="M 60 79.2 L 60 8" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-8" data-layer="cut" d="M 60 8 L 60.273 5.929" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-9" data-layer="cut" d="M 60.273 5.929 L 61.072 4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-10" data-layer="cut" d="M 61.072 4 L 62.343 2.343" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-11" data-layer="cut" d="M 62.343 2.343 L 64 1.072" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-12" data-layer="cut" d="M 64 1.072 L 65.929 0.273" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-13" data-layer="cut" d="M 65.929 0.273 L 68 0" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-14" data-layer="cut" d="M 68 0 L 172 0" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-15" data-layer="cut" d="M 172 0 L 174.071 0.273" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-16" data-layer="cut" d="M 174.071 0.273 L 176 1.072" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-17" data-layer="cut" d="M 176 1.072 L 177.657 2.343" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-18" data-layer="cut" d="M 177.657 2.343 L 178.928 4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-19" data-layer="cut" d="M 178.928 4 L 179.727 5.929" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-20" data-layer="cut" d="M 179.727 5.929 L 180 8" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-21" data-layer="cut" d="M 180 8 L 180 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-22" data-layer="cut" d="M 0 79.2 L 4.8 44.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-23" data-layer="cut" d="M 4.8 44.4 L 55.2 44.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-24" data-layer="cut" d="M 55.2 44.4 L 60 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-25" data-layer="cut" d="M 180 79.2 L 184.8 44.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-26" data-layer="cut" d="M 184.8 44.4 L 235.2 44.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-27" data-layer="cut" d="M 235.2 44.4 L 240 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-28" data-layer="cut" d="M 240 239.2 L 240 310.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-29" data-layer="cut" d="M 240 310.4 L 240.273 312.471" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-30" data-layer="cut" d="M 240.273 312.471 L 241.072 314.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-31" data-layer="cut" d="M 241.072 314.4 L 242.343 316.057" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-32" data-layer="cut" d="M 242.343 316.057 L 244 317.328" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-33" data-layer="cut" d="M 244 317.328 L 245.929 318.127" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-34" data-layer="cut" d="M 245.929 318.127 L 248 318.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-35" data-layer="cut" d="M 248 318.4 L 352 318.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-36" data-layer="cut" d="M 352 318.4 L 354.071 318.127" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-37" data-layer="cut" d="M 354.071 318.127 L 356 317.328" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-38" data-layer="cut" d="M 356 317.328 L 357.657 316.057" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-39" data-layer="cut" d="M 357.657 316.057 L 358.928 314.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-40" data-layer="cut" d="M 358.928 314.4 L 359.727 312.471" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-41" data-layer="cut" d="M 359.727 312.471 L 360 310.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-42" data-layer="cut" d="M 360 310.4 L 360 239.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-43" data-layer="cut" d="M 0 239.2 L 4.8 274" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-44" data-layer="cut" d="M 4.8 274 L 55.2 274" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-45" data-layer="cut" d="M 55.2 274 L 60 239.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-46" data-layer="cut" d="M 180 239.2 L 184.8 274" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-47" data-layer="cut" d="M 184.8 274 L 235.2 274" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-48" data-layer="cut" d="M 235.2 274 L 240 239.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cr-left-front" data-layer="crease" d="M 60 79.2 L 60 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-front-right" data-layer="crease" d="M 180 79.2 L 180 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-right-back" data-layer="crease" d="M 240 79.2 L 240 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-back-glue" data-layer="crease" d="M 360 79.2 L 360 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-front-toptuck" data-layer="crease" d="M 60 79.2 L 180 79.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-left-topdust" data-layer="crease" d="M 0 79.2 L 60 79.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-right-topdust" data-layer="crease" d="M 180 79.2 L 240 79.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-back-bottomtuck" data-layer="crease" d="M 240 239.2 L 360 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-left-bottomdust" data-layer="crease" d="M 0 239.2 L 60 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="cr-right-bottomdust" data-layer="crease" d="M 180 239.2 L 240 239.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="score-top-tuck-lip" data-layer="crease" d="M 60 19.2 L 180 19.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="score-bottom-tuck-lip" data-layer="crease" d="M 240 299.2 L 360 299.2" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <text id="label-left" data-layer="label" x="30" y="159.2" fill="#1f2a24" font-size="4">Left</text>
+  <text id="label-front" data-layer="label" x="120" y="159.2" fill="#1f2a24" font-size="4">Front</text>
+  <text id="label-right" data-layer="label" x="210" y="159.2" fill="#1f2a24" font-size="4">Right</text>
+  <text id="label-back" data-layer="label" x="300" y="159.2" fill="#1f2a24" font-size="4">Back</text>
+  <text id="label-glue-tab" data-layer="label" x="367.418" y="159.2" fill="#1f2a24" font-size="4">Glue tab</text>
+  <text id="label-top-tuck" data-layer="label" x="120" y="39.714" fill="#1f2a24" font-size="4">Top tuck flap</text>
+  <text id="label-top-dust-left" data-layer="label" x="30" y="62.304" fill="#1f2a24" font-size="4">Top dust flap (L)</text>
+  <text id="label-top-dust-right" data-layer="label" x="210" y="62.304" fill="#1f2a24" font-size="4">Top dust flap (R)</text>
+  <text id="label-bottom-tuck" data-layer="label" x="300" y="278.686" fill="#1f2a24" font-size="4">Bottom tuck flap</text>
+  <text id="label-bottom-dust-left" data-layer="label" x="30" y="256.096" fill="#1f2a24" font-size="4">Bottom dust flap (L)</text>
+  <text id="label-bottom-dust-right" data-layer="label" x="210" y="256.096" fill="#1f2a24" font-size="4">Bottom dust flap (R)</text>
+  </g>
+</svg>

@@ -29,7 +29,7 @@ export const tuckFlapPart: DielinePartGenerator<TuckFlapConfig> = {
 
     const height = ctx.numberValue(config.height, `${config.id}.height`);
     const lipHeight = ctx.numberValue(config.lipHeight, `${config.id}.lipHeight`);
-    const taper = ctx.numberValue(config.taper ?? 0, `${config.id}.taper`);
+    const cornerRadius = ctx.numberValue(config.taper ?? 0, `${config.id}.taper`);
     const scoreOffset = ctx.numberValue(config.scoreOffset, `${config.id}.scoreOffset`);
 
     if (height <= 0 || lipHeight < 0 || scoreOffset < 0) {
@@ -48,7 +48,7 @@ export const tuckFlapPart: DielinePartGenerator<TuckFlapConfig> = {
       width,
       height,
       lipHeight,
-      taper,
+      cornerRadius,
       position,
       `${capitalize(position)} tuck flap`,
     );
@@ -85,53 +85,37 @@ function createTuckFlapFace(
   width: number,
   height: number,
   lipHeight: number,
-  taper: number,
+  cornerRadius: number,
   direction: "top" | "bottom",
   label: string,
 ): DielineFace {
-  const innerY = direction === "top" ? y + lipHeight : y + height - lipHeight;
-  const topY = direction === "top" ? y : y + height;
-  const lidY = direction === "top" ? y + height : y;
-  const r = Math.min(5, taper, lipHeight * 0.5);
-  const slit = Math.min(3, taper * 0.5);
-  const leftSlitX = x + slit;
-  const rightSlitX = x + width - slit;
-  const leftArcCenterX = x + taper + r;
-  const rightArcCenterX = x + width - taper - r;
-  const arcCenterY = direction === "top" ? topY + r : topY - r;
-
+  const r = Math.max(0, Math.min(cornerRadius, lipHeight * 0.75, width * 0.16, height * 0.22, 8));
   const vertices = direction === "top"
     ? [
-        { x, y: lidY },
-        { x, y: innerY },
-        { x: leftSlitX, y: innerY },
-        { x: leftSlitX, y: innerY - slit * 0.5 },
-        ...sampleQuarterArc({ x: leftArcCenterX, y: arcCenterY }, r, Math.PI, Math.PI * 1.5),
-        { x: rightArcCenterX, y: topY },
-        ...sampleQuarterArc({ x: rightArcCenterX, y: arcCenterY }, r, Math.PI * 1.5, Math.PI * 2).slice(1),
-        { x: rightSlitX, y: innerY - slit * 0.5 },
-        { x: rightSlitX, y: innerY },
-        { x: x + width, y: innerY },
-        { x: x + width, y: lidY },
+        { x, y: y + height },
+        { x, y: y + r },
+        ...sampleQuarterArc({ x: x + r, y: y + r }, r, Math.PI, Math.PI * 1.5).slice(1),
+        { x: x + width - r, y },
+        ...sampleQuarterArc({ x: x + width - r, y: y + r }, r, Math.PI * 1.5, Math.PI * 2).slice(1),
+        { x: x + width, y: y + height },
       ]
     : [
-        { x, y: lidY },
-        { x, y: innerY },
-        { x: leftSlitX, y: innerY },
-        { x: leftSlitX, y: innerY + slit * 0.5 },
-        ...sampleQuarterArc({ x: leftArcCenterX, y: arcCenterY }, r, Math.PI, Math.PI * 0.5),
-        { x: rightArcCenterX, y: topY },
-        ...sampleQuarterArc({ x: rightArcCenterX, y: arcCenterY }, r, Math.PI * 0.5, 0).slice(1),
-        { x: rightSlitX, y: innerY + slit * 0.5 },
-        { x: rightSlitX, y: innerY },
-        { x: x + width, y: innerY },
-        { x: x + width, y: lidY },
+        { x, y },
+        { x, y: y + height - r },
+        ...sampleQuarterArc({ x: x + r, y: y + height - r }, r, Math.PI, Math.PI * 0.5).slice(1),
+        { x: x + width - r, y: y + height },
+        ...sampleQuarterArc({ x: x + width - r, y: y + height - r }, r, Math.PI * 0.5, 0).slice(1),
+        { x: x + width, y },
       ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
 }
 
 function sampleQuarterArc(center: Point, radius: number, startAngle: number, endAngle: number): Point[] {
+  if (radius <= 0) {
+    return [center];
+  }
+
   return Array.from({ length: 7 }, (_, index) => {
     const angle = startAngle + ((endAngle - startAngle) * index) / 6;
     return {

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="652mm" height="533.2mm" viewBox="0 0 652 533.2">
+<title>Straight Tuck End Folding Carton Box</title>
+<rect x="0" y="0" width="652" height="533.2" fill="#fbfaf7"/>
+<g transform="translate(36 36)">
+<g id="cut-paths" stroke="#d12f2f" stroke-width="0.45" fill="none">
+<polyline points="380,105.6 580,105.6"/>
+<polyline points="580,105.6 580,355.6"/>
+<polyline points="580,355.6 380,355.6"/>
+<polyline points="0,112.4 20,105.6"/>
+<polyline points="20,355.6 0,348.8"/>
+<polyline points="0,348.8 0,112.4"/>
+<polyline points="100,105.6 100,8"/>
+<polyline points="100,8 100.273,5.929"/>
+<polyline points="100.273,5.929 101.072,4"/>
+<polyline points="101.072,4 102.343,2.343"/>
+<polyline points="102.343,2.343 104,1.072"/>
+<polyline points="104,1.072 105.929,0.273"/>
+<polyline points="105.929,0.273 108,0"/>
+<polyline points="108,0 292,0"/>
+<polyline points="292,0 294.071,0.273"/>
+<polyline points="294.071,0.273 296,1.072"/>
+<polyline points="296,1.072 297.657,2.343"/>
+<polyline points="297.657,2.343 298.928,4"/>
+<polyline points="298.928,4 299.727,5.929"/>
+<polyline points="299.727,5.929 300,8"/>
+<polyline points="300,8 300,105.6"/>
+<polyline points="20,105.6 26,59.2"/>
+<polyline points="26,59.2 94,59.2"/>
+<polyline points="94,59.2 100,105.6"/>
+<polyline points="300,105.6 306,59.2"/>
+<polyline points="306,59.2 374,59.2"/>
+<polyline points="374,59.2 380,105.6"/>
+<polyline points="100,355.6 100,453.2"/>
+<polyline points="100,453.2 100.273,455.271"/>
+<polyline points="100.273,455.271 101.072,457.2"/>
+<polyline points="101.072,457.2 102.343,458.857"/>
+<polyline points="102.343,458.857 104,460.128"/>
+<polyline points="104,460.128 105.929,460.927"/>
+<polyline points="105.929,460.927 108,461.2"/>
+<polyline points="108,461.2 292,461.2"/>
+<polyline points="292,461.2 294.071,460.927"/>
+<polyline points="294.071,460.927 296,460.128"/>
+<polyline points="296,460.128 297.657,458.857"/>
+<polyline points="297.657,458.857 298.928,457.2"/>
+<polyline points="298.928,457.2 299.727,455.271"/>
+<polyline points="299.727,455.271 300,453.2"/>
+<polyline points="300,453.2 300,355.6"/>
+<polyline points="20,355.6 26,402"/>
+<polyline points="26,402 94,402"/>
+<polyline points="94,402 100,355.6"/>
+<polyline points="300,355.6 306,402"/>
+<polyline points="306,402 374,402"/>
+<polyline points="374,402 380,355.6"/>
+</g>
+<g id="face-outlines" fill="rgba(255,255,255,0.6)" stroke="#2f3437" stroke-width="0.35">
+<polygon points="20,105.6 100,105.6 100,355.6 20,355.6"/>
+<polygon points="100,105.6 300,105.6 300,355.6 100,355.6"/>
+<polygon points="300,105.6 380,105.6 380,355.6 300,355.6"/>
+<polygon points="380,105.6 580,105.6 580,355.6 380,355.6"/>
+<polygon points="0,112.4 20,105.6 20,355.6 0,348.8"/>
+<polygon points="100,105.6 100,8 100.273,5.929 101.072,4 102.343,2.343 104,1.072 105.929,0.273 108,0 292,0 294.071,0.273 296,1.072 297.657,2.343 298.928,4 299.727,5.929 300,8 300,105.6"/>
+<polygon points="20,105.6 26,59.2 94,59.2 100,105.6"/>
+<polygon points="300,105.6 306,59.2 374,59.2 380,105.6"/>
+<polygon points="100,355.6 100,453.2 100.273,455.271 101.072,457.2 102.343,458.857 104,460.128 105.929,460.927 108,461.2 292,461.2 294.071,460.927 296,460.128 297.657,458.857 298.928,457.2 299.727,455.271 300,453.2 300,355.6"/>
+<polygon points="20,355.6 26,402 94,402 100,355.6"/>
+<polygon points="300,355.6 306,402 374,402 380,355.6"/>
+</g>
+<g id="structural-creases" stroke="#2364aa" stroke-width="0.55" stroke-dasharray="2 1">
+<line x1="100" y1="105.6" x2="100" y2="355.6"/>
+<line x1="300" y1="105.6" x2="300" y2="355.6"/>
+<line x1="380" y1="105.6" x2="380" y2="355.6"/>
+<line x1="20" y1="105.6" x2="20" y2="355.6"/>
+<line x1="100" y1="105.6" x2="300" y2="105.6"/>
+<line x1="20" y1="105.6" x2="100" y2="105.6"/>
+<line x1="300" y1="105.6" x2="380" y2="105.6"/>
+<line x1="100" y1="355.6" x2="300" y2="355.6"/>
+<line x1="20" y1="355.6" x2="100" y2="355.6"/>
+<line x1="300" y1="355.6" x2="380" y2="355.6"/>
+</g>
+<g id="internal-score-lines" stroke="#d88400" stroke-width="0.45" stroke-dasharray="1.4 1">
+<line x1="100" y1="25.6" x2="300" y2="25.6"/>
+<line x1="100" y1="435.6" x2="300" y2="435.6"/>
+</g>
+<g id="anchors" stroke="#198754" fill="#198754" stroke-width="0.35">
+<line x1="20" y1="105.6" x2="100" y2="105.6"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<line x1="100" y1="105.6" x2="100" y2="355.6"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<line x1="20" y1="355.6" x2="100" y2="355.6"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<line x1="20" y1="105.6" x2="20" y2="355.6"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<line x1="100" y1="105.6" x2="300" y2="105.6"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<line x1="300" y1="105.6" x2="300" y2="355.6"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<line x1="100" y1="355.6" x2="300" y2="355.6"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<line x1="100" y1="105.6" x2="100" y2="355.6"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<line x1="300" y1="105.6" x2="380" y2="105.6"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<line x1="380" y1="105.6" x2="380" y2="355.6"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<line x1="300" y1="355.6" x2="380" y2="355.6"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<line x1="300" y1="105.6" x2="300" y2="355.6"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<line x1="380" y1="105.6" x2="580" y2="105.6"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<circle cx="580" cy="105.6" r="1.25"/>
+<line x1="580" y1="105.6" x2="580" y2="355.6"/>
+<circle cx="580" cy="105.6" r="1.25"/>
+<circle cx="580" cy="355.6" r="1.25"/>
+<line x1="380" y1="355.6" x2="580" y2="355.6"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<circle cx="580" cy="355.6" r="1.25"/>
+<line x1="380" y1="105.6" x2="380" y2="355.6"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<line x1="0" y1="105.6" x2="20" y2="105.6"/>
+<circle cx="0" cy="105.6" r="1.25"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<line x1="20" y1="105.6" x2="20" y2="355.6"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<line x1="0" y1="355.6" x2="20" y2="355.6"/>
+<circle cx="0" cy="355.6" r="1.25"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<line x1="0" y1="105.6" x2="0" y2="355.6"/>
+<circle cx="0" cy="105.6" r="1.25"/>
+<circle cx="0" cy="355.6" r="1.25"/>
+<line x1="100" y1="0" x2="300" y2="0"/>
+<circle cx="100" cy="0" r="1.25"/>
+<circle cx="300" cy="0" r="1.25"/>
+<line x1="300" y1="0" x2="300" y2="105.6"/>
+<circle cx="300" cy="0" r="1.25"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<line x1="100" y1="105.6" x2="300" y2="105.6"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<line x1="100" y1="0" x2="100" y2="105.6"/>
+<circle cx="100" cy="0" r="1.25"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<line x1="20" y1="59.2" x2="100" y2="59.2"/>
+<circle cx="20" cy="59.2" r="1.25"/>
+<circle cx="100" cy="59.2" r="1.25"/>
+<line x1="100" y1="59.2" x2="100" y2="105.6"/>
+<circle cx="100" cy="59.2" r="1.25"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<line x1="20" y1="105.6" x2="100" y2="105.6"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<circle cx="100" cy="105.6" r="1.25"/>
+<line x1="20" y1="59.2" x2="20" y2="105.6"/>
+<circle cx="20" cy="59.2" r="1.25"/>
+<circle cx="20" cy="105.6" r="1.25"/>
+<line x1="300" y1="59.2" x2="380" y2="59.2"/>
+<circle cx="300" cy="59.2" r="1.25"/>
+<circle cx="380" cy="59.2" r="1.25"/>
+<line x1="380" y1="59.2" x2="380" y2="105.6"/>
+<circle cx="380" cy="59.2" r="1.25"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<line x1="300" y1="105.6" x2="380" y2="105.6"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<circle cx="380" cy="105.6" r="1.25"/>
+<line x1="300" y1="59.2" x2="300" y2="105.6"/>
+<circle cx="300" cy="59.2" r="1.25"/>
+<circle cx="300" cy="105.6" r="1.25"/>
+<line x1="100" y1="355.6" x2="300" y2="355.6"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<line x1="300" y1="355.6" x2="300" y2="461.2"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<circle cx="300" cy="461.2" r="1.25"/>
+<line x1="100" y1="461.2" x2="300" y2="461.2"/>
+<circle cx="100" cy="461.2" r="1.25"/>
+<circle cx="300" cy="461.2" r="1.25"/>
+<line x1="100" y1="355.6" x2="100" y2="461.2"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<circle cx="100" cy="461.2" r="1.25"/>
+<line x1="20" y1="355.6" x2="100" y2="355.6"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<line x1="100" y1="355.6" x2="100" y2="402"/>
+<circle cx="100" cy="355.6" r="1.25"/>
+<circle cx="100" cy="402" r="1.25"/>
+<line x1="20" y1="402" x2="100" y2="402"/>
+<circle cx="20" cy="402" r="1.25"/>
+<circle cx="100" cy="402" r="1.25"/>
+<line x1="20" y1="355.6" x2="20" y2="402"/>
+<circle cx="20" cy="355.6" r="1.25"/>
+<circle cx="20" cy="402" r="1.25"/>
+<line x1="300" y1="355.6" x2="380" y2="355.6"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<line x1="380" y1="355.6" x2="380" y2="402"/>
+<circle cx="380" cy="355.6" r="1.25"/>
+<circle cx="380" cy="402" r="1.25"/>
+<line x1="300" y1="402" x2="380" y2="402"/>
+<circle cx="300" cy="402" r="1.25"/>
+<circle cx="380" cy="402" r="1.25"/>
+<line x1="300" y1="355.6" x2="300" y2="402"/>
+<circle cx="300" cy="355.6" r="1.25"/>
+<circle cx="300" cy="402" r="1.25"/>
+</g>
+<g id="face-labels" fill="#111827" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
+<text x="60" y="230.6" text-anchor="middle">left</text>
+<text x="200" y="230.6" text-anchor="middle">front</text>
+<text x="340" y="230.6" text-anchor="middle">right</text>
+<text x="480" y="230.6" text-anchor="middle">back</text>
+<text x="10.093" y="230.6" text-anchor="middle">glue-tab</text>
+<text x="200" y="52.869" text-anchor="middle">top-tuck</text>
+<text x="60" y="83.027" text-anchor="middle">top-dust-left</text>
+<text x="340" y="83.027" text-anchor="middle">top-dust-right</text>
+<text x="200" y="408.331" text-anchor="middle">bottom-tuck</text>
+<text x="60" y="378.173" text-anchor="middle">bottom-dust-left</text>
+<text x="340" y="378.173" text-anchor="middle">bottom-dust-right</text>
+</g>
+<g id="crease-labels" fill="#174a7c" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
+<text x="100" y="229" text-anchor="middle">cr-left-front</text>
+<text x="300" y="229" text-anchor="middle">cr-front-right</text>
+<text x="380" y="229" text-anchor="middle">cr-right-back</text>
+<text x="20" y="229" text-anchor="middle">cr-left-glue</text>
+<text x="200" y="104" text-anchor="middle">cr-front-toptuck</text>
+<text x="60" y="104" text-anchor="middle">cr-left-topdust</text>
+<text x="340" y="104" text-anchor="middle">cr-right-topdust</text>
+<text x="200" y="354" text-anchor="middle">cr-front-bottomtuck</text>
+<text x="60" y="354" text-anchor="middle">cr-left-bottomdust</text>
+<text x="340" y="354" text-anchor="middle">cr-right-bottomdust</text>
+</g>
+<g id="anchor-labels" fill="#0f6b3f" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
+<text x="60" y="102.6" text-anchor="middle">left.top</text>
+<text x="103" y="230.6" text-anchor="middle">left.right</text>
+<text x="60" y="358.6" text-anchor="middle">left.bottom</text>
+<text x="17" y="230.6" text-anchor="middle">left.left</text>
+<text x="200" y="102.6" text-anchor="middle">front.top</text>
+<text x="303" y="230.6" text-anchor="middle">front.right</text>
+<text x="200" y="358.6" text-anchor="middle">front.bottom</text>
+<text x="97" y="230.6" text-anchor="middle">front.left</text>
+<text x="340" y="102.6" text-anchor="middle">right.top</text>
+<text x="383" y="230.6" text-anchor="middle">right.right</text>
+<text x="340" y="358.6" text-anchor="middle">right.bottom</text>
+<text x="297" y="230.6" text-anchor="middle">right.left</text>
+<text x="480" y="102.6" text-anchor="middle">back.top</text>
+<text x="583" y="230.6" text-anchor="middle">back.right</text>
+<text x="480" y="358.6" text-anchor="middle">back.bottom</text>
+<text x="377" y="230.6" text-anchor="middle">back.left</text>
+<text x="10" y="102.6" text-anchor="middle">glue-tab.top</text>
+<text x="23" y="230.6" text-anchor="middle">glue-tab.right</text>
+<text x="10" y="358.6" text-anchor="middle">glue-tab.bottom</text>
+<text x="-3" y="230.6" text-anchor="middle">glue-tab.left</text>
+<text x="200" y="-3" text-anchor="middle">top-tuck.top</text>
+<text x="303" y="52.8" text-anchor="middle">top-tuck.right</text>
+<text x="200" y="108.6" text-anchor="middle">top-tuck.bottom</text>
+<text x="97" y="52.8" text-anchor="middle">top-tuck.left</text>
+<text x="60" y="56.2" text-anchor="middle">top-dust-left.top</text>
+<text x="103" y="82.4" text-anchor="middle">top-dust-left.right</text>
+<text x="60" y="108.6" text-anchor="middle">top-dust-left.bottom</text>
+<text x="17" y="82.4" text-anchor="middle">top-dust-left.left</text>
+<text x="340" y="56.2" text-anchor="middle">top-dust-right.top</text>
+<text x="383" y="82.4" text-anchor="middle">top-dust-right.right</text>
+<text x="340" y="108.6" text-anchor="middle">top-dust-right.bottom</text>
+<text x="297" y="82.4" text-anchor="middle">top-dust-right.left</text>
+<text x="200" y="352.6" text-anchor="middle">bottom-tuck.top</text>
+<text x="303" y="408.4" text-anchor="middle">bottom-tuck.right</text>
+<text x="200" y="464.2" text-anchor="middle">bottom-tuck.bottom</text>
+<text x="97" y="408.4" text-anchor="middle">bottom-tuck.left</text>
+<text x="60" y="352.6" text-anchor="middle">bottom-dust-left.top</text>
+<text x="103" y="378.8" text-anchor="middle">bottom-dust-left.right</text>
+<text x="60" y="405" text-anchor="middle">bottom-dust-left.bottom</text>
+<text x="17" y="378.8" text-anchor="middle">bottom-dust-left.left</text>
+<text x="340" y="352.6" text-anchor="middle">bottom-dust-right.top</text>
+<text x="383" y="378.8" text-anchor="middle">bottom-dust-right.right</text>
+<text x="340" y="405" text-anchor="middle">bottom-dust-right.bottom</text>
+<text x="297" y="378.8" text-anchor="middle">bottom-dust-right.left</text>
+</g>
+<g id="part-labels" fill="#6f42c1" style="font-family:Arial, sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;">
+<text x="270" y="235.6" text-anchor="middle">body</text>
+<text x="10.093" y="235.6" text-anchor="middle">glue-tab</text>
+<text x="200" y="57.869" text-anchor="middle">top-tuck</text>
+<text x="60" y="88.027" text-anchor="middle">top-dust-left</text>
+<text x="340" y="88.027" text-anchor="middle">top-dust-right</text>
+<text x="200" y="413.331" text-anchor="middle">bottom-tuck</text>
+<text x="60" y="383.173" text-anchor="middle">bottom-dust-left</text>
+<text x="340" y="383.173" text-anchor="middle">bottom-dust-right</text>
+</g>
+</g>
+</svg>

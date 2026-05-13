@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "verify:component-engine": "node scripts/verify-component-engine.mjs",
+    "compare:rte-v2": "node scripts/compare-rte-v2-reference.mjs",
     "verify:catalog": "node scripts/verify-catalog.mjs",
     "verify:dieline": "node scripts/verify-dieline-graph.mjs",
     "verify:visual": "node scripts/verify-visual.mjs"

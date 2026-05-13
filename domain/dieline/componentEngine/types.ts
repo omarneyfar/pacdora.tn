@@ -126,3 +126,9 @@ export type ComponentGraphAssemblyResult = {
   graph: DielineGraph;
   faceTree: DielineFaceNode[];
 };
+
+export type ComponentEngineDebugResult = {
+  graph: DielineGraph;
+  anchors: Anchor[];
+  warnings: string[];
+};

@@ -70,19 +70,20 @@ function createDustFlapFace(
   direction: "top" | "bottom",
   label: string,
 ): DielineFace {
-  const taper = Math.min(width * 0.15, height * 0.3);
-  const shoulder = Math.min(3, height * 0.1);
-  const topY = direction === "top" ? y : y + height;
-  const lidY = direction === "top" ? y + height : y;
-  const shoulderY = direction === "top" ? lidY - shoulder : lidY + shoulder;
-  const vertices = [
-    { x, y: lidY },
-    { x, y: shoulderY },
-    { x: x + taper, y: topY },
-    { x: x + width - taper, y: topY },
-    { x: x + width, y: shoulderY },
-    { x: x + width, y: lidY },
-  ];
+  const taper = Math.min(width * 0.08, height * 0.16, 6);
+  const vertices = direction === "top"
+    ? [
+        { x, y: y + height },
+        { x: x + taper, y },
+        { x: x + width - taper, y },
+        { x: x + width, y: y + height },
+      ]
+    : [
+        { x, y },
+        { x: x + taper, y: y + height },
+        { x: x + width - taper, y: y + height },
+        { x: x + width, y },
+      ];
 
   return createDielineFace({ id, label, vertices, role: "flap", artworkEnabled: false });
 }

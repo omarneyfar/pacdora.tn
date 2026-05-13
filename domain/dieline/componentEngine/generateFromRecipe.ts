@@ -7,6 +7,7 @@ import type {
   Anchor,
   ComponentLayoutContext,
   ComponentRecipePart,
+  ComponentEngineDebugResult,
   DielineComponentRecipe,
   PartResult,
 } from "./types";
@@ -16,6 +17,13 @@ export function generateFromRecipe(
   recipe: DielineComponentRecipe,
   userValues: Record<string, unknown> = {},
 ): DielineGraph {
+  return generateFromRecipeDebug(recipe, userValues).graph;
+}
+
+export function generateFromRecipeDebug(
+  recipe: DielineComponentRecipe,
+  userValues: Record<string, unknown> = {},
+): ComponentEngineDebugResult {
   validateRecipe(recipe, partRegistry);
 
   const resolved = resolveRecipeParameters(recipe, userValues);
@@ -41,7 +49,11 @@ export function generateFromRecipe(
   });
 
   assertValidDielineGraph(graph, recipe.label ?? recipe.id);
-  return graph;
+  return {
+    graph,
+    anchors: Array.from(ctx.anchors.values()),
+    warnings: ctx.warnings,
+  };
 }
 
 function createLayoutContext(recipe: DielineComponentRecipe, params: ParameterValueMap): ComponentLayoutContext {

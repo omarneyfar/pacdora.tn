@@ -43,11 +43,9 @@
     { "id": "top-tuck", "type": "tuck-flap", "attachTo": "front.top", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "TFW" },
     { "id": "top-dust-left", "type": "dust-flap", "attachTo": "left.top", "height": "DFW" },
     { "id": "top-dust-right", "type": "dust-flap", "attachTo": "right.top", "height": "DFW" },
-    { "id": "top-panel", "type": "panel-flap", "attachTo": "back.top", "height": "DFW" },
     { "id": "bottom-tuck", "type": "tuck-flap", "attachTo": "front.bottom", "height": "W + TFW", "lipHeight": "TFW", "taper": "TFR", "scoreOffset": "W" },
     { "id": "bottom-dust-left", "type": "dust-flap", "attachTo": "left.bottom", "height": "DFW" },
-    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" },
-    { "id": "bottom-panel", "type": "panel-flap", "attachTo": "back.bottom", "height": "DFW" }
+    { "id": "bottom-dust-right", "type": "dust-flap", "attachTo": "right.bottom", "height": "DFW" }
   ],
   "folding": {
     "rootFace": "front",
