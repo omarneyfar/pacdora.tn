@@ -9,6 +9,7 @@ import { evaluateFormula } from "./formulaEngine";
 import { toGeneratorParameterKey } from "./parameterAliases";
 
 const CLOSURE_PARAMETER_IDS = new Set(["TFW", "TFR", "GFW", "DFW"]);
+const V2_AUTO_CLOSURE_GENERATOR_IDS = new Set(["reverseTuckEndV2", "straightTuckEndV2"]);
 const DIMENSION_PARAMETER_IDS = new Set(["L", "W", "H"]);
 const EXPORT_PARAMETER_IDS = new Set(["pdfExport", "dxfExport", "outputSizeMode"]);
 
@@ -21,6 +22,7 @@ export function resolveTemplateParameters(
   const catalogValues: ParameterValueMap = {};
   const generatorParameters: ParameterValueMap = {};
   const warnings: string[] = [];
+  let closureMode: "auto" | "manual" = userValues.closureMode === "manual" ? "manual" : "auto";
 
   for (const spec of parameterSpecs) {
     const catalogKey = spec.description?.startsWith("catalog-key:")
@@ -34,7 +36,13 @@ export function resolveTemplateParameters(
     const value = coerceParameterValue(rawValue, spec);
 
     catalogValues[catalogKey] = value;
-    generatorParameters[spec.id] = value;
+    if (spec.id === "closureMode") {
+      closureMode = value === "manual" ? "manual" : "auto";
+    }
+
+    if (shouldPassGeneratorParameter(template, spec, catalogKey, userValues, closureMode)) {
+      generatorParameters[spec.id] = value;
+    }
   }
 
   for (const [key, definition] of Object.entries(template.derivedDimensions)) {
@@ -63,6 +71,24 @@ export function resolveTemplateParameters(
     parameterSpecs,
     warnings,
   };
+}
+
+function shouldPassGeneratorParameter(
+  template: DielineTemplateDefinition,
+  spec: ParameterSpec,
+  catalogKey: string,
+  userValues: Record<string, unknown>,
+  closureMode: "auto" | "manual",
+): boolean {
+  if (!V2_AUTO_CLOSURE_GENERATOR_IDS.has(template.runtime.generatorId) || !CLOSURE_PARAMETER_IDS.has(spec.id)) {
+    return true;
+  }
+
+  if (closureMode !== "manual") {
+    return false;
+  }
+
+  return Object.hasOwn(userValues, spec.id) || Object.hasOwn(userValues, catalogKey);
 }
 
 export function catalogTemplateToParameterSpecs(template: DielineTemplateDefinition): ParameterSpec[] {

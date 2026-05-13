@@ -17,13 +17,16 @@ const {
   getDielineTemplateByRoute,
   listDielineTemplateSummaries,
 } = loadTs(path.join(projectRoot, "domain", "dieline", "templateRegistry"));
-const { loadTemplateCatalog } = loadTs(path.join(projectRoot, "domain", "dieline", "catalog"));
+const { generateGraphFromCatalogTemplate, loadTemplateCatalog } = loadTs(path.join(projectRoot, "domain", "dieline", "catalog"));
+const { generateFromRecipe } = loadTs(path.join(projectRoot, "domain", "dieline", "componentEngine"));
 const { generateReverseTuckEnd } = loadTs(path.join(projectRoot, "domain", "dieline", "templates", "reverseTuckEnd"));
 const { parseReferenceGeometry, compareGraphToReference } = loadTs(path.join(projectRoot, "domain", "dieline", "reference"));
 const { getDielineParts } = loadTs(path.join(projectRoot, "domain", "dieline", "structure"));
 const { normalizeDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation"));
 const { importSvgDieline } = loadTs(path.join(projectRoot, "domain", "dieline", "svgImporter"));
 const { getSeedDielines } = loadTs(path.join(projectRoot, "server", "dielines", "seedDielines"));
+const reverseTuckEndV2Recipe = loadTs(path.join(projectRoot, "domain", "dieline", "recipes", "foldingBox", "reverseTuckEnd.v2.json"));
+const straightTuckEndV2Recipe = loadTs(path.join(projectRoot, "domain", "dieline", "recipes", "foldingBox", "straightTuckEnd.v2.json"));
 const dimensions = { width: 232, height: 70, depth: 232 };
 const template = packaging.getPackagingTemplate("folding-carton");
 const graph = template.getDielineGraph(dimensions);
@@ -520,6 +523,97 @@ function assertTemplateRegistry() {
   assert(summaries.some((summary) => summary.slug === "reverseTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Reverse Tuck End generator");
   assert(summaries.some((summary) => summary.slug === "straightTuckEnd" && summary.isImplemented), "Folding Box catalog should link the active Straight Tuck End generator");
   assert(summaries.some((summary) => !summary.isImplemented && summary.runtimeStatus === "catalog-only"), "Folding Box catalog should keep generator-missing templates visible");
+
+  assertCatalogAutoMatchesDirectV2(
+    "Reverse Tuck End catalog auto mode",
+    "reverse-tuck-end-folding-carton-box",
+    reverseTuckEndV2Recipe,
+  );
+  assertCatalogAutoMatchesDirectV2(
+    "Straight Tuck End catalog auto mode",
+    "straight-tuck-end-folding-carton-box",
+    straightTuckEndV2Recipe,
+  );
+  assertCatalogManualPassesExplicitClosures(reverseTuckEnd, "Reverse Tuck End catalog manual mode");
+  assertCatalogManualPassesExplicitClosures(straightTuckEnd, "Straight Tuck End catalog manual mode");
+}
+
+function assertCatalogAutoMatchesDirectV2(label, templateId, recipe) {
+  const input = { L: 120, W: 60, H: 160, closureMode: "auto" };
+  const direct = generateFromRecipe(recipe, input);
+  const catalogResult = generateGraphFromCatalogTemplate(templateId, {
+    ...input,
+    TFW: 999,
+    TFR: 999,
+    GFW: 999,
+    DFW: 999,
+  });
+  const catalogGraph = catalogResult.graph;
+
+  for (const id of ["TFW", "TFR", "GFW", "DFW"]) {
+    assert(!Object.hasOwn(catalogResult.resolvedParameters, id), `${label}: auto mode must not pass catalog ${id} to the generator`);
+    assertCloseNumber(
+      Number(catalogGraph.metadata?.parameterValues?.[id]),
+      Number(direct.metadata?.parameterValues?.[id]),
+      `${label}: resolved ${id}`,
+      0.000001,
+    );
+  }
+
+  assertGraphsMatch(direct, catalogGraph, label);
+}
+
+function assertCatalogManualPassesExplicitClosures(template, label) {
+  const explicit = {
+    closureMode: "manual",
+    L: 120,
+    W: 60,
+    H: 160,
+    TFW: 22,
+    TFR: 5,
+    GFW: 13,
+    DFW: 27,
+  };
+  const graph = template.generate(explicit);
+  const values = graph.metadata?.parameterValues ?? {};
+
+  for (const id of ["TFW", "TFR", "GFW", "DFW"]) {
+    assertCloseNumber(Number(values[id]), explicit[id], `${label}: explicit ${id}`, 0.000001);
+  }
+}
+
+function assertGraphsMatch(expected, actual, label) {
+  assert(
+    sameArray(expected.faces.map((face) => face.id), actual.faces.map((face) => face.id)),
+    `${label}: face IDs differ`,
+  );
+  assert(
+    sameArray(expected.creases.map((crease) => crease.id), actual.creases.map((crease) => crease.id)),
+    `${label}: crease IDs differ`,
+  );
+  assertCloseNumber(actual.size.width, expected.size.width, `${label}: graph width`, 0.01);
+  assertCloseNumber(actual.size.height, expected.size.height, `${label}: graph height`, 0.01);
+  assert((actual.geometry?.length ?? 0) === (expected.geometry?.length ?? 0), `${label}: geometry primitive count differs`);
+
+  const actualFaceById = new Map(actual.faces.map((face) => [face.id, face]));
+  for (const expectedFace of expected.faces) {
+    const actualFace = actualFaceById.get(expectedFace.id);
+    assert(actualFace, `${label}: missing face ${expectedFace.id}`);
+    assertCloseNumber(actualFace.bounds.x, expectedFace.bounds.x, `${label}: ${expectedFace.id}.bounds.x`, 0.01);
+    assertCloseNumber(actualFace.bounds.y, expectedFace.bounds.y, `${label}: ${expectedFace.id}.bounds.y`, 0.01);
+    assertCloseNumber(actualFace.bounds.width, expectedFace.bounds.width, `${label}: ${expectedFace.id}.bounds.width`, 0.01);
+    assertCloseNumber(actualFace.bounds.height, expectedFace.bounds.height, `${label}: ${expectedFace.id}.bounds.height`, 0.01);
+  }
+}
+
+function sameArray(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function assertCloseNumber(actual, expected, label, epsilon) {
+  assert(Number.isFinite(actual), `${label}: actual value is not finite`);
+  assert(Number.isFinite(expected), `${label}: expected value is not finite`);
+  assert(Math.abs(actual - expected) <= epsilon, `${label}: expected ${expected}, got ${actual}`);
 }
 
 function assertCreaseCoincidence(testGraph, model, label) {
