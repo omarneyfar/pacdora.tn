@@ -285,12 +285,15 @@ function assertHangTabStructure(graph, assembly, templateName) {
   const upperSlot = geometryById(graph, "foldedHangTab-upper-rounded-slot");
   assert(lowerSlot.layer === "hole", `${templateName}: lower hang slot must stay geometry-only on the hole layer.`);
   assert(upperSlot.layer === "hole", `${templateName}: upper fold-over panel slot must stay geometry-only on the hole layer.`);
+  assert(lowerSlot.type === "slot" && upperSlot.type === "slot", `${templateName}: upper and lower hang negatives must both be rounded slot primitives.`);
+  assert(close(lowerSlot.width, upperSlot.width) && close(lowerSlot.height, upperSlot.height), `${templateName}: upper and lower hang negatives must be the same size.`);
   assertPrimitiveSamplesInsideFace(lowerSlot, lower, `${templateName}: lower euro/keyhole slot must stay inside lower hang panel.`);
   assertPrimitiveSamplesInsideFace(upperSlot, upper, `${templateName}: upper rounded slot must stay inside upper fold-over panel.`);
   const foldY = minY(lower.vertices);
-  const lowerSlotCenterDistanceFromFold = lowerHangSlotMainCenterY(lowerSlot, parameters) - foldY;
+  const lowerSlotCenterDistanceFromFold = lowerHangSlotMainCenterY(parameters, front, lowerSlot) - foldY;
   const upperSlotCenterDistanceFromFold = foldY - slotCenterY(upperSlot);
   assert(close(lowerSlotCenterDistanceFromFold, upperSlotCenterDistanceFromFold), `${templateName}: folded hang tab slots must be positioned to overlay after folding.`);
+  assert(close(primitiveCenterX(lowerSlot), primitiveCenterX(upperSlot)), `${templateName}: folded hang tab slots must share one centerline.`);
 
   for (const crease of graph.creases) {
     assert(!/slot|hole|keyhole/i.test(crease.id), `${templateName}: slot or handle cutout became a structural crease.`);
@@ -299,16 +302,46 @@ function assertHangTabStructure(graph, assembly, templateName) {
   const frontMajor = faceById(graph, "bottomMajorFront-face");
   const backMajor = faceById(graph, "bottomMajorBack-face");
   assert(normalizedPointSignature(frontMajor) === normalizedPointSignature(backMajor), `${templateName}: reference major bottom flaps should share the same right-relief cut logic in local coordinates.`);
+  assertReferenceMajorBottomCut(frontMajor, templateName);
+  assertReferenceMajorBottomCut(backMajor, templateName);
   assertBottomBaseMatchesCrease(frontMajor, creaseById(graph, "bottomMajorFront-hinge"));
   assertBottomBaseMatchesCrease(backMajor, creaseById(graph, "bottomMajorBack-hinge"));
   assertBottomBaseMatchesCrease(faceById(graph, "bottomMinorSideA-face"), creaseById(graph, "bottomMinorSideA-hinge"));
   assertBottomBaseMatchesCrease(faceById(graph, "bottomMinorSideB-face"), creaseById(graph, "bottomMinorSideB-hinge"));
+  assertMajorBottomScoreGuide(graph, "bottomMajorFront", frontMajor, parameters, templateName);
+  assertMajorBottomScoreGuide(graph, "bottomMajorBack", backMajor, parameters, templateName);
 
   const frontNotch = geometryById(graph, "bottomMajorFront-notch-center-guide");
   const backNotch = geometryById(graph, "bottomMajorBack-notch-center-guide");
   const frontNotchLocalX = (frontNotch.start.x + frontNotch.end.x) / 2 - minX(frontMajor.vertices);
   const backNotchLocalX = (backNotch.start.x + backNotch.end.x) / 2 - minX(backMajor.vertices);
   assert(close(frontNotchLocalX, backNotchLocalX), `${templateName}: major bottom notch centers must align in local panel coordinates.`);
+}
+
+function assertMajorBottomScoreGuide(graph, partId, face, parameters, templateName) {
+  const score = geometryById(graph, `${partId}-diagonal-score-guide`);
+  const hinge = creaseById(graph, `${partId}-hinge`);
+  assert(score.type === "line", `${templateName}: ${partId} diagonal bottom score must be a geometry line.`);
+  assert(score.layer === "crease", `${templateName}: ${partId} diagonal bottom score must render on the crease/score layer.`);
+  assert(!graph.creases.some((crease) => crease.id === score.id), `${templateName}: ${partId} diagonal score guide must not become a DielineCrease.`);
+  const localDepth = Math.max(score.start.y, score.end.y) - hinge.edgeStart.y;
+  assert(close(localDepth, parameters.bottomDustDepth), `${templateName}: ${partId} diagonal score must end at the minor-flap reference depth.`);
+  assertPrimitiveSamplesInsideFace(score, face, `${templateName}: ${partId} diagonal score must stay inside the major bottom flap.`);
+}
+
+function assertReferenceMajorBottomCut(face, templateName) {
+  assert(face.vertices.length === 11, `${templateName}: ${face.id} must use the reference-style major bottom cut outline.`);
+  const first = face.vertices[0];
+  const second = face.vertices[1];
+  const third = face.vertices[2];
+  const fourth = face.vertices[3];
+  const highestY = maxY(face.vertices);
+  assert(second.x > first.x && second.y > first.y, `${templateName}: ${face.id} must start with a small angled body-edge relief.`);
+  assert(third.x < second.x && third.y >= second.y, `${templateName}: ${face.id} must step back inward after the body-edge relief.`);
+  assert(close(third.x, fourth.x) && close(fourth.y, highestY), `${templateName}: ${face.id} must have a long near-vertical side wall to the free cut edge.`);
+  assert(face.vertices[5].y < highestY && face.vertices[6].y < highestY, `${templateName}: ${face.id} must include the raised center locking notch.`);
+  assert(close(face.vertices[8].y, highestY) && close(face.vertices[9].y, highestY), `${templateName}: ${face.id} must return to the free cut edge after the notch.`);
+  assert(face.vertices[10].y < highestY, `${templateName}: ${face.id} must finish with the long diagonal return to the body crease.`);
 }
 
 function assertDisplayBaseMatchesCrease(face, crease) {
@@ -440,12 +473,22 @@ function slotCenterY(slot) {
   return slot.y + slot.height / 2;
 }
 
-function lowerHangSlotMainCenterY(slot, parameters) {
-  if ((slot.type === "polygon" || slot.type === "polyline") && Number.isFinite(parameters.lowerSlotHeight)) {
-    const bottomY = Math.max(...slot.points.map((point) => point.y));
-    return bottomY - parameters.lowerSlotHeight / 2;
+function lowerHangSlotMainCenterY(parameters, front, slot) {
+  if (Number.isFinite(parameters.lowerSlotHeight) && Number.isFinite(parameters.lowerSlotBottomOffsetFromBase) && Number.isFinite(parameters.upperSlotHeight)) {
+    const oldMainCenterY = minY(front.vertices) - parameters.lowerSlotBottomOffsetFromBase - parameters.lowerSlotHeight / 2;
+    return oldMainCenterY;
   }
   return slotCenterY(slot);
+}
+
+function primitiveCenterX(primitive) {
+  if (primitive.type === "circle") return primitive.center.x;
+  if (primitive.type === "line") return (primitive.start.x + primitive.end.x) / 2;
+  if (primitive.type === "polyline" || primitive.type === "polygon") {
+    const xs = primitive.points.map((point) => point.x);
+    return (Math.min(...xs) + Math.max(...xs)) / 2;
+  }
+  return primitive.x + primitive.width / 2;
 }
 
 function normalizedPointSignature(face) {

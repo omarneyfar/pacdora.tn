@@ -17,15 +17,15 @@ This is an exploratory hidden V2 assembly for the CefBox-style folding carton wi
   - lower hang panel attached to `front.top`
   - upper fold-over panel attached to the lower panel inset top fold
   - short top insert cap attached to the upper panel top edge
-  - lower euro/keyhole slot as a geometry-only hole primitive
+  - lower rounded slot as a geometry-only hole primitive
   - upper rounded slot as a geometry-only hole primitive
+- The lower and upper slots use the same rendered width, height, radius, and centerline so the negative openings stay visually linear/aligned when folded.
 - Reference-like defaults:
   - lower hang height: `clamp(L * 0.477, 40, 58)` -> about `52.5mm`
   - upper fold-over panel height: equal to lower hang height so the holes overlay after folding
   - short top cap height: `clamp(L * 0.153, 14, 22)` -> about `16.8mm`
   - slot width: `clamp(L * 0.41, 36, 50)` -> about `45.1mm`
-  - lower euro/keyhole slot height: about `15.5mm`
-  - upper rounded slot height: about `13.5mm`
+  - matching lower/upper rounded slot height: about `13.5mm`
   - lower slot bottom is about `22.8mm` above the front-panel top crease
   - upper slot center is mirrored around the lower/upper fold line so the holes overlay when the upper panel folds down
 - The top tuck closure depth follows the same policy as STE/RTE: `tuckDepth = W + TFW`, where `TFW` is the tuck lip allowance.
@@ -41,6 +41,7 @@ This is an exploratory hidden V2 assembly for the CefBox-style folding carton wi
 - Major-flap end relief is small, about `clamp(W * 0.055, 3, 6)`.
 - Major depth is derived from depth: `clamp(W * 0.68, 44, 58)`.
 - Notch width and notch depth are proportional to `W` / major depth and clamped.
+- Major flaps include a geometry-only diagonal score guide. The guide ends at `bottomDustDepth`, matching the height/depth of the minor bottom flaps visible in the ready SVG.
 
 ## Structural Rules
 
@@ -53,5 +54,5 @@ This is an exploratory hidden V2 assembly for the CefBox-style folding carton wi
 ## Known Remaining Risks
 
 - Bottom interlock is an original parametric approximation from the screenshot, not CAD-verified production geometry.
-- Exact die radii and slot/keyhole profile need a CAD overlay.
+- Exact die radii and slot profile need a CAD overlay.
 - Fold sequence, overlap clearance, and board caliper compensation still need prototype testing.

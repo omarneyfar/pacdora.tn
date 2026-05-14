@@ -69,6 +69,16 @@ export const interlockingBottomFlap: V2PartImplementation<InterlockingBottomFlap
     }));
 
     if (!role.startsWith("minor")) {
+      const diagonalScore = majorDiagonalScoreLine(anchor, bottomFlapDepth, insertLength, notchWidth, notchCenter, diagonalInset, handedness);
+      result.geometryPrimitives.push(linePrimitive({
+        id: `${input.id}.diagonal-score-guide`,
+        label: "Geometry-only bottom lock diagonal score",
+        layer: "score",
+        start: diagonalScore.start,
+        end: diagonalScore.end,
+        ownerFaceId: face.id,
+      }));
+
       const notchCenterPoint = offset(offset(anchor.start, anchor.tangent, notchCenter), anchor.normal, insertLength - notchDepth);
       result.geometryPrimitives.push(linePrimitive({
         id: `${input.id}.notch-center-guide`,
@@ -97,24 +107,52 @@ function majorLockPoints(
 ): V2Point[] {
   const notchStart = notchCenter - notchWidth / 2;
   const notchEnd = notchCenter + notchWidth / 2;
-  const notchChamfer = Math.min(notchWidth * 0.22, notchDepth * 0.7);
-  const freeStart = handedness === "left"
-    ? offset(offset(anchor.start, anchor.tangent, diagonalInset), anchor.normal, depth)
-    : offset(anchor.start, anchor.normal, depth);
-  const freeEnd = handedness === "left"
-    ? offset(anchor.end, anchor.normal, depth)
-    : offset(offset(anchor.end, anchor.tangent, -diagonalInset), anchor.normal, depth);
-
-  return [
-    anchor.start,
-    freeStart,
-    offset(offset(anchor.start, anchor.tangent, notchStart), anchor.normal, depth),
-    offset(offset(anchor.start, anchor.tangent, notchStart + notchChamfer), anchor.normal, depth - notchDepth),
-    offset(offset(anchor.start, anchor.tangent, notchEnd - notchChamfer), anchor.normal, depth - notchDepth),
-    offset(offset(anchor.start, anchor.tangent, notchEnd), anchor.normal, depth),
-    freeEnd,
-    anchor.end,
+  const sideReliefInset = clamp(Math.max(diagonalInset, anchor.length * 0.045), 1.5, anchor.length * 0.12);
+  const sideReliefDepth = clamp(depth * 0.16, 5, 10);
+  const leftRunEnd = clamp(notchStart - notchWidth * 0.75, sideReliefInset + 4, notchStart - 1);
+  const notchReturn = clamp(notchEnd + notchWidth * 0.78, notchEnd + 1, anchor.length - sideReliefInset - 3);
+  const notchStepDepth = clamp(notchDepth * 0.58, 3, notchDepth);
+  const rightReliefInset = sideReliefInset;
+  const localPoints = [
+    { x: 0, y: 0 },
+    { x: sideReliefInset * 1.28, y: sideReliefDepth * 0.72 },
+    { x: sideReliefInset * 0.25, y: sideReliefDepth },
+    { x: sideReliefInset * 0.25, y: depth },
+    { x: leftRunEnd, y: depth },
+    { x: notchStart, y: depth - notchDepth },
+    { x: notchEnd, y: depth - notchDepth },
+    { x: notchEnd, y: depth - notchDepth + notchStepDepth },
+    { x: notchReturn, y: depth },
+    { x: anchor.length - rightReliefInset, y: depth },
+    { x: anchor.length, y: 0 },
   ];
+
+  return (handedness === "left" ? localPoints.map((point) => ({ x: anchor.length - point.x, y: point.y })) : localPoints)
+    .map((point) => offset(offset(anchor.start, anchor.tangent, point.x), anchor.normal, point.y));
+}
+
+function majorDiagonalScoreLine(
+  anchor: V2Anchor,
+  dustFlapDepth: number,
+  insertLength: number,
+  notchWidth: number,
+  notchCenter: number,
+  diagonalInset: number,
+  handedness: "left" | "right",
+): { start: V2Point; end: V2Point } {
+  const startDepth = Math.min(dustFlapDepth * 0.135, insertLength * 0.12);
+  const scoreDepth = Math.min(dustFlapDepth, insertLength);
+  const startInset = clamp(Math.max(diagonalInset, anchor.length * 0.045), 1, anchor.length * 0.18);
+  const endInset = clamp(notchCenter - notchWidth * 0.72, startInset + 1, anchor.length - 1);
+  const interiorStartLocal = startInset * 0.45 + 0.75;
+  const interiorStartDepth = Math.max(startDepth, Math.min(dustFlapDepth * 0.22, insertLength * 0.18));
+  const startLocal = handedness === "left" ? anchor.length - interiorStartLocal : interiorStartLocal;
+  const endLocal = handedness === "left" ? anchor.length - endInset : endInset;
+
+  return {
+    start: offset(offset(anchor.start, anchor.tangent, startLocal), anchor.normal, interiorStartDepth),
+    end: offset(offset(anchor.start, anchor.tangent, endLocal), anchor.normal, scoreDepth),
+  };
 }
 
 function minorDustPoints(anchor: V2Anchor, depth: number, diagonalInset: number): V2Point[] {

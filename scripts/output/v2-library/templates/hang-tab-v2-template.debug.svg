@@ -15,55 +15,88 @@
   <path id="cut-11" data-layer="cut" d="M 198.448 85.77 L 263.6 85.77" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="cut-12" data-layer="cut" d="M 263.6 85.77 L 265.52 115.56" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="cut-13" data-layer="cut" d="M 265.52 115.56 L 270 121.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-14" data-layer="cut" d="M 80 121.77 L 80 79.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-15" data-layer="cut" d="M 80 79.3 L 89.9 69.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-16" data-layer="cut" d="M 180.1 69.3 L 190 79.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-17" data-layer="cut" d="M 190 79.3 L 190 121.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-18" data-layer="cut" d="M 89.9 69.3 L 80 59.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-19" data-layer="cut" d="M 80 59.3 L 80 16.83" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-20" data-layer="cut" d="M 190 16.83 L 190 59.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-21" data-layer="cut" d="M 190 59.3 L 180.1 69.3" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-22" data-layer="cut" d="M 80 16.83 L 80 0" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-23" data-layer="cut" d="M 80 0 L 190 0" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-24" data-layer="cut" d="M 190 0 L 190 16.83" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-25" data-layer="cut" d="M 270 121.77 L 270 32.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-26" data-layer="cut" d="M 270 32.57 L 270.3 30.292" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-27" data-layer="cut" d="M 270.3 30.292 L 271.179 28.17" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-28" data-layer="cut" d="M 271.179 28.17 L 272.577 26.347" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-29" data-layer="cut" d="M 272.577 26.347 L 274.4 24.949" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-30" data-layer="cut" d="M 274.4 24.949 L 276.522 24.07" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-31" data-layer="cut" d="M 276.522 24.07 L 278.8 23.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-32" data-layer="cut" d="M 278.8 23.77 L 371.2 23.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-33" data-layer="cut" d="M 371.2 23.77 L 373.478 24.07" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-34" data-layer="cut" d="M 373.478 24.07 L 375.6 24.949" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-35" data-layer="cut" d="M 375.6 24.949 L 377.423 26.347" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-36" data-layer="cut" d="M 377.423 26.347 L 378.821 28.17" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-37" data-layer="cut" d="M 378.821 28.17 L 379.7 30.292" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-38" data-layer="cut" d="M 379.7 30.292 L 380 32.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-39" data-layer="cut" d="M 380 32.57 L 380 121.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-40" data-layer="cut" d="M 0 271.77 L 33.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-41" data-layer="cut" d="M 33.6 311.77 L 75.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-42" data-layer="cut" d="M 75.6 311.77 L 80 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-43" data-layer="cut" d="M 80 271.77 L 80 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-44" data-layer="cut" d="M 80 324.57 L 124.6 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-45" data-layer="cut" d="M 124.6 324.57 L 129.176 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-46" data-layer="cut" d="M 129.176 316.122 L 140.824 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-47" data-layer="cut" d="M 140.824 316.122 L 145.4 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-48" data-layer="cut" d="M 145.4 324.57 L 185.6 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-49" data-layer="cut" d="M 185.6 324.57 L 190 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-50" data-layer="cut" d="M 190 271.77 L 223.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-51" data-layer="cut" d="M 223.6 311.77 L 265.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-52" data-layer="cut" d="M 265.6 311.77 L 270 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-53" data-layer="cut" d="M 270 271.77 L 270 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-54" data-layer="cut" d="M 270 324.57 L 314.6 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-55" data-layer="cut" d="M 314.6 324.57 L 319.176 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-56" data-layer="cut" d="M 319.176 316.122 L 330.824 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-57" data-layer="cut" d="M 330.824 316.122 L 335.4 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-58" data-layer="cut" d="M 335.4 324.57 L 375.6 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-59" data-layer="cut" d="M 375.6 324.57 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-60" data-layer="cut" d="M 380 121.77 L 395 126.87" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-61" data-layer="cut" d="M 395 126.87 L 395 266.67" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-62" data-layer="cut" d="M 395 266.67 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-14" data-layer="cut" d="M 80 121.77 L 80 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-15" data-layer="cut" d="M 80 79.2 L 80.19 77.269" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-16" data-layer="cut" d="M 80.19 77.269 L 80.754 75.411" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-17" data-layer="cut" d="M 80.754 75.411 L 81.668 73.7" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-18" data-layer="cut" d="M 81.668 73.7 L 82.9 72.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-19" data-layer="cut" d="M 82.9 72.2 L 84.4 70.968" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-20" data-layer="cut" d="M 84.4 70.968 L 86.111 70.054" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-21" data-layer="cut" d="M 86.111 70.054 L 87.969 69.49" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-22" data-layer="cut" d="M 87.969 69.49 L 89.9 69.3" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-23" data-layer="cut" d="M 180.1 69.3 L 182.031 69.49" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-24" data-layer="cut" d="M 182.031 69.49 L 183.889 70.054" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-25" data-layer="cut" d="M 183.889 70.054 L 185.6 70.968" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-26" data-layer="cut" d="M 185.6 70.968 L 187.1 72.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-27" data-layer="cut" d="M 187.1 72.2 L 188.332 73.7" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-28" data-layer="cut" d="M 188.332 73.7 L 189.246 75.411" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-29" data-layer="cut" d="M 189.246 75.411 L 189.81 77.269" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-30" data-layer="cut" d="M 189.81 77.269 L 190 79.2" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-31" data-layer="cut" d="M 190 79.2 L 190 121.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-32" data-layer="cut" d="M 89.9 69.3 L 87.969 69.11" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-33" data-layer="cut" d="M 87.969 69.11 L 86.111 68.546" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-34" data-layer="cut" d="M 86.111 68.546 L 84.4 67.632" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-35" data-layer="cut" d="M 84.4 67.632 L 82.9 66.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-36" data-layer="cut" d="M 82.9 66.4 L 81.668 64.9" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-37" data-layer="cut" d="M 81.668 64.9 L 80.754 63.189" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-38" data-layer="cut" d="M 80.754 63.189 L 80.19 61.331" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-39" data-layer="cut" d="M 80.19 61.331 L 80 59.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-40" data-layer="cut" d="M 80 59.4 L 80 16.83" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-41" data-layer="cut" d="M 190 16.83 L 189.81 61.331" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-42" data-layer="cut" d="M 189.81 61.331 L 189.246 63.189" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-43" data-layer="cut" d="M 189.246 63.189 L 188.332 64.9" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-44" data-layer="cut" d="M 188.332 64.9 L 187.1 66.4" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-45" data-layer="cut" d="M 187.1 66.4 L 185.6 67.632" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-46" data-layer="cut" d="M 185.6 67.632 L 183.889 68.546" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-47" data-layer="cut" d="M 183.889 68.546 L 182.031 69.11" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-48" data-layer="cut" d="M 182.031 69.11 L 180.1 69.3" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-49" data-layer="cut" d="M 80 16.83 L 80 0" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-50" data-layer="cut" d="M 80 0 L 190 0" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-51" data-layer="cut" d="M 190 0 L 190 16.83" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-52" data-layer="cut" d="M 270 121.77 L 270 32.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-53" data-layer="cut" d="M 270 32.57 L 270.3 30.292" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-54" data-layer="cut" d="M 270.3 30.292 L 271.179 28.17" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-55" data-layer="cut" d="M 271.179 28.17 L 272.577 26.347" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-56" data-layer="cut" d="M 272.577 26.347 L 274.4 24.949" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-57" data-layer="cut" d="M 274.4 24.949 L 276.522 24.07" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-58" data-layer="cut" d="M 276.522 24.07 L 278.8 23.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-59" data-layer="cut" d="M 278.8 23.77 L 371.2 23.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-60" data-layer="cut" d="M 371.2 23.77 L 373.478 24.07" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-61" data-layer="cut" d="M 373.478 24.07 L 375.6 24.949" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-62" data-layer="cut" d="M 375.6 24.949 L 377.423 26.347" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-63" data-layer="cut" d="M 377.423 26.347 L 378.821 28.17" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-64" data-layer="cut" d="M 378.821 28.17 L 379.7 30.292" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-65" data-layer="cut" d="M 379.7 30.292 L 380 32.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-66" data-layer="cut" d="M 380 32.57 L 380 121.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-67" data-layer="cut" d="M 0 271.77 L 33.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-68" data-layer="cut" d="M 33.6 311.77 L 75.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-69" data-layer="cut" d="M 75.6 311.77 L 80 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-70" data-layer="cut" d="M 80 271.77 L 86.336 277.853" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-71" data-layer="cut" d="M 86.336 277.853 L 81.237 280.218" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-72" data-layer="cut" d="M 81.237 280.218 L 81.237 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-73" data-layer="cut" d="M 81.237 324.57 L 109 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-74" data-layer="cut" d="M 109 324.57 L 124.6 316.122" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-75" data-layer="cut" d="M 124.6 316.122 L 145.4 316.122" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-76" data-layer="cut" d="M 145.4 316.122 L 145.4 321.022" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-77" data-layer="cut" d="M 145.4 321.022 L 161.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-78" data-layer="cut" d="M 161.624 324.57 L 185.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-79" data-layer="cut" d="M 185.05 324.57 L 190 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-80" data-layer="cut" d="M 190 271.77 L 223.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-81" data-layer="cut" d="M 223.6 311.77 L 265.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-82" data-layer="cut" d="M 265.6 311.77 L 270 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-83" data-layer="cut" d="M 270 271.77 L 276.336 277.853" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-84" data-layer="cut" d="M 276.336 277.853 L 271.238 280.218" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-85" data-layer="cut" d="M 271.238 280.218 L 271.238 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-86" data-layer="cut" d="M 271.238 324.57 L 299 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-87" data-layer="cut" d="M 299 324.57 L 314.6 316.122" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-88" data-layer="cut" d="M 314.6 316.122 L 335.4 316.122" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-89" data-layer="cut" d="M 335.4 316.122 L 335.4 321.022" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-90" data-layer="cut" d="M 335.4 321.022 L 351.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-91" data-layer="cut" d="M 351.624 324.57 L 375.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-92" data-layer="cut" d="M 375.05 324.57 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-93" data-layer="cut" d="M 380 121.77 L 395 126.87" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-94" data-layer="cut" d="M 395 126.87 L 395 266.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-95" data-layer="cut" d="M 395 266.67 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="body-crease-body-sideA-body-front-line" data-layer="crease" d="M 80 121.77 L 80 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="body-crease-body-front-body-sideB-line" data-layer="crease" d="M 190 121.77 L 190 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="body-crease-body-sideB-body-back-line" data-layer="crease" d="M 270 121.77 L 270 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
@@ -78,10 +111,12 @@
   <path id="bottomMinorSideB-hinge-line" data-layer="crease" d="M 190 271.77 L 270 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="bottomMajorBack-hinge-line" data-layer="crease" d="M 270 271.77 L 380 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="sideGlue-hinge-line" data-layer="crease" d="M 380 121.77 L 380 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
-  <path id="foldedHangTab-lower-euro-slot" data-layer="hole" d="M 120.15 83.46 L 127.245 83.46 L 127.835 80.492 L 129.516 77.976 L 132.032 76.295 L 135 75.705 L 137.968 76.295 L 140.484 77.976 L 142.165 80.492 L 142.755 83.46 L 149.85 83.46 L 152.818 84.05 L 155.334 85.731 L 157.015 88.247 L 157.605 91.215 L 157.015 94.183 L 155.334 96.699 L 152.818 98.38 L 149.85 98.97 L 120.15 98.97 L 117.182 98.38 L 114.666 96.699 L 112.985 94.183 L 112.395 91.215 L 112.985 88.247 L 114.666 85.731 L 117.182 84.05 L 120.15 83.46 Z" stroke="#2f8a53" stroke-width="0.35"/>
+  <path id="foldedHangTab-lower-euro-slot" data-layer="hole" d="M 119.16 84.45 L 150.84 84.45 A 6.765 6.765 0 0 1 157.605 91.215 L 157.605 91.215 A 6.765 6.765 0 0 1 150.84 97.98 L 119.16 97.98 A 6.765 6.765 0 0 1 112.395 91.215 L 112.395 91.215 A 6.765 6.765 0 0 1 119.16 84.45 Z" stroke="#2f8a53" stroke-width="0.35"/>
   <path id="foldedHangTab-upper-rounded-slot" data-layer="hole" d="M 119.16 40.62 L 150.84 40.62 A 6.765 6.765 0 0 1 157.605 47.385 L 157.605 47.385 A 6.765 6.765 0 0 1 150.84 54.15 L 119.16 54.15 A 6.765 6.765 0 0 1 112.395 47.385 L 112.395 47.385 A 6.765 6.765 0 0 1 119.16 40.62 Z" stroke="#2f8a53" stroke-width="0.35"/>
   <path id="topTuck-lip-score" data-layer="crease" d="M 270 41.77 L 380 41.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="bottomMajorFront-diagonal-score-guide" data-layer="crease" d="M 82.978 280.57 L 120.024 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="bottomMajorFront-notch-center-guide" data-layer="safe" d="M 135 312.32 L 135 319.924" stroke="#7c8790" stroke-width="0.35"/>
+  <path id="bottomMajorBack-diagonal-score-guide" data-layer="crease" d="M 272.978 280.57 L 310.024 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="bottomMajorBack-notch-center-guide" data-layer="safe" d="M 325 312.32 L 325 319.924" stroke="#7c8790" stroke-width="0.35"/>
   <path id="sideGlue-glue-zone" data-layer="safe" d="M 380 121.77 L 395 126.87 L 395 266.67 L 380 271.77 Z" stroke="#7c8790" stroke-width="0.35"/>
   <text id="label-body-sideA" data-layer="label" x="40" y="196.77" fill="#1f2a24" font-size="4">Side A Panel</text>
@@ -90,14 +125,14 @@
   <text id="label-body-back" data-layer="label" x="325" y="196.77" fill="#1f2a24" font-size="4">Back Panel</text>
   <text id="label-topDustSideA-face" data-layer="label" x="39.692" y="104.223" fill="#1f2a24" font-size="4">Standard Dust Flap</text>
   <text id="label-topDustSideB-face" data-layer="label" x="230.308" y="104.223" fill="#1f2a24" font-size="4">Standard Dust Flap</text>
-  <text id="label-foldedHangTab-lower" data-layer="label" x="135" y="95.935" fill="#1f2a24" font-size="4">Lower Hang Panel</text>
-  <text id="label-foldedHangTab-upper" data-layer="label" x="135" y="42.665" fill="#1f2a24" font-size="4">Fold-Over Hang Panel</text>
+  <text id="label-foldedHangTab-lower" data-layer="label" x="135" y="95.715" fill="#1f2a24" font-size="4">Lower Hang Panel</text>
+  <text id="label-foldedHangTab-upper" data-layer="label" x="134.961" y="42.883" fill="#1f2a24" font-size="4">Fold-Over Hang Panel</text>
   <text id="label-foldedHangTab-cap" data-layer="label" x="135" y="8.415" fill="#1f2a24" font-size="4">Top Insert Cap</text>
   <text id="label-topTuck-face" data-layer="label" x="325" y="72.921" fill="#1f2a24" font-size="4">Standard Tuck Closure Flap</text>
   <text id="label-bottomMinorSideA-face" data-layer="label" x="46.542" y="289.693" fill="#1f2a24" font-size="4">Left Minor Bottom Dust Flap</text>
-  <text id="label-bottomMajorFront-face" data-layer="label" x="133.881" y="297.429" fill="#1f2a24" font-size="4">Major Bottom Insert Flap</text>
+  <text id="label-bottomMajorFront-face" data-layer="label" x="134.639" y="296.864" fill="#1f2a24" font-size="4">Major Bottom Insert Flap</text>
   <text id="label-bottomMinorSideB-face" data-layer="label" x="236.542" y="289.693" fill="#1f2a24" font-size="4">Right Minor Bottom Dust Flap</text>
-  <text id="label-bottomMajorBack-face" data-layer="label" x="323.881" y="297.429" fill="#1f2a24" font-size="4">Major Bottom Lock Flap</text>
+  <text id="label-bottomMajorBack-face" data-layer="label" x="324.639" y="296.864" fill="#1f2a24" font-size="4">Major Bottom Lock Flap</text>
   <text id="label-sideGlue-face" data-layer="label" x="387.412" y="196.77" fill="#1f2a24" font-size="4">Side Glue Seam Tab</text>
   </g>
 </svg>
