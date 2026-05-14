@@ -9,6 +9,7 @@ import {
   autoLockMinorFlap,
   bottomGlueZone,
   fullFlapBottomPanel,
+  interlockingBottomFlap,
   snapLockMajorFlap,
   snapLockMinorFlap,
   snapLockReceiverSlot,
@@ -28,6 +29,7 @@ import { circularCutout } from "../parts/cutouts/circularCutout";
 import { euroSlotCutout } from "../parts/cutouts/euroSlotCutout";
 import { reliefNotch } from "../parts/cutouts/reliefNotch";
 import { roundedSlotCutout } from "../parts/cutouts/roundedSlotCutout";
+import { foldedHangTabPanel } from "../parts/display/foldedHangTabPanel";
 import { hangPanel } from "../parts/display/hangPanel";
 import { hangTab } from "../parts/display/hangTab";
 import { sideCircularHangPanel } from "../parts/display/sideCircularHangPanel";
@@ -97,6 +99,7 @@ const implementations = [
   autoLockDiagonalScore,
   fullFlapBottomPanel,
   bottomGlueZone,
+  interlockingBottomFlap,
   circularCutout,
   roundedSlotCutout,
   euroSlotCutout,
@@ -105,6 +108,7 @@ const implementations = [
   hangPanel,
   sideCircularHangPanel,
   hangTab,
+  foldedHangTabPanel,
   lockTab,
   lockSlot,
   lockingTuckFlap,

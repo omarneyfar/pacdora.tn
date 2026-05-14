@@ -13,6 +13,7 @@ const moduleCache = new Map();
 const reverseTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "reverseTuckEnd.v2template"));
 const straightTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "straightTuckEnd.v2template"));
 const circularHangHoleTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "circularHangHole.v2template"));
+const hangTabTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "hangTab.v2template"));
 const {
   generateV2ReverseTuckEndAssembly,
   generateV2ReverseTuckEndDielineGraph,
@@ -25,6 +26,10 @@ const {
   generateV2CircularHangHoleAssembly,
   generateV2CircularHangHoleDielineGraph,
 } = circularHangHoleTemplate;
+const {
+  generateV2HangTabAssembly,
+  generateV2HangTabDielineGraph,
+} = hangTabTemplate;
 const { validateDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation", "validateDielineGraph"));
 const { graphToSvg } = loadTs(path.join(projectRoot, "domain", "dieline", "canonicalGeometry"));
 
@@ -74,6 +79,31 @@ const templateCases = [
     assemblyFactory: generateV2CircularHangHoleAssembly,
     graphFactory: generateV2CircularHangHoleDielineGraph,
   },
+  {
+    name: "Hang Tab",
+    outputStem: "hang-tab-v2-template",
+    expectedClosureContract: "standardTuckClosureFlap",
+    values: { L: 110, W: 80, H: 150, GFW: 15 },
+    expectedFaceIds: [
+      "body-sideA",
+      "body-front",
+      "body-sideB",
+      "body-back",
+      "sideGlue-face",
+      "topDustSideA-face",
+      "topDustSideB-face",
+      "foldedHangTab-lower",
+      "foldedHangTab-upper",
+      "topTuck-face",
+      "bottomMinorSideA-face",
+      "bottomMajorFront-face",
+      "bottomMinorSideB-face",
+      "bottomMajorBack-face",
+    ],
+    hangTab: true,
+    assemblyFactory: generateV2HangTabAssembly,
+    graphFactory: generateV2HangTabDielineGraph,
+  },
 ];
 
 const results = [];
@@ -113,7 +143,7 @@ for (const result of results) {
 
 function assertGraphShape(graph, assembly, templateCase) {
   const faceIds = new Set(graph.faces.map((face) => face.id));
-  const expectedFaceIds = [
+  const expectedFaceIds = templateCase.expectedFaceIds ?? [
     "body-back",
     "body-sideB",
     "body-front",
@@ -160,8 +190,9 @@ function assertGraphShape(graph, assembly, templateCase) {
   assert(graph.metadata?.catalog?.generatorId === "v2Library/template-assembly", `${templateCase.name}: graph metadata must identify v2Library template assembly source.`);
   assert(graph.metadata?.catalog?.productionReady === false, `${templateCase.name}: graph metadata must remain productionReady=false.`);
   assert(graph.source?.type === "template" && graph.source.templateId.includes("v2Library/template-assembly"), `${templateCase.name}: graph source must identify v2Library.`);
-  assertDustFlapHandedness(graph, templateCase.name, templateCase.dust);
+  if (templateCase.dust) assertDustFlapHandedness(graph, templateCase.name, templateCase.dust);
   if (templateCase.circularHang) assertCircularHangHoleStructure(graph, assembly, templateCase.name);
+  if (templateCase.hangTab) assertHangTabStructure(graph, assembly, templateCase.name);
 }
 
 function isFinitePoint(point) {
@@ -220,11 +251,73 @@ function assertCircularHangHoleStructure(graph, assembly, templateName) {
   }
 }
 
+function assertHangTabStructure(graph, assembly, templateName) {
+  const contractIds = assembly.parts.map((part) => part.contractId);
+  assert(contractIds.includes("foldedHangTabPanel"), `${templateName}: foldedHangTabPanel must be used for the top handle/display structure.`);
+  assert(contractIds.filter((contractId) => contractId === "interlockingBottomFlap").length === 4, `${templateName}: bottom closure must use four interlockingBottomFlap parts.`);
+  assert(contractIds.includes("sideGlueSeamTab"), `${templateName}: side glue seam tab is required.`);
+
+  const bodyBack = faceById(graph, "body-back");
+  const sideGlue = faceById(graph, "sideGlue-face");
+  assert(minX(sideGlue.vertices) >= maxX(bodyBack.vertices) - 0.000001, `${templateName}: glue tab must remain on the far right.`);
+
+  const lower = faceById(graph, "foldedHangTab-lower");
+  const upper = faceById(graph, "foldedHangTab-upper");
+  const front = faceById(graph, "body-front");
+  const topTuck = faceById(graph, "topTuck-face");
+  const topDust = faceById(graph, "topDustSideA-face");
+  const parameters = graph.metadata?.parameterValues ?? {};
+  const expectedTuckDepth = parameters.W + parameters.TFW;
+  assert(close(faceHeight(topTuck), expectedTuckDepth), `${templateName}: top tuck closure depth must use STE/RTE-style W + TFW calculation.`);
+  assert(faceHeight(topTuck) > faceHeight(topDust), `${templateName}: top tuck closure should be deeper than standardDustFlap.`);
+  assert(close(faceHeight(lower), faceHeight(upper)), `${templateName}: folded hang tab lower and upper panels must have equal height.`);
+  assert(maxY(lower.vertices) <= minY(front.vertices) + 0.000001, `${templateName}: lower hang panel must sit above the front panel.`);
+  assert(maxY(upper.vertices) <= minY(lower.vertices) + 0.000001, `${templateName}: upper cap must sit above the lower hang panel.`);
+  assertDisplayBaseMatchesCrease(lower, creaseById(graph, "foldedHangTab-attach-hinge"));
+  assertDisplayBaseMatchesCrease(upper, creaseById(graph, "foldedHangTab-cap-fold"));
+
+  const lowerSlot = geometryById(graph, "foldedHangTab-lower-euro-slot");
+  const upperSlot = geometryById(graph, "foldedHangTab-upper-rounded-slot");
+  assert(lowerSlot.layer === "hole", `${templateName}: lower hang slot must stay geometry-only on the hole layer.`);
+  assert(upperSlot.layer === "hole", `${templateName}: upper cap slot must stay geometry-only on the hole layer.`);
+  assertPrimitiveSamplesInsideFace(lowerSlot, lower, `${templateName}: lower euro/keyhole slot must stay inside lower hang panel.`);
+  assertPrimitiveSamplesInsideFace(upperSlot, upper, `${templateName}: upper rounded slot must stay inside upper cap.`);
+  const foldY = minY(lower.vertices);
+  const lowerSlotCenterDistanceFromFold = slotCenterY(lowerSlot) - foldY;
+  const upperSlotCenterDistanceFromFold = foldY - slotCenterY(upperSlot);
+  assert(close(lowerSlotCenterDistanceFromFold, upperSlotCenterDistanceFromFold), `${templateName}: folded hang tab slots must be positioned to overlay after folding.`);
+
+  for (const crease of graph.creases) {
+    assert(!/slot|hole|keyhole/i.test(crease.id), `${templateName}: slot or handle cutout became a structural crease.`);
+  }
+
+  const frontMajor = faceById(graph, "bottomMajorFront-face");
+  const backMajor = faceById(graph, "bottomMajorBack-face");
+  assert(normalizedPointSignature(frontMajor) !== normalizedPointSignature(backMajor), `${templateName}: major bottom flaps must be handed/mirrored, not duplicated.`);
+  assertBottomBaseMatchesCrease(frontMajor, creaseById(graph, "bottomMajorFront-hinge"));
+  assertBottomBaseMatchesCrease(backMajor, creaseById(graph, "bottomMajorBack-hinge"));
+  assertBottomBaseMatchesCrease(faceById(graph, "bottomMinorSideA-face"), creaseById(graph, "bottomMinorSideA-hinge"));
+  assertBottomBaseMatchesCrease(faceById(graph, "bottomMinorSideB-face"), creaseById(graph, "bottomMinorSideB-hinge"));
+
+  const frontNotch = geometryById(graph, "bottomMajorFront-notch-center-guide");
+  const backNotch = geometryById(graph, "bottomMajorBack-notch-center-guide");
+  const frontNotchLocalX = (frontNotch.start.x + frontNotch.end.x) / 2 - minX(frontMajor.vertices);
+  const backNotchLocalX = (backNotch.start.x + backNotch.end.x) / 2 - minX(backMajor.vertices);
+  assert(close(frontNotchLocalX, backNotchLocalX), `${templateName}: major bottom notch centers must align in local panel coordinates.`);
+}
+
 function assertDisplayBaseMatchesCrease(face, crease) {
   const first = face.vertices[0];
   const last = face.vertices[face.vertices.length - 1];
   assert(pointsEqual(first, crease.edgeStart), `${face.id}: first base point must match display hinge start.`);
   assert(pointsEqual(last, crease.edgeEnd), `${face.id}: last base point must match display hinge end.`);
+}
+
+function assertBottomBaseMatchesCrease(face, crease) {
+  const first = face.vertices[0];
+  const last = face.vertices[face.vertices.length - 1];
+  assert(pointsEqual(first, crease.edgeStart), `${face.id}: first base point must match bottom hinge start.`);
+  assert(pointsEqual(last, crease.edgeEnd), `${face.id}: last base point must match bottom hinge end.`);
 }
 
 function assertCircleInsideFace(circle, face, templateName) {
@@ -238,6 +331,33 @@ function assertCircleInsideFace(circle, face, templateName) {
   for (const point of samplePoints) {
     assert(pointInOrOnPolygon(point, face.vertices), `${templateName}: circular cutout must stay inside side hanger panel.`);
   }
+}
+
+function assertPrimitiveSamplesInsideFace(primitive, face, message) {
+  for (const point of primitivePoints(primitive)) {
+    assert(pointInOrOnPolygon(point, face.vertices), message);
+  }
+}
+
+function primitivePoints(primitive) {
+  if (primitive.type === "circle") {
+    return [
+      primitive.center,
+      { x: primitive.center.x - primitive.radius, y: primitive.center.y },
+      { x: primitive.center.x + primitive.radius, y: primitive.center.y },
+      { x: primitive.center.x, y: primitive.center.y - primitive.radius },
+      { x: primitive.center.x, y: primitive.center.y + primitive.radius },
+    ];
+  }
+  if (primitive.type === "line") return [primitive.start, primitive.end];
+  if (primitive.type === "polyline" || primitive.type === "polygon") return primitive.points;
+  return [
+    { x: primitive.x, y: primitive.y },
+    { x: primitive.x + primitive.width, y: primitive.y },
+    { x: primitive.x + primitive.width, y: primitive.y + primitive.height },
+    { x: primitive.x, y: primitive.y + primitive.height },
+    { x: primitive.x + primitive.width / 2, y: primitive.y + primitive.height / 2 },
+  ];
 }
 
 function assertDustBaseMatchesCrease(face, crease) {
@@ -287,6 +407,28 @@ function creaseById(graph, id) {
   const crease = graph.creases.find((candidate) => candidate.id === id);
   assert(crease, `Missing dust flap hinge ${id}`);
   return crease;
+}
+
+function geometryById(graph, id) {
+  const primitive = (graph.geometry ?? []).find((candidate) => candidate.id === id);
+  assert(primitive, `Missing geometry primitive ${id}`);
+  return primitive;
+}
+
+function minY(points) {
+  return Math.min(...points.map((point) => point.y));
+}
+
+function maxY(points) {
+  return Math.max(...points.map((point) => point.y));
+}
+
+function faceHeight(face) {
+  return maxY(face.vertices) - minY(face.vertices);
+}
+
+function slotCenterY(slot) {
+  return slot.y + slot.height / 2;
 }
 
 function normalizedPointSignature(face) {

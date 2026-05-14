@@ -6,6 +6,7 @@ import {
   faceLinePrimitivePart,
   faceSlotPrimitivePart,
 } from "../parametricParts";
+export { interlockingBottomFlap } from "./interlockingBottomFlap";
 
 const snapWarning = () => ["Snap-lock bottom geometry is reference-pending; tongue and slot clearance must be prototype checked."];
 const autoWarning = () => ["Auto-lock/crash-lock geometry is partial-experimental; diagonal behavior must be verified with a folding prototype."];

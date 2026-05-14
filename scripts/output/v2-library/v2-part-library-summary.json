@@ -1,5 +1,5 @@
 {
-  "totalContracts": 90,
+  "totalContracts": 92,
   "implementedParts": [
     "standardBodyStrip",
     "sleeveBody",
@@ -22,6 +22,7 @@
     "hangPanel",
     "sideCircularHangPanel",
     "hangTab",
+    "foldedHangTabPanel",
     "scoreGuide",
     "glueZoneGuide",
     "safeAreaGuide",
@@ -44,6 +45,7 @@
     "autoLockDiagonalScore",
     "fullFlapBottomPanel",
     "bottomGlueZone",
+    "interlockingBottomFlap",
     "lockTab",
     "lockSlot",
     "lockingTuckFlap",

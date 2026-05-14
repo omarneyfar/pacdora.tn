@@ -48,6 +48,7 @@ It is not connected to the current recipe engine, generator registry, catalog, o
 - `trapezoidDustFlap`
 - `angledBottomDustFlap`
 - `bottomLockFlap`
+- `foldedHangTabPanel`
 - `circularCutout`
 - `roundedSlotCutout`
 - `euroSlotCutout`
@@ -79,6 +80,7 @@ It is not connected to the current recipe engine, generator registry, catalog, o
 - `autoLockDiagonalScore`
 - `fullFlapBottomPanel`
 - `bottomGlueZone`
+- `interlockingBottomFlap`
 - `lockTab`
 - `lockSlot`
 - `lockingTuckFlap`
