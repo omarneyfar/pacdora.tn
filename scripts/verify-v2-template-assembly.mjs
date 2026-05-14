@@ -12,6 +12,7 @@ const moduleCache = new Map();
 
 const reverseTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "reverseTuckEnd.v2template"));
 const straightTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "straightTuckEnd.v2template"));
+const circularHangHoleTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "circularHangHole.v2template"));
 const {
   generateV2ReverseTuckEndAssembly,
   generateV2ReverseTuckEndDielineGraph,
@@ -20,6 +21,10 @@ const {
   generateV2StraightTuckEndAssembly,
   generateV2StraightTuckEndDielineGraph,
 } = straightTuckEndTemplate;
+const {
+  generateV2CircularHangHoleAssembly,
+  generateV2CircularHangHoleDielineGraph,
+} = circularHangHoleTemplate;
 const { validateDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation", "validateDielineGraph"));
 const { graphToSvg } = loadTs(path.join(projectRoot, "domain", "dieline", "canonicalGeometry"));
 
@@ -39,6 +44,13 @@ const templateCases = [
     expectedClosureContract: "standardTuckClosureFlap",
     assemblyFactory: generateV2StraightTuckEndAssembly,
     graphFactory: generateV2StraightTuckEndDielineGraph,
+  },
+  {
+    name: "Circular Hang Hole",
+    outputStem: "circular-hang-hole-v2-template",
+    expectedClosureContract: "standardTuckClosureFlap",
+    assemblyFactory: generateV2CircularHangHoleAssembly,
+    graphFactory: generateV2CircularHangHoleDielineGraph,
   },
 ];
 
@@ -92,6 +104,10 @@ function assertGraphShape(graph, assembly, templateCase) {
     "bottomDustSideA-face",
     "bottomDustSideB-face",
   ];
+
+  if (templateCase.name === "Circular Hang Hole") {
+    expectedFaceIds.push("hangPanel-face");
+  }
 
   for (const faceId of expectedFaceIds) {
     assert(faceIds.has(faceId), `${templateCase.name}: missing stable V2 face id: ${faceId}`);
