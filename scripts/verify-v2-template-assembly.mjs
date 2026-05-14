@@ -285,15 +285,16 @@ function assertHangTabStructure(graph, assembly, templateName) {
   const upperSlot = geometryById(graph, "foldedHangTab-upper-rounded-slot");
   assert(lowerSlot.layer === "hole", `${templateName}: lower hang slot must stay geometry-only on the hole layer.`);
   assert(upperSlot.layer === "hole", `${templateName}: upper fold-over panel slot must stay geometry-only on the hole layer.`);
-  assert(lowerSlot.type === "slot" && upperSlot.type === "slot", `${templateName}: upper and lower hang negatives must both be rounded slot primitives.`);
-  assert(close(lowerSlot.width, upperSlot.width) && close(lowerSlot.height, upperSlot.height), `${templateName}: upper and lower hang negatives must be the same size.`);
+  assert(lowerSlot.type === "polygon" && upperSlot.type === "polygon", `${templateName}: upper and lower hang negatives must be rounded slots with centered half-circle reliefs.`);
+  assert(close(primitiveBounds(lowerSlot).width, primitiveBounds(upperSlot).width) && close(primitiveBounds(lowerSlot).height, primitiveBounds(upperSlot).height), `${templateName}: upper and lower hang negatives must be the same size.`);
   assertPrimitiveSamplesInsideFace(lowerSlot, lower, `${templateName}: lower euro/keyhole slot must stay inside lower hang panel.`);
   assertPrimitiveSamplesInsideFace(upperSlot, upper, `${templateName}: upper rounded slot must stay inside upper fold-over panel.`);
   const foldY = minY(lower.vertices);
   const lowerSlotCenterDistanceFromFold = lowerHangSlotMainCenterY(parameters, front, lowerSlot) - foldY;
-  const upperSlotCenterDistanceFromFold = foldY - slotCenterY(upperSlot);
+  const upperSlotCenterDistanceFromFold = parameters.upperSlotOffsetFromFold;
   assert(close(lowerSlotCenterDistanceFromFold, upperSlotCenterDistanceFromFold), `${templateName}: folded hang tab slots must be positioned to overlay after folding.`);
   assert(close(primitiveCenterX(lowerSlot), primitiveCenterX(upperSlot)), `${templateName}: folded hang tab slots must share one centerline.`);
+  assertHalfCircleReliefsFaceFold(lowerSlot, upperSlot, parameters, front, templateName);
 
   for (const crease of graph.creases) {
     assert(!/slot|hole|keyhole/i.test(crease.id), `${templateName}: slot or handle cutout became a structural crease.`);
@@ -494,6 +495,27 @@ function primitiveCenterX(primitive) {
     return (Math.min(...xs) + Math.max(...xs)) / 2;
   }
   return primitive.x + primitive.width / 2;
+}
+
+function primitiveBounds(primitive) {
+  const points = primitivePoints(primitive);
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  return {
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+function assertHalfCircleReliefsFaceFold(lowerSlot, upperSlot, parameters, front, templateName) {
+  const lowerMainCenterY = lowerHangSlotMainCenterY(parameters, front, lowerSlot);
+  const lowerMainTopY = lowerMainCenterY - parameters.upperSlotHeight / 2;
+  const upperBounds = primitiveBounds(upperSlot);
+  const upperMainBottomY = upperBounds.y + parameters.upperSlotHeight;
+  assert(minY(primitivePoints(lowerSlot)) < lowerMainTopY - 0.5, `${templateName}: lower folded-hang negative needs a centered half-circle relief facing upward toward the fold.`);
+  assert(maxY(primitivePoints(upperSlot)) > upperMainBottomY + 0.5, `${templateName}: upper folded-hang negative needs a centered half-circle relief facing downward toward the fold.`);
 }
 
 function normalizedPointSignature(face) {

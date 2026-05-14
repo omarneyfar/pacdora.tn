@@ -1,7 +1,6 @@
 import { createAnchor, createFaceEdgeAnchor, createFaceEdgeAnchors } from "../../anchors/createAnchors";
-import type { V2PartImplementation, V2Point } from "../../contracts/types";
+import type { V2GeometryPrimitive, V2PartImplementation, V2Point } from "../../contracts/types";
 import { sampleArc } from "../../primitives/arcs";
-import { roundedSlotPrimitive } from "../../primitives/slots";
 import { assertBaseEdgeMatchesAnchor, assertPrimitiveInsideFace } from "../../primitives/validation";
 import { emptyPartResult, numberParameter, positiveParameter, structuralCrease } from "../buildingBlocks";
 import { createFace } from "../../primitives/polygon";
@@ -95,25 +94,28 @@ export const foldedHangTabPanel: V2PartImplementation<FoldedHangTabPanelParamete
     assertBaseEdgeMatchesAnchor(cap, capAnchor, `${input.id}.cap`);
 
     const lowerSlotCenterY = anchor.start.y - euroSlotOffsetFromBase - euroSlotHeight / 2;
-    const lowerSlot = roundedSlotPrimitive({
+    const slotReliefRadius = upperSlotHeight * 0.34;
+    const lowerSlot = slotWithHalfCirclePrimitive({
       id: `${input.id}.lower-euro-slot`,
-      label: "Lower hang rounded slot",
+      label: "Lower hang rounded slot with half-circle relief",
       x: lower.bounds.x + lower.bounds.width / 2 - upperSlotWidth / 2,
       y: lowerSlotCenterY - upperSlotHeight / 2,
       width: upperSlotWidth,
       height: upperSlotHeight,
-      radius: upperSlotHeight / 2,
+      reliefRadius: slotReliefRadius,
+      reliefDirection: "up",
       ownerFaceId: lower.id,
     });
     const upperSlotCenterY = upperAnchor.start.y - upperSlotOffsetFromFold;
-    const upperSlot = roundedSlotPrimitive({
+    const upperSlot = slotWithHalfCirclePrimitive({
       id: `${input.id}.upper-rounded-slot`,
-      label: "Upper cap rounded slot",
+      label: "Upper cap rounded slot with half-circle relief",
       x: upper.bounds.x + upper.bounds.width / 2 - upperSlotWidth / 2,
       y: upperSlotCenterY - upperSlotHeight / 2,
       width: upperSlotWidth,
       height: upperSlotHeight,
-      radius: upperSlotHeight / 2,
+      reliefRadius: slotReliefRadius,
+      reliefDirection: "down",
       ownerFaceId: upper.id,
     });
 
@@ -197,6 +199,66 @@ function upperFoldOverPanelPoints(start: V2Point, end: V2Point, baseStart: V2Poi
     { x: end.x, y: topY },
     ...sampleArc(rightCenter, arcRadius, 0, Math.PI / 2, 8).slice(1),
   ];
+}
+
+function slotWithHalfCirclePrimitive(input: {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  reliefRadius: number;
+  reliefDirection: "up" | "down";
+  ownerFaceId?: string;
+}): V2GeometryPrimitive {
+  const radius = input.height / 2;
+  const reliefRadius = Math.min(input.reliefRadius, input.width * 0.18, input.height * 0.48);
+  const centerX = input.x + input.width / 2;
+  const centerY = input.y + input.height / 2;
+  const leftCenter = { x: input.x + radius, y: centerY };
+  const rightCenter = { x: input.x + input.width - radius, y: centerY };
+  const reliefLeft = centerX - reliefRadius;
+  const reliefRight = centerX + reliefRadius;
+  const topY = input.y;
+  const bottomY = input.y + input.height;
+  const topLeft = { x: input.x + radius, y: topY };
+  const topRight = { x: input.x + input.width - radius, y: topY };
+  const bottomRight = { x: input.x + input.width - radius, y: bottomY };
+  const bottomLeft = { x: input.x + radius, y: bottomY };
+  const rightArc = sampleArc(rightCenter, radius, -Math.PI / 2, Math.PI / 2, 10).slice(1);
+  const leftArc = sampleArc(leftCenter, radius, Math.PI / 2, Math.PI * 1.5, 10).slice(1);
+  const points = input.reliefDirection === "down"
+    ? [
+        topLeft,
+        topRight,
+        ...rightArc,
+        { x: reliefRight, y: bottomY },
+        ...sampleArc({ x: centerX, y: bottomY }, reliefRadius, 0, Math.PI, 12).slice(1),
+        { x: reliefLeft, y: bottomY },
+        bottomLeft,
+        ...leftArc,
+      ]
+    : [
+        topLeft,
+        { x: reliefLeft, y: topY },
+        ...sampleArc({ x: centerX, y: topY }, reliefRadius, Math.PI, Math.PI * 2, 12).slice(1),
+        { x: reliefRight, y: topY },
+        topRight,
+        ...rightArc,
+        bottomRight,
+        bottomLeft,
+        ...leftArc,
+      ];
+
+  return {
+    id: input.id,
+    label: input.label,
+    type: "polygon",
+    layer: "hole",
+    ownerFaceId: input.ownerFaceId,
+    points,
+  };
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
