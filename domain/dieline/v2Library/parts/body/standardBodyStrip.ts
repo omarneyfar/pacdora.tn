@@ -7,6 +7,7 @@ type StandardBodyStripParameters = {
   L?: number;
   W?: number;
   H?: number;
+  panelOrder?: string;
   topAllowance?: number;
   bottomAllowance?: number;
 };
@@ -28,12 +29,23 @@ export const standardBodyStrip: V2PartImplementation<StandardBodyStripParameters
       warnings.push(`${input.id}: W is larger than L; documentation convention expects L to be the longer horizontal dimension.`);
     }
 
-    const panels = [
-      { id: "back", label: "Back Panel", width: length },
-      { id: "sideB", label: "Side B Panel", width },
-      { id: "front", label: "Front Panel", width: length },
-      { id: "sideA", label: "Side A Panel", width },
-    ];
+    const panelOrder = typeof input.parameters.panelOrder === "string" ? input.parameters.panelOrder : "back-side-front-side";
+    const panels = panelOrder === "side-front-side-back"
+      ? [
+        { id: "sideA", label: "Side A Panel", width },
+        { id: "front", label: "Front Panel", width: length },
+        { id: "sideB", label: "Side B Panel", width },
+        { id: "back", label: "Back Panel", width: length },
+      ]
+      : [
+        { id: "back", label: "Back Panel", width: length },
+        { id: "sideB", label: "Side B Panel", width },
+        { id: "front", label: "Front Panel", width: length },
+        { id: "sideA", label: "Side A Panel", width },
+      ];
+    if (panelOrder !== "back-side-front-side" && panelOrder !== "side-front-side-back") {
+      warnings.push(`${input.id}: unknown panelOrder '${panelOrder}', using default V2 panel order.`);
+    }
     let cursor = 0;
 
     for (const panel of panels) {

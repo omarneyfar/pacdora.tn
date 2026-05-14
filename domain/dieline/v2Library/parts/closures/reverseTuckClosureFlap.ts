@@ -26,7 +26,7 @@ export const reverseTuckClosureFlap: V2PartImplementation<TuckClosureParameters>
     return buildTuckClosureFlap(input, context, {
       label: "Reverse Tuck Closure Flap",
       contractPartId: "reverseTuckClosureFlap",
-      includeLockNotches: true,
+      includeLockNotches: false,
       includeLipScore: true,
     });
   },

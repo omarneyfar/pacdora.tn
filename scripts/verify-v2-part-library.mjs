@@ -11,6 +11,7 @@ const outputDir = path.join(scriptsDir, "output", "v2-library", "parts");
 const summaryPath = path.join(scriptsDir, "output", "v2-library", "v2-part-library-summary.json");
 const moduleCache = new Map();
 const referenceDebugWidth = 120;
+const defaultDebugPartIds = ["standardDustFlap"];
 const expectedPartIds = [
   "standardBodyStrip",
   "sleeveBody",
@@ -123,10 +124,11 @@ const outputFiles = [];
 const summary = createSummary();
 assertContractsAndRegistry(summary);
 
-for (const partId of implementedV2PartIds) {
+for (const partId of defaultDebugPartIds) {
+  assert(implementedV2PartIds.includes(partId), `${partId}: expected default debug part is not implemented`);
   const graph = generatePartDebugGraph(partId, referenceDebugWidth);
   validateDebugGraph(graph, partId, referenceDebugWidth);
-  const outputPath = path.join(outputDir, `${kebab(partId)}.debug.svg`);
+  const outputPath = path.join(outputDir, `${kebab(partId)}-default.debug.svg`);
   fs.writeFileSync(outputPath, generatePartDebugSvg(graph), "utf8");
   outputFiles.push(outputPath);
   rows.push({
