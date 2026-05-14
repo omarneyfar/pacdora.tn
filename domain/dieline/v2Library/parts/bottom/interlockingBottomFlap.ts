@@ -53,7 +53,7 @@ export const interlockingBottomFlap: V2PartImplementation<InterlockingBottomFlap
       printable: false,
       points: role.startsWith("minor")
         ? minorDustPoints(anchor, bottomFlapDepth, diagonalInset)
-        : majorLockPoints(anchor, insertLength, notchWidth, notchDepth, diagonalInset, notchCenter, handedness),
+        : majorLockPoints(anchor, insertLength, bottomFlapDepth, notchWidth, notchDepth, diagonalInset, notchCenter, handedness),
     });
     assertBaseEdgeMatchesAnchor(face, anchor, input.id);
 
@@ -99,6 +99,7 @@ export const interlockingBottomFlap: V2PartImplementation<InterlockingBottomFlap
 function majorLockPoints(
   anchor: V2Anchor,
   depth: number,
+  minorDepth: number,
   notchWidth: number,
   notchDepth: number,
   diagonalInset: number,
@@ -112,16 +113,23 @@ function majorLockPoints(
   const leftRunEnd = clamp(notchStart - notchWidth * 0.75, sideReliefInset + 4, notchStart - 1);
   const notchReturn = clamp(notchEnd + notchWidth * 0.78, notchEnd + 1, anchor.length - sideReliefInset - 3);
   const notchStepDepth = clamp(notchDepth * 0.58, 3, notchDepth);
+  const lockShelfDepth = clamp(minorDepth, notchStepDepth + 2, depth - notchStepDepth - 1);
   const rightReliefInset = sideReliefInset;
+  const reliefPeakX = sideReliefInset * 1.05;
+  const reliefPeakY = sideReliefDepth * 0.58;
+  const reliefKinkX = sideReliefInset * 1.01;
+  const reliefKinkY = sideReliefDepth * 0.64;
+  const reliefWallX = sideReliefInset * 0.2;
   const localPoints = [
     { x: 0, y: 0 },
-    { x: sideReliefInset * 1.28, y: sideReliefDepth * 0.72 },
-    { x: sideReliefInset * 0.25, y: sideReliefDepth },
-    { x: sideReliefInset * 0.25, y: depth },
+    { x: reliefPeakX, y: reliefPeakY },
+    { x: reliefKinkX, y: reliefKinkY },
+    { x: reliefWallX, y: sideReliefDepth },
+    { x: reliefWallX, y: depth },
     { x: leftRunEnd, y: depth },
-    { x: notchStart, y: depth - notchDepth },
-    { x: notchEnd, y: depth - notchDepth },
-    { x: notchEnd, y: depth - notchDepth + notchStepDepth },
+    { x: notchStart, y: lockShelfDepth },
+    { x: notchEnd, y: lockShelfDepth },
+    { x: notchEnd, y: lockShelfDepth + notchStepDepth },
     { x: notchReturn, y: depth },
     { x: anchor.length - rightReliefInset, y: depth },
     { x: anchor.length, y: 0 },
@@ -140,17 +148,17 @@ function majorDiagonalScoreLine(
   diagonalInset: number,
   handedness: "left" | "right",
 ): { start: V2Point; end: V2Point } {
-  const startDepth = Math.min(dustFlapDepth * 0.135, insertLength * 0.12);
   const scoreDepth = Math.min(dustFlapDepth, insertLength);
   const startInset = clamp(Math.max(diagonalInset, anchor.length * 0.045), 1, anchor.length * 0.18);
-  const endInset = clamp(notchCenter - notchWidth * 0.72, startInset + 1, anchor.length - 1);
-  const interiorStartLocal = startInset * 0.45 + 0.75;
-  const interiorStartDepth = Math.max(startDepth, Math.min(dustFlapDepth * 0.22, insertLength * 0.18));
-  const startLocal = handedness === "left" ? anchor.length - interiorStartLocal : interiorStartLocal;
+  const endInset = clamp(notchCenter - notchWidth / 2, startInset + 1, anchor.length - 1);
+  const sideReliefDepth = clamp(insertLength * 0.16, 5, 10);
+  const reliefKinkLocal = startInset * 1.01;
+  const reliefKinkDepth = sideReliefDepth * 0.64;
+  const startLocal = handedness === "left" ? anchor.length - reliefKinkLocal : reliefKinkLocal;
   const endLocal = handedness === "left" ? anchor.length - endInset : endInset;
 
   return {
-    start: offset(offset(anchor.start, anchor.tangent, startLocal), anchor.normal, interiorStartDepth),
+    start: offset(offset(anchor.start, anchor.tangent, startLocal), anchor.normal, reliefKinkDepth),
     end: offset(offset(anchor.start, anchor.tangent, endLocal), anchor.normal, scoreDepth),
   };
 }

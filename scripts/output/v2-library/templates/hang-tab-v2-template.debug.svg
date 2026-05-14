@@ -71,32 +71,34 @@
   <path id="cut-67" data-layer="cut" d="M 0 271.77 L 33.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="cut-68" data-layer="cut" d="M 33.6 311.77 L 75.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="cut-69" data-layer="cut" d="M 75.6 311.77 L 80 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-70" data-layer="cut" d="M 80 271.77 L 86.336 277.853" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-71" data-layer="cut" d="M 86.336 277.853 L 81.237 280.218" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-72" data-layer="cut" d="M 81.237 280.218 L 81.237 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-73" data-layer="cut" d="M 81.237 324.57 L 109 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-74" data-layer="cut" d="M 109 324.57 L 124.6 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-75" data-layer="cut" d="M 124.6 316.122 L 145.4 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-76" data-layer="cut" d="M 145.4 316.122 L 145.4 321.022" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-77" data-layer="cut" d="M 145.4 321.022 L 161.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-78" data-layer="cut" d="M 161.624 324.57 L 185.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-79" data-layer="cut" d="M 185.05 324.57 L 190 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-80" data-layer="cut" d="M 190 271.77 L 223.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-81" data-layer="cut" d="M 223.6 311.77 L 265.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-82" data-layer="cut" d="M 265.6 311.77 L 270 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-83" data-layer="cut" d="M 270 271.77 L 276.336 277.853" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-84" data-layer="cut" d="M 276.336 277.853 L 271.238 280.218" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-85" data-layer="cut" d="M 271.238 280.218 L 271.238 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-86" data-layer="cut" d="M 271.238 324.57 L 299 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-87" data-layer="cut" d="M 299 324.57 L 314.6 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-88" data-layer="cut" d="M 314.6 316.122 L 335.4 316.122" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-89" data-layer="cut" d="M 335.4 316.122 L 335.4 321.022" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-90" data-layer="cut" d="M 335.4 321.022 L 351.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-91" data-layer="cut" d="M 351.624 324.57 L 375.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-92" data-layer="cut" d="M 375.05 324.57 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-93" data-layer="cut" d="M 380 121.77 L 395 126.87" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-94" data-layer="cut" d="M 395 126.87 L 395 266.67" stroke="#c53f2f" stroke-width="0.35"/>
-  <path id="cut-95" data-layer="cut" d="M 395 266.67 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-70" data-layer="cut" d="M 80 271.77 L 85.198 276.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-71" data-layer="cut" d="M 85.198 276.67 L 84.999 277.177" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-72" data-layer="cut" d="M 84.999 277.177 L 80.99 280.218" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-73" data-layer="cut" d="M 80.99 280.218 L 80.99 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-74" data-layer="cut" d="M 80.99 324.57 L 109 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-75" data-layer="cut" d="M 109 324.57 L 124.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-76" data-layer="cut" d="M 124.6 311.77 L 145.4 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-77" data-layer="cut" d="M 145.4 311.77 L 145.4 316.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-78" data-layer="cut" d="M 145.4 316.67 L 161.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-79" data-layer="cut" d="M 161.624 324.57 L 185.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-80" data-layer="cut" d="M 185.05 324.57 L 190 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-81" data-layer="cut" d="M 190 271.77 L 223.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-82" data-layer="cut" d="M 223.6 311.77 L 265.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-83" data-layer="cut" d="M 265.6 311.77 L 270 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-84" data-layer="cut" d="M 270 271.77 L 275.197 276.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-85" data-layer="cut" d="M 275.197 276.67 L 275 277.177" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-86" data-layer="cut" d="M 275 277.177 L 270.99 280.218" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-87" data-layer="cut" d="M 270.99 280.218 L 270.99 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-88" data-layer="cut" d="M 270.99 324.57 L 299 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-89" data-layer="cut" d="M 299 324.57 L 314.6 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-90" data-layer="cut" d="M 314.6 311.77 L 335.4 311.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-91" data-layer="cut" d="M 335.4 311.77 L 335.4 316.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-92" data-layer="cut" d="M 335.4 316.67 L 351.624 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-93" data-layer="cut" d="M 351.624 324.57 L 375.05 324.57" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-94" data-layer="cut" d="M 375.05 324.57 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-95" data-layer="cut" d="M 380 121.77 L 395 126.87" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-96" data-layer="cut" d="M 395 126.87 L 395 266.67" stroke="#c53f2f" stroke-width="0.35"/>
+  <path id="cut-97" data-layer="cut" d="M 395 266.67 L 380 271.77" stroke="#c53f2f" stroke-width="0.35"/>
   <path id="body-crease-body-sideA-body-front-line" data-layer="crease" d="M 80 121.77 L 80 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="body-crease-body-front-body-sideB-line" data-layer="crease" d="M 190 121.77 L 190 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="body-crease-body-sideB-body-back-line" data-layer="crease" d="M 270 121.77 L 270 271.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
@@ -114,9 +116,9 @@
   <path id="foldedHangTab-lower-euro-slot" data-layer="hole" d="M 119.16 84.45 L 150.84 84.45 A 6.765 6.765 0 0 1 157.605 91.215 L 157.605 91.215 A 6.765 6.765 0 0 1 150.84 97.98 L 119.16 97.98 A 6.765 6.765 0 0 1 112.395 91.215 L 112.395 91.215 A 6.765 6.765 0 0 1 119.16 84.45 Z" stroke="#2f8a53" stroke-width="0.35"/>
   <path id="foldedHangTab-upper-rounded-slot" data-layer="hole" d="M 119.16 40.62 L 150.84 40.62 A 6.765 6.765 0 0 1 157.605 47.385 L 157.605 47.385 A 6.765 6.765 0 0 1 150.84 54.15 L 119.16 54.15 A 6.765 6.765 0 0 1 112.395 47.385 L 112.395 47.385 A 6.765 6.765 0 0 1 119.16 40.62 Z" stroke="#2f8a53" stroke-width="0.35"/>
   <path id="topTuck-lip-score" data-layer="crease" d="M 270 41.77 L 380 41.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
-  <path id="bottomMajorFront-diagonal-score-guide" data-layer="crease" d="M 82.978 280.57 L 120.024 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="bottomMajorFront-diagonal-score-guide" data-layer="crease" d="M 84.999 277.177 L 124.6 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="bottomMajorFront-notch-center-guide" data-layer="safe" d="M 135 312.32 L 135 319.924" stroke="#7c8790" stroke-width="0.35"/>
-  <path id="bottomMajorBack-diagonal-score-guide" data-layer="crease" d="M 272.978 280.57 L 310.024 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
+  <path id="bottomMajorBack-diagonal-score-guide" data-layer="crease" d="M 275 277.177 L 314.6 311.77" stroke="#1677ff" stroke-width="0.35" stroke-dasharray="5 3"/>
   <path id="bottomMajorBack-notch-center-guide" data-layer="safe" d="M 325 312.32 L 325 319.924" stroke="#7c8790" stroke-width="0.35"/>
   <path id="sideGlue-glue-zone" data-layer="safe" d="M 380 121.77 L 395 126.87 L 395 266.67 L 380 271.77 Z" stroke="#7c8790" stroke-width="0.35"/>
   <text id="label-body-sideA" data-layer="label" x="40" y="196.77" fill="#1f2a24" font-size="4">Side A Panel</text>
@@ -130,9 +132,9 @@
   <text id="label-foldedHangTab-cap" data-layer="label" x="135" y="8.415" fill="#1f2a24" font-size="4">Top Insert Cap</text>
   <text id="label-topTuck-face" data-layer="label" x="325" y="72.921" fill="#1f2a24" font-size="4">Standard Tuck Closure Flap</text>
   <text id="label-bottomMinorSideA-face" data-layer="label" x="46.542" y="289.693" fill="#1f2a24" font-size="4">Left Minor Bottom Dust Flap</text>
-  <text id="label-bottomMajorFront-face" data-layer="label" x="134.639" y="296.864" fill="#1f2a24" font-size="4">Major Bottom Insert Flap</text>
+  <text id="label-bottomMajorFront-face" data-layer="label" x="134.472" y="296.265" fill="#1f2a24" font-size="4">Major Bottom Insert Flap</text>
   <text id="label-bottomMinorSideB-face" data-layer="label" x="236.542" y="289.693" fill="#1f2a24" font-size="4">Right Minor Bottom Dust Flap</text>
-  <text id="label-bottomMajorBack-face" data-layer="label" x="324.639" y="296.864" fill="#1f2a24" font-size="4">Major Bottom Lock Flap</text>
+  <text id="label-bottomMajorBack-face" data-layer="label" x="324.472" y="296.265" fill="#1f2a24" font-size="4">Major Bottom Lock Flap</text>
   <text id="label-sideGlue-face" data-layer="label" x="387.412" y="196.77" fill="#1f2a24" font-size="4">Side Glue Seam Tab</text>
   </g>
 </svg>

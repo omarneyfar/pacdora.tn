@@ -326,22 +326,27 @@ function assertMajorBottomScoreGuide(graph, partId, face, parameters, templateNa
   assert(!graph.creases.some((crease) => crease.id === score.id), `${templateName}: ${partId} diagonal score guide must not become a DielineCrease.`);
   const localDepth = Math.max(score.start.y, score.end.y) - hinge.edgeStart.y;
   assert(close(localDepth, parameters.bottomDustDepth), `${templateName}: ${partId} diagonal score must end at the minor-flap reference depth.`);
+  assert(pointsEqual(score.start, face.vertices[2]), `${templateName}: ${partId} diagonal score must start on the reference cutting-line kink.`);
+  assert(pointsEqual(score.end, face.vertices[6]), `${templateName}: ${partId} diagonal score must end on the raised cut shelf at the minor-flap height.`);
   assertPrimitiveSamplesInsideFace(score, face, `${templateName}: ${partId} diagonal score must stay inside the major bottom flap.`);
 }
 
 function assertReferenceMajorBottomCut(face, templateName) {
-  assert(face.vertices.length === 11, `${templateName}: ${face.id} must use the reference-style major bottom cut outline.`);
+  assert(face.vertices.length === 12, `${templateName}: ${face.id} must use the reference-style major bottom cut outline.`);
   const first = face.vertices[0];
   const second = face.vertices[1];
   const third = face.vertices[2];
   const fourth = face.vertices[3];
+  const fifth = face.vertices[4];
   const highestY = maxY(face.vertices);
   assert(second.x > first.x && second.y > first.y, `${templateName}: ${face.id} must start with a small angled body-edge relief.`);
-  assert(third.x < second.x && third.y >= second.y, `${templateName}: ${face.id} must step back inward after the body-edge relief.`);
-  assert(close(third.x, fourth.x) && close(fourth.y, highestY), `${templateName}: ${face.id} must have a long near-vertical side wall to the free cut edge.`);
-  assert(face.vertices[5].y < highestY && face.vertices[6].y < highestY, `${templateName}: ${face.id} must include the raised center locking notch.`);
-  assert(close(face.vertices[8].y, highestY) && close(face.vertices[9].y, highestY), `${templateName}: ${face.id} must return to the free cut edge after the notch.`);
-  assert(face.vertices[10].y < highestY, `${templateName}: ${face.id} must finish with the long diagonal return to the body crease.`);
+  assert(third.x < second.x && third.y > second.y, `${templateName}: ${face.id} must include the tiny reference kink after the first relief cut.`);
+  assert(fourth.x < third.x && fourth.y > third.y, `${templateName}: ${face.id} must step back inward after the relief kink.`);
+  assert(close(fourth.x, fifth.x) && close(fifth.y, highestY), `${templateName}: ${face.id} must have a long near-vertical side wall to the free cut edge.`);
+  assert(face.vertices[6].y < highestY && face.vertices[7].y < highestY, `${templateName}: ${face.id} must include the raised center locking notch.`);
+  assert(close(face.vertices[6].y, face.vertices[7].y), `${templateName}: ${face.id} raised cut shelf must be horizontal at the minor-flap reference height.`);
+  assert(close(face.vertices[9].y, highestY) && close(face.vertices[10].y, highestY), `${templateName}: ${face.id} must return to the free cut edge after the notch.`);
+  assert(face.vertices[11].y < highestY, `${templateName}: ${face.id} must finish with the long diagonal return to the body crease.`);
 }
 
 function assertDisplayBaseMatchesCrease(face, crease) {
