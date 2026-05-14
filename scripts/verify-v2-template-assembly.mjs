@@ -10,45 +10,74 @@ const projectRoot = path.resolve(scriptsDir, "..");
 const outputDir = path.join(scriptsDir, "output", "v2-library", "templates");
 const moduleCache = new Map();
 
+const reverseTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "reverseTuckEnd.v2template"));
+const straightTuckEndTemplate = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "straightTuckEnd.v2template"));
 const {
   generateV2ReverseTuckEndAssembly,
   generateV2ReverseTuckEndDielineGraph,
-} = loadTs(path.join(projectRoot, "domain", "dieline", "v2Templates", "foldingBox", "reverseTuckEnd.v2template"));
+} = reverseTuckEndTemplate;
+const {
+  generateV2StraightTuckEndAssembly,
+  generateV2StraightTuckEndDielineGraph,
+} = straightTuckEndTemplate;
 const { validateDielineGraph } = loadTs(path.join(projectRoot, "domain", "dieline", "validation", "validateDielineGraph"));
 const { graphToSvg } = loadTs(path.join(projectRoot, "domain", "dieline", "canonicalGeometry"));
 
 fs.mkdirSync(outputDir, { recursive: true });
 
-const assembly = generateV2ReverseTuckEndAssembly({
-  L: 120,
-  W: 60,
-  H: 160,
-});
-const graph = generateV2ReverseTuckEndDielineGraph({
-  L: 120,
-  W: 60,
-  H: 160,
-});
-const validation = validateDielineGraph(graph);
+const templateCases = [
+  {
+    name: "Reverse Tuck End",
+    outputStem: "reverse-tuck-end-v2-template",
+    expectedClosureContract: "reverseTuckClosureFlap",
+    assemblyFactory: generateV2ReverseTuckEndAssembly,
+    graphFactory: generateV2ReverseTuckEndDielineGraph,
+  },
+  {
+    name: "Straight Tuck End",
+    outputStem: "straight-tuck-end-v2-template",
+    expectedClosureContract: "straightTuckClosureFlap",
+    assemblyFactory: generateV2StraightTuckEndAssembly,
+    graphFactory: generateV2StraightTuckEndDielineGraph,
+  },
+];
 
-assert(validation.ok, `DielineGraph validation failed: ${validation.errors.join("; ")}`);
-assertGraphShape(graph, assembly);
+const results = [];
 
-const svgPath = path.join(outputDir, "reverse-tuck-end-v2-template.debug.svg");
-const graphPath = path.join(outputDir, "reverse-tuck-end-v2-template.graph.json");
+for (const templateCase of templateCases) {
+  const values = { L: 120, W: 60, H: 160 };
+  const assembly = templateCase.assemblyFactory(values);
+  const graph = templateCase.graphFactory(values);
+  const validation = validateDielineGraph(graph);
 
-fs.writeFileSync(svgPath, graphToSvg(graph), "utf8");
-fs.writeFileSync(graphPath, `${JSON.stringify(graph, null, 2)}\n`, "utf8");
+  assert(validation.ok, `${templateCase.name}: DielineGraph validation failed: ${validation.errors.join("; ")}`);
+  assertGraphShape(graph, assembly, templateCase);
 
-console.log("V2 template assembly verification passed.");
-console.log(`Faces: ${graph.faces.length}`);
-console.log(`Creases: ${graph.creases.length}`);
-console.log(`Geometry primitives: ${graph.geometry?.length ?? 0}`);
-console.log(`Validation warnings: ${validation.warnings.join("; ") || "none"}`);
-console.log(`Debug SVG: ${path.relative(projectRoot, svgPath)}`);
-console.log(`Graph JSON: ${path.relative(projectRoot, graphPath)}`);
+  const svgPath = path.join(outputDir, `${templateCase.outputStem}.debug.svg`);
+  const graphPath = path.join(outputDir, `${templateCase.outputStem}.graph.json`);
 
-function assertGraphShape(graph, assembly) {
+  fs.writeFileSync(svgPath, graphToSvg(graph), "utf8");
+  fs.writeFileSync(graphPath, `${JSON.stringify(graph, null, 2)}\n`, "utf8");
+
+  results.push({
+    name: templateCase.name,
+    faces: graph.faces.length,
+    creases: graph.creases.length,
+    geometry: graph.geometry?.length ?? 0,
+    warnings: validation.warnings,
+    svgPath,
+    graphPath,
+  });
+}
+
+console.log(`V2 template assembly verification passed for ${results.length} templates.`);
+for (const result of results) {
+  console.log(`${result.name}: faces=${result.faces}, creases=${result.creases}, geometry=${result.geometry}, warnings=${result.warnings.join("; ") || "none"}`);
+  console.log(`  Debug SVG: ${path.relative(projectRoot, result.svgPath)}`);
+  console.log(`  Graph JSON: ${path.relative(projectRoot, result.graphPath)}`);
+}
+
+function assertGraphShape(graph, assembly, templateCase) {
   const faceIds = new Set(graph.faces.map((face) => face.id));
   const expectedFaceIds = [
     "body-back",
@@ -65,46 +94,49 @@ function assertGraphShape(graph, assembly) {
   ];
 
   for (const faceId of expectedFaceIds) {
-    assert(faceIds.has(faceId), `Missing stable V2 RTE face id: ${faceId}`);
+    assert(faceIds.has(faceId), `${templateCase.name}: missing stable V2 face id: ${faceId}`);
   }
 
   for (const face of graph.faces) {
-    assert(face.vertices.every(isFinitePoint), `${face.id}: non-finite vertices`);
-    assert(!hasSelfCrossingPolygon(face.vertices), `${face.id}: self-intersecting polygon`);
+    assert(face.vertices.every(isFinitePoint), `${templateCase.name}: ${face.id}: non-finite vertices`);
+    assert(!hasSelfCrossingPolygon(face.vertices), `${templateCase.name}: ${face.id}: self-intersecting polygon`);
   }
 
   for (const crease of graph.creases) {
-    assert(faceIds.has(crease.faceA), `${crease.id}: missing faceA`);
-    assert(faceIds.has(crease.faceB), `${crease.id}: missing faceB`);
-    assert(crease.faceA !== crease.faceB, `${crease.id}: self-referencing crease`);
-    assert(isFinitePoint(crease.edgeStart) && isFinitePoint(crease.edgeEnd), `${crease.id}: non-finite endpoints`);
-    assert(!/score|slot|hole|window|relief|safe|bleed|perforation|notch|zone/i.test(crease.id), `${crease.id}: geometry-only item became crease`);
-    assert(crease.foldAngle > 0 && crease.foldAngle <= Math.PI + 0.000001, `${crease.id}: foldAngle should be radians`);
+    assert(faceIds.has(crease.faceA), `${templateCase.name}: ${crease.id}: missing faceA`);
+    assert(faceIds.has(crease.faceB), `${templateCase.name}: ${crease.id}: missing faceB`);
+    assert(crease.faceA !== crease.faceB, `${templateCase.name}: ${crease.id}: self-referencing crease`);
+    assert(isFinitePoint(crease.edgeStart) && isFinitePoint(crease.edgeEnd), `${templateCase.name}: ${crease.id}: non-finite endpoints`);
+    assert(!/score|slot|hole|window|relief|safe|bleed|perforation|notch|zone/i.test(crease.id), `${templateCase.name}: ${crease.id}: geometry-only item became crease`);
+    assert(crease.foldAngle > 0 && crease.foldAngle <= Math.PI + 0.000001, `${templateCase.name}: ${crease.id}: foldAngle should be radians`);
   }
+
+  const contractIds = assembly.parts.map((part) => part.contractId);
+  assert(contractIds.includes(templateCase.expectedClosureContract), `${templateCase.name}: expected closure contract ${templateCase.expectedClosureContract} was not used.`);
 
   for (const part of assembly.parts) {
-    assert(part.implementationStatus !== "spec-only", `${part.id}: spec-only part was used`);
-    assert(part.productionReady === false, `${part.id}: productionReady must remain false`);
+    assert(part.implementationStatus !== "spec-only", `${templateCase.name}: ${part.id}: spec-only part was used`);
+    assert(part.productionReady === false, `${templateCase.name}: ${part.id}: productionReady must remain false`);
   }
 
-  assert(graph.metadata?.catalog?.generatorId === "v2Library/template-assembly", "Graph metadata must identify v2Library template assembly source.");
-  assert(graph.metadata?.catalog?.productionReady === false, "Graph metadata must remain productionReady=false.");
-  assert(graph.source?.type === "template" && graph.source.templateId.includes("v2Library/template-assembly"), "Graph source must identify v2Library.");
-  assertDustFlapHandedness(graph);
+  assert(graph.metadata?.catalog?.generatorId === "v2Library/template-assembly", `${templateCase.name}: graph metadata must identify v2Library template assembly source.`);
+  assert(graph.metadata?.catalog?.productionReady === false, `${templateCase.name}: graph metadata must remain productionReady=false.`);
+  assert(graph.source?.type === "template" && graph.source.templateId.includes("v2Library/template-assembly"), `${templateCase.name}: graph source must identify v2Library.`);
+  assertDustFlapHandedness(graph, templateCase.name);
 }
 
 function isFinitePoint(point) {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
-function assertDustFlapHandedness(graph) {
+function assertDustFlapHandedness(graph, templateName) {
   const topLeft = faceById(graph, "topDustSideA-face");
   const topRight = faceById(graph, "topDustSideB-face");
   const bottomLeft = faceById(graph, "bottomDustSideA-face");
   const bottomRight = faceById(graph, "bottomDustSideB-face");
 
-  assert(normalizedPointSignature(topLeft) !== normalizedPointSignature(topRight), "Top left/right dust flaps must be handed, not identical translated polygons.");
-  assert(normalizedPointSignature(bottomLeft) !== normalizedPointSignature(bottomRight), "Bottom left/right dust flaps must be handed, not identical translated polygons.");
+  assert(normalizedPointSignature(topLeft) !== normalizedPointSignature(topRight), `${templateName}: top left/right dust flaps must be handed, not identical translated polygons.`);
+  assert(normalizedPointSignature(bottomLeft) !== normalizedPointSignature(bottomRight), `${templateName}: bottom left/right dust flaps must be handed, not identical translated polygons.`);
 
   assertDustBaseMatchesCrease(topLeft, creaseById(graph, "topDustSideA-hinge"));
   assertDustBaseMatchesCrease(topRight, creaseById(graph, "topDustSideB-hinge"));
@@ -117,7 +149,7 @@ function assertDustFlapHandedness(graph) {
   assertRightHandedDustFlap(graph, bottomRight, "bottomDustSideB");
 
   for (const crease of graph.creases) {
-    assert(!/Dust.*relief|relief.*Dust/i.test(crease.id), `${crease.id}: dust relief became a structural crease.`);
+    assert(!/Dust.*relief|relief.*Dust/i.test(crease.id), `${templateName}: ${crease.id}: dust relief became a structural crease.`);
   }
 }
 
