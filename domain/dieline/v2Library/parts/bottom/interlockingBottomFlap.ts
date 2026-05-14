@@ -52,7 +52,7 @@ export const interlockingBottomFlap: V2PartImplementation<InterlockingBottomFlap
       sourcePartId: input.id,
       printable: false,
       points: role.startsWith("minor")
-        ? minorDustPoints(anchor, bottomFlapDepth, diagonalInset, role)
+        ? minorDustPoints(anchor, bottomFlapDepth, diagonalInset)
         : majorLockPoints(anchor, insertLength, notchWidth, notchDepth, diagonalInset, notchCenter, handedness),
     });
     assertBaseEdgeMatchesAnchor(face, anchor, input.id);
@@ -117,20 +117,13 @@ function majorLockPoints(
   ];
 }
 
-function minorDustPoints(anchor: V2Anchor, depth: number, diagonalInset: number, role: string): V2Point[] {
-  if (role === "minor-dust-right") {
-    return [
-      anchor.start,
-      offset(offset(anchor.start, anchor.tangent, diagonalInset), anchor.normal, depth),
-      offset(anchor.end, anchor.normal, depth),
-      anchor.end,
-    ];
-  }
+function minorDustPoints(anchor: V2Anchor, depth: number, diagonalInset: number): V2Point[] {
+  const endReliefInset = Math.min(anchor.length * 0.055, Math.max(2, depth * 0.12));
 
   return [
     anchor.start,
-    offset(anchor.start, anchor.normal, depth),
-    offset(offset(anchor.end, anchor.tangent, -diagonalInset), anchor.normal, depth),
+    offset(offset(anchor.start, anchor.tangent, diagonalInset), anchor.normal, depth),
+    offset(offset(anchor.end, anchor.tangent, -endReliefInset), anchor.normal, depth),
     anchor.end,
   ];
 }

@@ -16,8 +16,8 @@ The hidden V2 hang-tab assembly now produces a first inspectable graph from the 
 - The body strip follows the reference order with glue on the far right.
 - The top side dust flaps are foldable faces attached to side panel top edges.
 - The back-panel top closure uses the shared standard tuck flap geometry with STE/RTE-style depth: `W + TFW`.
-- The front-panel display area uses a lower hang panel plus an equal-height upper fold-over cap.
-- The lower euro/keyhole slot and upper rounded slot are geometry-only hole primitives positioned to overlay after the cap folds down.
+- The front-panel display area uses a lower hang panel, an equal-height upper fold-over panel, and a short top insert cap.
+- The lower euro/keyhole slot and upper rounded slot are geometry-only hole primitives positioned to overlay after the upper panel folds down.
 - Bottom pieces are generated through one coordinated interlocking flap part with shared notch-center calculations.
 
 ## Remaining Differences

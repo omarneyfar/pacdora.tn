@@ -13,6 +13,7 @@ export type V2HangTabParameters = {
   TFR?: number;
   lowerHangHeight?: number;
   upperCapHeight?: number;
+  foldOverHeight?: number;
   slotWidth?: number;
   slotHeight?: number;
   bottomDepth?: number;
@@ -26,19 +27,22 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
   const glueFlapWidth = positiveNumber(values.GFW, clamp(width * 0.18, 12, 18));
   const topDustDepth = positiveNumber(values.DFW, clamp(width * 0.45, 24, 42));
   const lowerHangHeight = positiveNumber(values.lowerHangHeight, clamp(length * 0.477, 40, 58));
-  const upperCapHeight = lowerHangHeight;
-  const topTuckLipDepth = positiveNumber(values.TFW, clamp(width * 0.32, Math.max(1, minimumDimension * 0.08), Math.max(2, minimumDimension * 0.5)));
+  const foldOverHeight = positiveNumber(values.foldOverHeight, lowerHangHeight);
+  const upperCapHeight = positiveNumber(values.upperCapHeight, clamp(length * 0.153, 14, 22));
+  const topTuckLipDepth = positiveNumber(values.TFW, clamp(18, Math.max(1, minimumDimension * 0.08), Math.max(2, minimumDimension * 0.5)));
   const topTuckDepth = width + topTuckLipDepth;
   const topTuckRadius = positiveNumber(values.TFR, clamp(length * 0.08, 6, 11));
-  const slotWidth = positiveNumber(values.slotWidth, clamp(length * 0.41, 36, 50));
-  const slotHeight = positiveNumber(values.slotHeight, clamp(length * 0.123, 10, 15));
-  const lowerSlotOffsetFromBase = clamp(lowerHangHeight * 0.435, slotHeight / 2 + 4, lowerHangHeight - slotHeight / 2 - 4);
-  const upperSlotOffsetFromFold = lowerHangHeight - lowerSlotOffsetFromBase;
-  const bottomDustDepth = clamp(width * 0.45, 28, 40);
-  const bottomMajorDepth = positiveNumber(values.bottomDepth, clamp(width * 0.68, 44, 58));
+  const slotWidth = positiveNumber(values.slotWidth, clamp(length * 0.411, 36, 50));
+  const lowerSlotHeight = positiveNumber(values.slotHeight, clamp(length * 0.141, 12, 17));
+  const upperSlotHeight = clamp(length * 0.123, 10, 15);
+  const lowerSlotBottomOffsetFromBase = clamp(22.8, lowerSlotHeight + 4, lowerHangHeight - 4);
+  const upperSlotOffsetFromFold = lowerHangHeight - lowerSlotBottomOffsetFromBase - lowerSlotHeight / 2;
+  const bottomDustDepth = clamp(width * 0.5, 34, 42);
+  const bottomMajorDepth = positiveNumber(values.bottomDepth, clamp(width * 0.66, 48, 56));
   const notchWidth = clamp(width * 0.26, 18, 24);
   const notchDepth = clamp(bottomMajorDepth * 0.16, 6, 10);
-  const diagonalInset = clamp(width * 0.34, 22, 32);
+  const minorDiagonalInset = clamp(width * 0.5, 34, 42);
+  const majorEndInset = clamp(width * 0.055, 3, 6);
 
   return assembleV2Template({
     id: "hang-tab-v2-template",
@@ -54,14 +58,19 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
       tuckDepth: topTuckDepth,
       TFR: topTuckRadius,
       lowerHangHeight,
+      foldOverHeight,
       upperCapHeight,
       slotWidth,
-      slotHeight,
+      lowerSlotHeight,
+      upperSlotHeight,
+      lowerSlotBottomOffsetFromBase,
+      upperSlotOffsetFromFold,
       bottomDustDepth,
       bottomMajorDepth,
       notchWidth,
       notchDepth,
-      diagonalInset,
+      minorDiagonalInset,
+      majorEndInset,
     },
     parts: [
       {
@@ -72,7 +81,7 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
           W: width,
           H: height,
           panelOrder: "side-front-side-back",
-          topAllowance: Math.max(lowerHangHeight + upperCapHeight, topTuckDepth),
+          topAllowance: Math.max(lowerHangHeight + foldOverHeight + upperCapHeight, topTuckDepth),
           bottomAllowance: bottomMajorDepth,
         },
       },
@@ -94,13 +103,14 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
         attachTo: "body.front.top",
         parameters: {
           lowerHeight: lowerHangHeight,
-          upperHeight: upperCapHeight,
-          cornerRadius: 8,
+          upperHeight: foldOverHeight,
+          capHeight: upperCapHeight,
+          cornerRadius: 10,
           euroSlotWidth: slotWidth,
-          euroSlotHeight: slotHeight,
-          euroSlotOffsetFromBase: lowerSlotOffsetFromBase,
+          euroSlotHeight: lowerSlotHeight,
+          euroSlotOffsetFromBase: lowerSlotBottomOffsetFromBase,
           upperSlotWidth: slotWidth,
-          upperSlotHeight: slotHeight,
+          upperSlotHeight,
           upperSlotOffsetFromFold,
         },
       },
@@ -117,7 +127,7 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
         parameters: {
           role: "minor-dust-left",
           bottomFlapDepth: bottomDustDepth,
-          diagonalInset,
+          diagonalInset: minorDiagonalInset,
         },
       },
       {
@@ -126,12 +136,12 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
         attachTo: "body.front.bottom",
         parameters: {
           role: "major-insert",
-          handedness: "left",
+          handedness: "right",
           bottomFlapDepth: bottomDustDepth,
           insertLength: bottomMajorDepth,
           notchWidth,
           notchDepth,
-          diagonalInset,
+          diagonalInset: majorEndInset,
           notchCenter: length / 2,
         },
       },
@@ -142,7 +152,7 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
         parameters: {
           role: "minor-dust-right",
           bottomFlapDepth: bottomDustDepth,
-          diagonalInset,
+          diagonalInset: minorDiagonalInset,
         },
       },
       {
@@ -156,7 +166,7 @@ export function generateV2HangTabAssembly(values: V2HangTabParameters = {}): V2T
           insertLength: bottomMajorDepth,
           notchWidth,
           notchDepth,
-          diagonalInset,
+          diagonalInset: majorEndInset,
           notchCenter: length / 2,
         },
       },
@@ -181,6 +191,7 @@ export function generateV2HangTabDielineGraph(values: ParameterValueMap = {}): D
     TFR: numericValue(values.TFR),
     lowerHangHeight: numericValue(values.lowerHangHeight),
     upperCapHeight: numericValue(values.upperCapHeight),
+    foldOverHeight: numericValue(values.foldOverHeight),
     slotWidth: numericValue(values.slotWidth),
     slotHeight: numericValue(values.slotHeight),
     bottomDepth: numericValue(values.bottomDepth),

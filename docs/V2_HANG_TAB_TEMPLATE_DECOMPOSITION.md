@@ -15,16 +15,19 @@ This is an exploratory hidden V2 assembly for the CefBox-style folding carton wi
 - `standardDustFlap` creates the two top side dust flaps.
 - `foldedHangTabPanel` creates:
   - lower hang panel attached to `front.top`
-  - upper fold-over cap attached to the lower panel top edge
+  - upper fold-over panel attached to the lower panel inset top fold
+  - short top insert cap attached to the upper panel top edge
   - lower euro/keyhole slot as a geometry-only hole primitive
   - upper rounded slot as a geometry-only hole primitive
 - Reference-like defaults:
   - lower hang height: `clamp(L * 0.477, 40, 58)` -> about `52.5mm`
-  - upper cap height: equal to lower hang height so the fold-over panel can sit inside/behind the lower panel
+  - upper fold-over panel height: equal to lower hang height so the holes overlay after folding
+  - short top cap height: `clamp(L * 0.153, 14, 22)` -> about `16.8mm`
   - slot width: `clamp(L * 0.41, 36, 50)` -> about `45.1mm`
-  - slot height: `clamp(L * 0.123, 10, 15)` -> about `13.5mm`
-  - lower slot center is about `43.5%` of the lower panel height above the front-panel top crease
-  - upper slot center is mirrored around the fold line so the holes overlay when the cap folds down
+  - lower euro/keyhole slot height: about `15.5mm`
+  - upper rounded slot height: about `13.5mm`
+  - lower slot bottom is about `22.8mm` above the front-panel top crease
+  - upper slot center is mirrored around the lower/upper fold line so the holes overlay when the upper panel folds down
 - The top tuck closure depth follows the same policy as STE/RTE: `tuckDepth = W + TFW`, where `TFW` is the tuck lip allowance.
 - The top dust flap depth remains separate as `DFW`; dust flaps are not used to size the main tuck insert.
 
@@ -34,7 +37,8 @@ This is an exploratory hidden V2 assembly for the CefBox-style folding carton wi
 - Minor side flaps attach to `sideA.bottom` and `sideB.bottom`.
 - Major flaps attach to `front.bottom` and `back.bottom`.
 - Major notches use the same local coordinate: `notchCenter = L / 2`.
-- Diagonal inset is derived from depth: `clamp(W * 0.34, 22, 32)`.
+- Minor-flap diagonal inset is derived from depth: `clamp(W * 0.5, 34, 42)`.
+- Major-flap end relief is small, about `clamp(W * 0.055, 3, 6)`.
 - Major depth is derived from depth: `clamp(W * 0.68, 44, 58)`.
 - Notch width and notch depth are proportional to `W` / major depth and clamped.
 

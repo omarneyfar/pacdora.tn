@@ -94,6 +94,7 @@ const templateCases = [
       "topDustSideB-face",
       "foldedHangTab-lower",
       "foldedHangTab-upper",
+      "foldedHangTab-cap",
       "topTuck-face",
       "bottomMinorSideA-face",
       "bottomMajorFront-face",
@@ -263,6 +264,7 @@ function assertHangTabStructure(graph, assembly, templateName) {
 
   const lower = faceById(graph, "foldedHangTab-lower");
   const upper = faceById(graph, "foldedHangTab-upper");
+  const cap = faceById(graph, "foldedHangTab-cap");
   const front = faceById(graph, "body-front");
   const topTuck = faceById(graph, "topTuck-face");
   const topDust = faceById(graph, "topDustSideA-face");
@@ -271,19 +273,22 @@ function assertHangTabStructure(graph, assembly, templateName) {
   assert(close(faceHeight(topTuck), expectedTuckDepth), `${templateName}: top tuck closure depth must use STE/RTE-style W + TFW calculation.`);
   assert(faceHeight(topTuck) > faceHeight(topDust), `${templateName}: top tuck closure should be deeper than standardDustFlap.`);
   assert(close(faceHeight(lower), faceHeight(upper)), `${templateName}: folded hang tab lower and upper panels must have equal height.`);
+  assert(faceHeight(cap) < faceHeight(upper), `${templateName}: folded hang tab top cap must be shorter than the two main hang panels.`);
   assert(maxY(lower.vertices) <= minY(front.vertices) + 0.000001, `${templateName}: lower hang panel must sit above the front panel.`);
-  assert(maxY(upper.vertices) <= minY(lower.vertices) + 0.000001, `${templateName}: upper cap must sit above the lower hang panel.`);
+  assert(maxY(upper.vertices) <= minY(lower.vertices) + 0.000001, `${templateName}: upper fold-over panel must sit above the lower hang panel.`);
+  assert(maxY(cap.vertices) <= minY(upper.vertices) + 0.000001, `${templateName}: short top cap must sit above the upper fold-over panel.`);
   assertDisplayBaseMatchesCrease(lower, creaseById(graph, "foldedHangTab-attach-hinge"));
-  assertDisplayBaseMatchesCrease(upper, creaseById(graph, "foldedHangTab-cap-fold"));
+  assertDisplayBaseMatchesCrease(upper, creaseById(graph, "foldedHangTab-panel-fold"));
+  assertDisplayBaseMatchesCrease(cap, creaseById(graph, "foldedHangTab-cap-fold"));
 
   const lowerSlot = geometryById(graph, "foldedHangTab-lower-euro-slot");
   const upperSlot = geometryById(graph, "foldedHangTab-upper-rounded-slot");
   assert(lowerSlot.layer === "hole", `${templateName}: lower hang slot must stay geometry-only on the hole layer.`);
-  assert(upperSlot.layer === "hole", `${templateName}: upper cap slot must stay geometry-only on the hole layer.`);
+  assert(upperSlot.layer === "hole", `${templateName}: upper fold-over panel slot must stay geometry-only on the hole layer.`);
   assertPrimitiveSamplesInsideFace(lowerSlot, lower, `${templateName}: lower euro/keyhole slot must stay inside lower hang panel.`);
-  assertPrimitiveSamplesInsideFace(upperSlot, upper, `${templateName}: upper rounded slot must stay inside upper cap.`);
+  assertPrimitiveSamplesInsideFace(upperSlot, upper, `${templateName}: upper rounded slot must stay inside upper fold-over panel.`);
   const foldY = minY(lower.vertices);
-  const lowerSlotCenterDistanceFromFold = slotCenterY(lowerSlot) - foldY;
+  const lowerSlotCenterDistanceFromFold = lowerHangSlotMainCenterY(lowerSlot, parameters) - foldY;
   const upperSlotCenterDistanceFromFold = foldY - slotCenterY(upperSlot);
   assert(close(lowerSlotCenterDistanceFromFold, upperSlotCenterDistanceFromFold), `${templateName}: folded hang tab slots must be positioned to overlay after folding.`);
 
@@ -293,7 +298,7 @@ function assertHangTabStructure(graph, assembly, templateName) {
 
   const frontMajor = faceById(graph, "bottomMajorFront-face");
   const backMajor = faceById(graph, "bottomMajorBack-face");
-  assert(normalizedPointSignature(frontMajor) !== normalizedPointSignature(backMajor), `${templateName}: major bottom flaps must be handed/mirrored, not duplicated.`);
+  assert(normalizedPointSignature(frontMajor) === normalizedPointSignature(backMajor), `${templateName}: reference major bottom flaps should share the same right-relief cut logic in local coordinates.`);
   assertBottomBaseMatchesCrease(frontMajor, creaseById(graph, "bottomMajorFront-hinge"));
   assertBottomBaseMatchesCrease(backMajor, creaseById(graph, "bottomMajorBack-hinge"));
   assertBottomBaseMatchesCrease(faceById(graph, "bottomMinorSideA-face"), creaseById(graph, "bottomMinorSideA-hinge"));
@@ -428,7 +433,19 @@ function faceHeight(face) {
 }
 
 function slotCenterY(slot) {
+  if (slot.type === "polygon" || slot.type === "polyline") {
+    const ys = slot.points.map((point) => point.y);
+    return (Math.min(...ys) + Math.max(...ys)) / 2;
+  }
   return slot.y + slot.height / 2;
+}
+
+function lowerHangSlotMainCenterY(slot, parameters) {
+  if ((slot.type === "polygon" || slot.type === "polyline") && Number.isFinite(parameters.lowerSlotHeight)) {
+    const bottomY = Math.max(...slot.points.map((point) => point.y));
+    return bottomY - parameters.lowerSlotHeight / 2;
+  }
+  return slotCenterY(slot);
 }
 
 function normalizedPointSignature(face) {
