@@ -30,6 +30,7 @@ import { reliefNotch } from "../parts/cutouts/reliefNotch";
 import { roundedSlotCutout } from "../parts/cutouts/roundedSlotCutout";
 import { hangPanel } from "../parts/display/hangPanel";
 import { hangTab } from "../parts/display/hangTab";
+import { sideCircularHangPanel } from "../parts/display/sideCircularHangPanel";
 import { gussetCover, gussetDiagonalScore, gussetSidePanel, gussetTrianglePanel } from "../parts/gusset/gussetParts";
 import { bleedGuide } from "../parts/guides/bleedGuide";
 import {
@@ -102,6 +103,7 @@ const implementations = [
   windowCutout,
   reliefNotch,
   hangPanel,
+  sideCircularHangPanel,
   hangTab,
   lockTab,
   lockSlot,

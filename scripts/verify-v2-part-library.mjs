@@ -52,6 +52,7 @@ const expectedPartIds = [
   "windowCutout",
   "reliefNotch",
   "hangPanel",
+  "sideCircularHangPanel",
   "hangTab",
   "foldedHandle",
   "arcHandle",

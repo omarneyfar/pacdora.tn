@@ -54,6 +54,7 @@ It is not connected to the current recipe engine, generator registry, catalog, o
 - `windowCutout`
 - `reliefNotch`
 - `hangPanel`
+- `sideCircularHangPanel`
 - `hangTab`
 - `scoreGuide`
 - `glueZoneGuide`

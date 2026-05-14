@@ -1,5 +1,5 @@
 {
-  "totalContracts": 89,
+  "totalContracts": 90,
   "implementedParts": [
     "standardBodyStrip",
     "sleeveBody",
@@ -20,6 +20,7 @@
     "windowCutout",
     "reliefNotch",
     "hangPanel",
+    "sideCircularHangPanel",
     "hangTab",
     "scoreGuide",
     "glueZoneGuide",

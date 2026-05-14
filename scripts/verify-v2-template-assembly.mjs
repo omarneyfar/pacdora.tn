@@ -35,6 +35,13 @@ const templateCases = [
     name: "Reverse Tuck End",
     outputStem: "reverse-tuck-end-v2-template",
     expectedClosureContract: "standardTuckClosureFlap",
+    values: { L: 120, W: 60, H: 160 },
+    dust: {
+      topLeft: ["topDustSideA-face", "topDustSideA"],
+      topRight: ["topDustSideB-face", "topDustSideB"],
+      bottomLeft: ["bottomDustSideA-face", "bottomDustSideA"],
+      bottomRight: ["bottomDustSideB-face", "bottomDustSideB"],
+    },
     assemblyFactory: generateV2ReverseTuckEndAssembly,
     graphFactory: generateV2ReverseTuckEndDielineGraph,
   },
@@ -42,6 +49,13 @@ const templateCases = [
     name: "Straight Tuck End",
     outputStem: "straight-tuck-end-v2-template",
     expectedClosureContract: "standardTuckClosureFlap",
+    values: { L: 120, W: 60, H: 160 },
+    dust: {
+      topLeft: ["topDustSideA-face", "topDustSideA"],
+      topRight: ["topDustSideB-face", "topDustSideB"],
+      bottomLeft: ["bottomDustSideA-face", "bottomDustSideA"],
+      bottomRight: ["bottomDustSideB-face", "bottomDustSideB"],
+    },
     assemblyFactory: generateV2StraightTuckEndAssembly,
     graphFactory: generateV2StraightTuckEndDielineGraph,
   },
@@ -49,6 +63,14 @@ const templateCases = [
     name: "Circular Hang Hole",
     outputStem: "circular-hang-hole-v2-template",
     expectedClosureContract: "standardTuckClosureFlap",
+    values: { L: 150, W: 25, H: 100, GFW: 15, OD: 20, hangExtensionWidth: 70, hangOuterRadius: 25 },
+    dust: {
+      topLeft: ["topDustSideB-face", "topDustSideB"],
+      topRight: ["topDustSideA-face", "topDustSideA"],
+      bottomLeft: ["bottomDustSideB-face", "bottomDustSideB"],
+      bottomRight: ["bottomDustSideA-face", "bottomDustSideA"],
+    },
+    circularHang: true,
     assemblyFactory: generateV2CircularHangHoleAssembly,
     graphFactory: generateV2CircularHangHoleDielineGraph,
   },
@@ -57,7 +79,7 @@ const templateCases = [
 const results = [];
 
 for (const templateCase of templateCases) {
-  const values = { L: 120, W: 60, H: 160 };
+  const values = templateCase.values;
   const assembly = templateCase.assemblyFactory(values);
   const graph = templateCase.graphFactory(values);
   const validation = validateDielineGraph(graph);
@@ -106,7 +128,7 @@ function assertGraphShape(graph, assembly, templateCase) {
   ];
 
   if (templateCase.name === "Circular Hang Hole") {
-    expectedFaceIds.push("hangPanel-face");
+    expectedFaceIds.push("sideHangPanel-face");
   }
 
   for (const faceId of expectedFaceIds) {
@@ -138,34 +160,83 @@ function assertGraphShape(graph, assembly, templateCase) {
   assert(graph.metadata?.catalog?.generatorId === "v2Library/template-assembly", `${templateCase.name}: graph metadata must identify v2Library template assembly source.`);
   assert(graph.metadata?.catalog?.productionReady === false, `${templateCase.name}: graph metadata must remain productionReady=false.`);
   assert(graph.source?.type === "template" && graph.source.templateId.includes("v2Library/template-assembly"), `${templateCase.name}: graph source must identify v2Library.`);
-  assertDustFlapHandedness(graph, templateCase.name);
+  assertDustFlapHandedness(graph, templateCase.name, templateCase.dust);
+  if (templateCase.circularHang) assertCircularHangHoleStructure(graph, assembly, templateCase.name);
 }
 
 function isFinitePoint(point) {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
-function assertDustFlapHandedness(graph, templateName) {
-  const topLeft = faceById(graph, "topDustSideA-face");
-  const topRight = faceById(graph, "topDustSideB-face");
-  const bottomLeft = faceById(graph, "bottomDustSideA-face");
-  const bottomRight = faceById(graph, "bottomDustSideB-face");
+function assertDustFlapHandedness(graph, templateName, dust) {
+  const topLeft = faceById(graph, dust.topLeft[0]);
+  const topRight = faceById(graph, dust.topRight[0]);
+  const bottomLeft = faceById(graph, dust.bottomLeft[0]);
+  const bottomRight = faceById(graph, dust.bottomRight[0]);
 
   assert(normalizedPointSignature(topLeft) !== normalizedPointSignature(topRight), `${templateName}: top left/right dust flaps must be handed, not identical translated polygons.`);
   assert(normalizedPointSignature(bottomLeft) !== normalizedPointSignature(bottomRight), `${templateName}: bottom left/right dust flaps must be handed, not identical translated polygons.`);
 
-  assertDustBaseMatchesCrease(topLeft, creaseById(graph, "topDustSideA-hinge"));
-  assertDustBaseMatchesCrease(topRight, creaseById(graph, "topDustSideB-hinge"));
-  assertDustBaseMatchesCrease(bottomLeft, creaseById(graph, "bottomDustSideA-hinge"));
-  assertDustBaseMatchesCrease(bottomRight, creaseById(graph, "bottomDustSideB-hinge"));
+  assertDustBaseMatchesCrease(topLeft, creaseById(graph, `${dust.topLeft[1]}-hinge`));
+  assertDustBaseMatchesCrease(topRight, creaseById(graph, `${dust.topRight[1]}-hinge`));
+  assertDustBaseMatchesCrease(bottomLeft, creaseById(graph, `${dust.bottomLeft[1]}-hinge`));
+  assertDustBaseMatchesCrease(bottomRight, creaseById(graph, `${dust.bottomRight[1]}-hinge`));
 
-  assertLeftHandedDustFlap(graph, topLeft, "topDustSideA");
-  assertRightHandedDustFlap(graph, topRight, "topDustSideB");
-  assertLeftHandedDustFlap(graph, bottomLeft, "bottomDustSideA");
-  assertRightHandedDustFlap(graph, bottomRight, "bottomDustSideB");
+  assertLeftHandedDustFlap(graph, topLeft, dust.topLeft[1]);
+  assertRightHandedDustFlap(graph, topRight, dust.topRight[1]);
+  assertLeftHandedDustFlap(graph, bottomLeft, dust.bottomLeft[1]);
+  assertRightHandedDustFlap(graph, bottomRight, dust.bottomRight[1]);
 
   for (const crease of graph.creases) {
     assert(!/Dust.*relief|relief.*Dust/i.test(crease.id), `${templateName}: ${crease.id}: dust relief became a structural crease.`);
+  }
+}
+
+function assertCircularHangHoleStructure(graph, assembly, templateName) {
+  const contractIds = assembly.parts.map((part) => part.contractId);
+  assert(contractIds.includes("sideCircularHangPanel"), `${templateName}: sideCircularHangPanel must be used for the right-side hanger.`);
+  assert(contractIds.includes("circularCutout"), `${templateName}: circularCutout must be used for the hang hole.`);
+  assert(!contractIds.includes("hangPanel"), `${templateName}: top hangPanel must not be used for the side hanger reference.`);
+  assert(!graph.faces.some((face) => face.id === "hangPanel-face"), `${templateName}: top hangPanel face must not exist.`);
+
+  const bodyBack = faceById(graph, "body-back");
+  const sideGlue = faceById(graph, "sideGlue-face");
+  assert(maxX(sideGlue.vertices) <= minX(bodyBack.vertices) + 0.000001, `${templateName}: glue tab must be on the left of the body strip.`);
+
+  const sideHang = faceById(graph, "sideHangPanel-face");
+  const bodyMaxX = Math.max(...graph.faces.filter((face) => face.id.startsWith("body-")).flatMap((face) => face.vertices.map((point) => point.x)));
+  assert(minX(sideHang.vertices) >= bodyMaxX - 0.000001, `${templateName}: side hanger must attach on the right side of the body strip.`);
+  assert(maxX(sideHang.vertices) > bodyMaxX, `${templateName}: side hanger must extend to the right of the body strip.`);
+  assertDisplayBaseMatchesCrease(sideHang, creaseById(graph, "sideHangPanel-hinge"));
+
+  const hole = (graph.geometry ?? []).find((primitive) => primitive.id === "circularCutout-circle");
+  assert(hole, `${templateName}: circular cutout geometry primitive is missing.`);
+  assert(hole.type === "circle", `${templateName}: circular cutout must be a circle primitive.`);
+  assert(hole.layer === "hole", `${templateName}: circular cutout must remain on the hole layer.`);
+  assertCircleInsideFace(hole, sideHang, templateName);
+
+  for (const crease of graph.creases) {
+    assert(!/circularCutout|circle|hole/i.test(crease.id), `${templateName}: circular cutout became a structural crease.`);
+  }
+}
+
+function assertDisplayBaseMatchesCrease(face, crease) {
+  const first = face.vertices[0];
+  const last = face.vertices[face.vertices.length - 1];
+  assert(pointsEqual(first, crease.edgeStart), `${face.id}: first base point must match display hinge start.`);
+  assert(pointsEqual(last, crease.edgeEnd), `${face.id}: last base point must match display hinge end.`);
+}
+
+function assertCircleInsideFace(circle, face, templateName) {
+  const samplePoints = [
+    circle.center,
+    { x: circle.center.x - circle.radius, y: circle.center.y },
+    { x: circle.center.x + circle.radius, y: circle.center.y },
+    { x: circle.center.x, y: circle.center.y - circle.radius },
+    { x: circle.center.x, y: circle.center.y + circle.radius },
+  ];
+  for (const point of samplePoints) {
+    assert(pointInOrOnPolygon(point, face.vertices), `${templateName}: circular cutout must stay inside side hanger panel.`);
   }
 }
 
@@ -226,6 +297,14 @@ function normalizedPointSignature(face) {
     .join(" ");
 }
 
+function minX(points) {
+  return Math.min(...points.map((point) => point.x));
+}
+
+function maxX(points) {
+  return Math.max(...points.map((point) => point.x));
+}
+
 function hasSelfCrossingPolygon(points) {
   for (let a = 0; a < points.length; a += 1) {
     const a1 = points[a];
@@ -254,6 +333,34 @@ function orientation(a, b, c) {
 
 function pointsEqual(a, b) {
   return close(a.x, b.x) && close(a.y, b.y);
+}
+
+function pointInOrOnPolygon(point, points) {
+  if (points.some((start, index) => pointOnSegment(point, start, points[(index + 1) % points.length]))) {
+    return true;
+  }
+
+  let inside = false;
+  for (let current = 0, previous = points.length - 1; current < points.length; previous = current, current += 1) {
+    const a = points[current];
+    const b = points[previous];
+    const intersects = (a.y > point.y) !== (b.y > point.y)
+      && point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointOnSegment(point, start, end) {
+  const length = distance(start, end);
+  if (length <= 0.000001) return distance(point, start) <= 0.000001;
+  const cross = Math.abs((point.y - start.y) * (end.x - start.x) - (point.x - start.x) * (end.y - start.y));
+  const dot = (point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y);
+  return cross / length <= 0.000001 && dot >= -0.000001 && dot <= length * length + 0.000001;
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 function close(a, b) {

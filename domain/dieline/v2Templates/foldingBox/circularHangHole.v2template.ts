@@ -12,19 +12,26 @@ export type V2CircularHangHoleParameters = {
   TFR?: number;
   DFW?: number;
   HL?: number;
+  OD?: number;
+  hangExtensionWidth?: number;
+  hangOuterRadius?: number;
 };
 
 export function generateV2CircularHangHoleAssembly(values: V2CircularHangHoleParameters = {}): V2TemplateAssembly {
-  const length = positiveNumber(values.L, 120);
-  const width = positiveNumber(values.W, 60);
-  const height = positiveNumber(values.H, 160);
+  const length = positiveNumber(values.L, 150);
+  const width = positiveNumber(values.W, 25);
+  const height = positiveNumber(values.H, 100);
   const minimumDimension = Math.min(length, width, height);
-  const glueFlapWidth = positiveNumber(values.GFW, clamp(minimumDimension * 0.25, 1.5, Math.max(3, minimumDimension * 0.35)));
-  const tuckLipDepth = positiveNumber(values.TFW, clamp(width * 0.32, Math.max(1, minimumDimension * 0.08), Math.max(2, minimumDimension * 0.5)));
+  const glueFlapWidth = positiveNumber(values.GFW, clamp(minimumDimension * 0.6, 10, 20));
+  const tuckLipDepth = positiveNumber(values.TFW, clamp(18, Math.max(1, minimumDimension * 0.4), Math.max(2, minimumDimension * 0.8)));
   const tuckDepth = width + tuckLipDepth;
-  const tuckRadius = positiveNumber(values.TFR, clamp(width * 0.18, 0.5, Math.min(width * 0.25, length * 0.18, height * 0.18)));
-  const dustDepth = positiveNumber(values.DFW, clamp(width * 0.58, Math.max(1, width * 0.25), Math.max(2, Math.min(width * 0.75, height * 0.75, length * 0.75))));
-  const hangPanelLength = positiveNumber(values.HL, 30);
+  const tuckRadius = positiveNumber(values.TFR, clamp(9, 0.5, Math.min(width * 0.45, length * 0.18, height * 0.18)));
+  const dustDepth = positiveNumber(values.DFW, clamp(width * 0.84, Math.max(1, width * 0.25), Math.max(2, Math.min(width * 1.1, height * 0.75, length * 0.75))));
+  const hangExtensionWidth = positiveNumber(values.hangExtensionWidth ?? values.HL, 70);
+  const hangOuterRadius = positiveNumber(values.hangOuterRadius, 25);
+  const holeDiameter = positiveNumber(values.OD, 20);
+  const holeCenterX = hangExtensionWidth - hangOuterRadius;
+  const holeCenterY = height / 2;
 
   return assembleV2Template({
     id: "circular-hang-hole-v2-template",
@@ -39,7 +46,9 @@ export function generateV2CircularHangHoleAssembly(values: V2CircularHangHolePar
       tuckDepth,
       TFR: tuckRadius,
       DFW: dustDepth,
-      HL: hangPanelLength,
+      hangExtensionWidth,
+      hangOuterRadius,
+      OD: holeDiameter,
     },
     parts: [
       {
@@ -49,7 +58,8 @@ export function generateV2CircularHangHoleAssembly(values: V2CircularHangHolePar
           L: length,
           W: width,
           H: height,
-          panelOrder: "side-front-side-back",
+          panelOrder: "back-side-front-side",
+          xOffset: glueFlapWidth,
           topAllowance: tuckDepth,
           bottomAllowance: tuckDepth,
         },
@@ -57,7 +67,7 @@ export function generateV2CircularHangHoleAssembly(values: V2CircularHangHolePar
       {
         id: "sideGlue",
         type: "sideGlueSeamTab",
-        attachTo: "body.back.right",
+        attachTo: "body.back.left",
         parameters: { GFW: glueFlapWidth, reliefBevel: glueFlapWidth * 0.34 },
       },
       {
@@ -76,37 +86,42 @@ export function generateV2CircularHangHoleAssembly(values: V2CircularHangHolePar
         id: "topDustSideA",
         type: "standardDustFlap",
         attachTo: "body.sideA.top",
-        parameters: { DFW: dustDepth, sidePosition: "right" },
+        parameters: { DFW: dustDepth, sidePosition: "left" },
       },
       {
         id: "topDustSideB",
         type: "standardDustFlap",
         attachTo: "body.sideB.top",
-        parameters: { DFW: dustDepth, sidePosition: "left" },
+        parameters: { DFW: dustDepth, sidePosition: "right" },
       },
       {
         id: "bottomDustSideA",
         type: "standardDustFlap",
         attachTo: "body.sideA.bottom",
-        parameters: { DFW: dustDepth, sidePosition: "right" },
+        parameters: { DFW: dustDepth, sidePosition: "left" },
       },
       {
         id: "bottomDustSideB",
         type: "standardDustFlap",
         attachTo: "body.sideB.bottom",
-        parameters: { DFW: dustDepth, sidePosition: "left" },
+        parameters: { DFW: dustDepth, sidePosition: "right" },
       },
       {
-        id: "hangPanel",
-        type: "hangPanel",
-        attachTo: "body.back.top",
-        parameters: { HL: hangPanelLength },
+        id: "sideHangPanel",
+        type: "sideCircularHangPanel",
+        attachTo: "body.sideA.right",
+        parameters: {
+          extensionWidth: hangExtensionWidth,
+          neckWidth: width * 0.95,
+          outerRadius: hangOuterRadius,
+          centerY: holeCenterY,
+        },
       },
       {
         id: "circularCutout",
         type: "circularCutout",
-        attachTo: "hangPanel.face",
-        parameters: { OD: 8 },
+        attachTo: "sideHangPanel.face",
+        parameters: { OD: holeDiameter, centerX: holeCenterX, centerY: holeCenterY, margin: 3 },
       },
     ],
   });
@@ -122,6 +137,9 @@ export function generateV2CircularHangHoleDielineGraph(values: ParameterValueMap
     TFR: numericValue(values.TFR),
     DFW: numericValue(values.DFW),
     HL: numericValue(values.HL),
+    OD: numericValue(values.OD),
+    hangExtensionWidth: numericValue(values.hangExtensionWidth),
+    hangOuterRadius: numericValue(values.hangOuterRadius),
   }));
 }
 

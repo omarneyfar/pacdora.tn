@@ -8,6 +8,7 @@ type StandardBodyStripParameters = {
   W?: number;
   H?: number;
   panelOrder?: string;
+  xOffset?: number;
   topAllowance?: number;
   bottomAllowance?: number;
 };
@@ -20,6 +21,7 @@ export const standardBodyStrip: V2PartImplementation<StandardBodyStripParameters
     const length = positiveParameter(input, "L");
     const width = positiveParameter(input, "W");
     const height = positiveParameter(input, "H");
+    const xOffset = numberParameter(input, "xOffset", 0);
     const topAllowance = Math.max(0, numberParameter(input, "topAllowance", 0));
     const y = topAllowance;
     const result = emptyPartResult();
@@ -46,7 +48,7 @@ export const standardBodyStrip: V2PartImplementation<StandardBodyStripParameters
     if (panelOrder !== "back-side-front-side" && panelOrder !== "side-front-side-back") {
       warnings.push(`${input.id}: unknown panelOrder '${panelOrder}', using default V2 panel order.`);
     }
-    let cursor = 0;
+    let cursor = xOffset;
 
     for (const panel of panels) {
       const face = rectangleFace({

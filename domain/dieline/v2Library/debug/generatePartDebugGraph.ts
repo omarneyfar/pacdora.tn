@@ -123,6 +123,7 @@ function createDebugContext(anchorWidth: number): DebugContext {
 
 function attachTargetForPart(partId: string): string | undefined {
   if (partId === "sideGlueSeamTab" || partId === "relievedGlueSeamTab") return "host.right";
+  if (partId === "sideCircularHangPanel") return "host.right";
   if (bottomAnchorPartIds.has(partId)) return "host.bottom";
   if (faceTargetPartIds.has(partId)) return "host";
   if (partId === "scoreGuide") return "host.top";
@@ -232,6 +233,8 @@ function parametersForPart(partId: string, anchorWidth: number): Record<string, 
       return { width: Math.max(2, anchorWidth * 0.04), depth: 2, position: "both" };
     case "hangPanel":
       return { HL: Math.max(24, anchorWidth * 0.25) };
+    case "sideCircularHangPanel":
+      return { extensionWidth: Math.max(30, anchorWidth * 0.7), neckWidth: anchorWidth * 0.24, outerRadius: anchorWidth * 0.24 };
     case "hangTab":
       return { TW: anchorWidth, SAL: Math.max(24, anchorWidth * 0.24), SL: anchorWidth * 0.42, SW: 6, FR: 3 };
     case "foldedHandle":
