@@ -8,10 +8,103 @@ const require = createRequire(import.meta.url);
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptsDir, "..");
 const outputDir = path.join(scriptsDir, "output", "v2-library", "parts");
+const summaryPath = path.join(scriptsDir, "output", "v2-library", "v2-part-library-summary.json");
 const moduleCache = new Map();
 const debugWidths = [40, 80, 120, 180, 250, 320];
+const expectedPartIds = [
+  "standardBodyStrip",
+  "sleeveBody",
+  "sideGlueSeamTab",
+  "relievedGlueSeamTab",
+  "reverseTuckClosureFlap",
+  "straightTuckClosureFlap",
+  "centeredTuckClosureFlap",
+  "fullWidthTuckClosureFlap",
+  "lockingLipClosureFlap",
+  "standardDustFlap",
+  "trapezoidDustFlap",
+  "angledBottomDustFlap",
+  "bottomLockFlap",
+  "snapLockBottomPanel",
+  "snapLockMajorFlap",
+  "snapLockMinorFlap",
+  "snapLockTongue",
+  "snapLockReceiverSlot",
+  "autoLockBottomPanel",
+  "autoLockMajorFlap",
+  "autoLockMinorFlap",
+  "autoLockGluePanel",
+  "autoLockDiagonalScore",
+  "crashBottomPanel",
+  "fullFlapBottomPanel",
+  "bottomGlueZone",
+  "lockTab",
+  "lockSlot",
+  "lockingTuckFlap",
+  "catalogLockFlap",
+  "snapLockingLip",
+  "lockReliefNotch",
+  "circularCutout",
+  "roundedSlotCutout",
+  "euroSlotCutout",
+  "windowCutout",
+  "reliefNotch",
+  "hangPanel",
+  "hangTab",
+  "foldedHandle",
+  "arcHandle",
+  "handleBridge",
+  "handleCutout",
+  "handleReinforcementPanel",
+  "tearStrip",
+  "perforationStrip",
+  "tearPullTab",
+  "tearNotch",
+  "sealFlap",
+  "centeredDivider",
+  "integratedPartition",
+  "builtInInsert",
+  "productMount",
+  "internalHolder",
+  "compartmentGrid",
+  "partitionLockSlot",
+  "partitionGlueZone",
+  "trayBody",
+  "traySideWall",
+  "trayCornerTab",
+  "skilletBody",
+  "skilletLid",
+  "separatedSkilletBase",
+  "separatedSkilletLid",
+  "skilletSideWall",
+  "skilletCornerLock",
+  "skilletInsertPanel",
+  "skilletSnapSlot",
+  "reversibleLid",
+  "reversibleLidHinge",
+  "reversibleLidLockTab",
+  "reversibleLidReceiverSlot",
+  "lidInsertPanel",
+  "gussetRoofPanel",
+  "gussetTrianglePanel",
+  "gussetCover",
+  "gussetSidePanel",
+  "gussetDiagonalScore",
+  "roofRidgeCrease",
+  "scoreGuide",
+  "glueZoneGuide",
+  "safeAreaGuide",
+  "bleedGuide",
+  "internalScoreGuide",
+  "noPrintZoneGuide",
+  "filmGlueZoneGuide",
+  "windowFilmPatchGuide",
+  "barcodeSafeZoneGuide",
+];
+const documentation = JSON.parse(fs.readFileSync(path.join(projectRoot, "folding-box-documentation.json"), "utf8"));
 
 const {
+  foldingBoxPartContracts,
   generatePartDebugGraph,
   generatePartDebugSvg,
   implementedV2PartIds,
@@ -22,7 +115,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const rows = [];
 const outputFiles = [];
-assertContractsAndRegistry();
+const summary = createSummary();
+assertContractsAndRegistry(summary);
 
 for (const partId of implementedV2PartIds) {
   for (const width of debugWidths) {
@@ -40,26 +134,73 @@ for (const partId of implementedV2PartIds) {
       anchors: graph.anchors.length,
       warnings: graph.warnings.length,
     });
+    summary.warningsPerPart[partId] = (summary.warningsPerPart[partId] ?? 0) + graph.warnings.length;
   }
 }
 
+summary.debugSvgCount = outputFiles.length;
+fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
+fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
 printRows(rows);
 console.log(`Debug SVG files written: ${outputFiles.map((file) => path.relative(projectRoot, file)).join(", ")}`);
+console.log(`Summary JSON written: ${path.relative(projectRoot, summaryPath)}`);
 console.log("V2 part library verification passed.");
 
-function assertContractsAndRegistry() {
+function createSummary() {
+  return {
+    totalContracts: foldingBoxPartContracts.length,
+    implementedParts: [],
+    partialParts: [],
+    specOnlyParts: [],
+    missingContracts: {
+      expectedPartIds: [],
+      documentedSourcePartIds: [],
+    },
+    warningsPerPart: {},
+    debugSvgCount: 0,
+  };
+}
+
+function assertContractsAndRegistry(summary) {
   const specOnly = [];
+  const registeredIds = new Set(v2FoldingBoxPartRegistry.keys());
+  const contractIds = new Set(foldingBoxPartContracts.map((contract) => contract.id));
+  const documentedSourcePartIds = Object.keys(documentation.reusableParts ?? {});
+  const coveredSourcePartIds = new Set(foldingBoxPartContracts.map((contract) => contract.sourceDocPartId));
+  const missingDocumentedSourceParts = documentedSourcePartIds.filter((partId) => !coveredSourcePartIds.has(partId));
+  const missingExpectedPartIds = expectedPartIds.filter((partId) => !contractIds.has(partId));
+
+  summary.missingContracts.expectedPartIds = missingExpectedPartIds;
+  summary.missingContracts.documentedSourcePartIds = missingDocumentedSourceParts;
+  assert(missingExpectedPartIds.length === 0, `Missing V2 contracts for expected parts: ${missingExpectedPartIds.join(", ")}`);
+  assert(missingDocumentedSourceParts.length === 0, `Missing source documentation coverage for: ${missingDocumentedSourceParts.join(", ")}`);
+
+  for (const contract of foldingBoxPartContracts) {
+    assert(registeredIds.has(contract.id), `${contract.id}: contract is not registered`);
+  }
+
   for (const [partId, entry] of v2FoldingBoxPartRegistry.entries()) {
     assert(entry.contract.productionReady === false, `${partId}: contract must remain productionReady=false`);
+    assert(contractIds.has(partId), `${partId}: registry entry has no matching contract`);
     if (entry.contract.implementationStatus === "spec-only") {
       specOnly.push(partId);
+      summary.specOnlyParts.push(partId);
       assert(!entry.implementation, `${partId}: spec-only part must not have an implementation yet`);
     } else {
       assert(entry.implementation, `${partId}: non-spec contract must have implementation`);
+      if (entry.contract.implementationStatus === "partial-experimental") {
+        summary.partialParts.push(partId);
+      } else {
+        summary.implementedParts.push(partId);
+      }
     }
   }
   assert(specOnly.includes("snapLockBottomPanel"), "snapLockBottomPanel must exist as spec-only");
   assert(specOnly.includes("autoLockBottomPanel"), "autoLockBottomPanel must exist as spec-only");
+  assert(specOnly.includes("crashBottomPanel"), "crashBottomPanel must exist as spec-only");
+  assert(specOnly.includes("gussetRoofPanel"), "gussetRoofPanel must exist as spec-only");
+  assert(specOnly.includes("roofRidgeCrease"), "roofRidgeCrease must exist as spec-only");
+  assert(specOnly.includes("reversibleLidHinge"), "reversibleLidHinge must exist as spec-only");
 }
 
 function validateDebugGraph(graph, partId, width) {
@@ -81,7 +222,7 @@ function validateDebugGraph(graph, partId, width) {
     assert(faceIds.has(crease.faceB), `${partId}-${width}: crease ${crease.id} faceB is missing`);
     assert(crease.faceA !== crease.faceB, `${partId}-${width}: crease ${crease.id} references same face twice`);
     assert(isFinitePoint(crease.start) && isFinitePoint(crease.end), `${partId}-${width}: crease ${crease.id} has non-finite points`);
-    assert(!/score|slot|hole|window|relief|safe|bleed/i.test(crease.id), `${partId}-${width}: geometry-only concept became a structural crease: ${crease.id}`);
+    assert(!/score|slot|hole|window|relief|safe|bleed|perforation|notch|zone/i.test(crease.id), `${partId}-${width}: geometry-only concept became a structural crease: ${crease.id}`);
   }
 
   for (const primitive of graph.geometryPrimitives) {

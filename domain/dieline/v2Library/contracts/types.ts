@@ -1,5 +1,6 @@
 export type V2ImplementationStatus =
   | "spec-only"
+  | "partial-experimental"
   | "implemented-experimental"
   | "graph-valid"
   | "reference-pending"
@@ -12,7 +13,17 @@ export type V2PartFamily =
   | "dust-flaps"
   | "bottom-closures"
   | "cutouts"
+  | "lock-tabs"
   | "hang-display"
+  | "handles"
+  | "windows"
+  | "tear-perforation"
+  | "internal-structures"
+  | "mount-structures"
+  | "reversible-lids"
+  | "skillet-structures"
+  | "gusset-structures"
+  | "guide-print-helpers"
   | "artwork-guides";
 
 export type V2Point = {
@@ -44,9 +55,18 @@ export type V2Anchor = {
 export type V2FaceRole =
   | "body"
   | "closure"
+  | "bottom"
   | "dust"
   | "glue"
+  | "locking"
   | "display"
+  | "handle"
+  | "tear"
+  | "internal"
+  | "tray"
+  | "skillet"
+  | "reversible"
+  | "gusset"
   | "guide";
 
 export type V2Face = {
@@ -76,7 +96,10 @@ export type V2GeometryLayer =
   | "hole"
   | "window"
   | "score"
+  | "perforation"
   | "glue"
+  | "no-print"
+  | "film"
   | "safe-area"
   | "bleed"
   | "guide";

@@ -4,7 +4,7 @@ import { sampleArc } from "./arcs";
 export function roundedRectPrimitive(input: {
   id: string;
   label: string;
-  layer: "hole" | "window" | "safe-area" | "bleed" | "glue" | "guide";
+  layer: Extract<V2GeometryPrimitive["layer"], "hole" | "window" | "safe-area" | "bleed" | "glue" | "no-print" | "film" | "guide">;
   x: number;
   y: number;
   width: number;
