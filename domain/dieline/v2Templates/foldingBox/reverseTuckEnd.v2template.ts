@@ -17,10 +17,12 @@ export function generateV2ReverseTuckEndAssembly(values: V2ReverseTuckEndParamet
   const length = positiveNumber(values.L, 120);
   const width = positiveNumber(values.W, 60);
   const height = positiveNumber(values.H, 160);
-  const glueFlapWidth = positiveNumber(values.GFW, 12);
-  const tuckDepth = positiveNumber(values.TFW, Math.max(16, width * 0.68));
-  const tuckRadius = positiveNumber(values.TFR, 4);
-  const dustDepth = positiveNumber(values.DFW, Math.max(8, width / 2 - 3));
+  const minimumDimension = Math.min(length, width, height);
+  const glueFlapWidth = positiveNumber(values.GFW, clamp(minimumDimension * 0.25, 1.5, Math.max(3, minimumDimension * 0.35)));
+  const tuckLipDepth = positiveNumber(values.TFW, clamp(width * 0.32, Math.max(1, minimumDimension * 0.08), Math.max(2, minimumDimension * 0.5)));
+  const tuckDepth = width + tuckLipDepth;
+  const tuckRadius = positiveNumber(values.TFR, clamp(width * 0.18, 0.5, Math.min(width * 0.25, length * 0.18, height * 0.18)));
+  const dustDepth = positiveNumber(values.DFW, clamp(width * 0.58, Math.max(1, width * 0.25), Math.max(2, Math.min(width * 0.75, height * 0.75, length * 0.75))));
 
   return assembleV2Template({
     id: "reverse-tuck-end-v2-template",
@@ -31,7 +33,8 @@ export function generateV2ReverseTuckEndAssembly(values: V2ReverseTuckEndParamet
       W: width,
       H: height,
       GFW: glueFlapWidth,
-      TFW: tuckDepth,
+      TFW: tuckLipDepth,
+      tuckDepth,
       TFR: tuckRadius,
       DFW: dustDepth,
     },
@@ -51,19 +54,19 @@ export function generateV2ReverseTuckEndAssembly(values: V2ReverseTuckEndParamet
         id: "sideGlue",
         type: "sideGlueSeamTab",
         attachTo: "body.sideA.right",
-        parameters: { GFW: glueFlapWidth },
+        parameters: { GFW: glueFlapWidth, reliefBevel: glueFlapWidth * 0.34 },
       },
       {
         id: "topTuck",
         type: "reverseTuckClosureFlap",
         attachTo: "body.back.top",
-        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth },
+        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },
       {
         id: "bottomTuck",
         type: "reverseTuckClosureFlap",
         attachTo: "body.front.bottom",
-        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth },
+        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },
       {
         id: "topDustSideA",
@@ -112,4 +115,8 @@ function numericValue(value: unknown): number | undefined {
 function positiveNumber(value: number | undefined, fallback: number): number {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
   return fallback;
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
 }

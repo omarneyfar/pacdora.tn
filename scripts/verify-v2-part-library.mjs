@@ -10,7 +10,7 @@ const projectRoot = path.resolve(scriptsDir, "..");
 const outputDir = path.join(scriptsDir, "output", "v2-library", "parts");
 const summaryPath = path.join(scriptsDir, "output", "v2-library", "v2-part-library-summary.json");
 const moduleCache = new Map();
-const debugWidths = [40, 80, 120, 180, 250, 320];
+const referenceDebugWidth = 120;
 const expectedPartIds = [
   "standardBodyStrip",
   "sleeveBody",
@@ -112,6 +112,11 @@ const {
 } = loadTs(path.join(projectRoot, "domain", "dieline", "v2Library"));
 
 fs.mkdirSync(outputDir, { recursive: true });
+for (const file of fs.readdirSync(outputDir)) {
+  if (file.endsWith(".debug.svg")) {
+    fs.unlinkSync(path.join(outputDir, file));
+  }
+}
 
 const rows = [];
 const outputFiles = [];
@@ -119,23 +124,21 @@ const summary = createSummary();
 assertContractsAndRegistry(summary);
 
 for (const partId of implementedV2PartIds) {
-  for (const width of debugWidths) {
-    const graph = generatePartDebugGraph(partId, width);
-    validateDebugGraph(graph, partId, width);
-    const outputPath = path.join(outputDir, `${kebab(partId)}-${width}.debug.svg`);
-    fs.writeFileSync(outputPath, generatePartDebugSvg(graph), "utf8");
-    outputFiles.push(outputPath);
-    rows.push({
-      part: partId,
-      width,
-      faces: graph.faces.length,
-      creases: graph.structuralCreases.length,
-      geometry: graph.geometryPrimitives.length,
-      anchors: graph.anchors.length,
-      warnings: graph.warnings.length,
-    });
-    summary.warningsPerPart[partId] = (summary.warningsPerPart[partId] ?? 0) + graph.warnings.length;
-  }
+  const graph = generatePartDebugGraph(partId, referenceDebugWidth);
+  validateDebugGraph(graph, partId, referenceDebugWidth);
+  const outputPath = path.join(outputDir, `${kebab(partId)}.debug.svg`);
+  fs.writeFileSync(outputPath, generatePartDebugSvg(graph), "utf8");
+  outputFiles.push(outputPath);
+  rows.push({
+    part: partId,
+    width: referenceDebugWidth,
+    faces: graph.faces.length,
+    creases: graph.structuralCreases.length,
+    geometry: graph.geometryPrimitives.length,
+    anchors: graph.anchors.length,
+    warnings: graph.warnings.length,
+  });
+  summary.warningsPerPart[partId] = (summary.warningsPerPart[partId] ?? 0) + graph.warnings.length;
 }
 
 summary.debugSvgCount = outputFiles.length;

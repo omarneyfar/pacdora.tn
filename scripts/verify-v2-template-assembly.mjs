@@ -23,19 +23,11 @@ const assembly = generateV2ReverseTuckEndAssembly({
   L: 120,
   W: 60,
   H: 160,
-  GFW: 12,
-  TFW: 42,
-  TFR: 4,
-  DFW: 27,
 });
 const graph = generateV2ReverseTuckEndDielineGraph({
   L: 120,
   W: 60,
   H: 160,
-  GFW: 12,
-  TFW: 42,
-  TFR: 4,
-  DFW: 27,
 });
 const validation = validateDielineGraph(graph);
 

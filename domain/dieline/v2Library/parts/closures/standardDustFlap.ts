@@ -1,14 +1,16 @@
 import type { V2PartImplementation } from "../../contracts/types";
 import {
-  anchoredRectangleFace,
+  anchoredTrapezoidFace,
   anchorsForFace,
   emptyPartResult,
+  numberParameter,
   positiveParameter,
   structuralCrease,
 } from "../buildingBlocks";
 
 type StandardDustFlapParameters = {
   DFW?: number;
+  taper?: number;
 };
 
 export const standardDustFlap: V2PartImplementation<StandardDustFlapParameters> = {
@@ -23,15 +25,24 @@ export const standardDustFlap: V2PartImplementation<StandardDustFlapParameters> 
     }
 
     const depth = positiveParameter(input, "DFW", Math.max(8, anchor.length * 0.45));
-    const warnings = depth >= anchor.length / 2
-      ? [`${input.id}: DFW should be less than half box width to avoid dust flap jamming.`]
-      : [];
-    const face = anchoredRectangleFace({
+    const defaultTaper = Math.min(anchor.length * 0.08, depth * 0.3);
+    const taper = clamp(numberParameter(input, "taper", defaultTaper), 0, Math.max(0, anchor.length / 2 - 1));
+    const warnings: string[] = [];
+    if (depth >= anchor.length / 2) {
+      warnings.push(`${input.id}: DFW should be less than half box width to avoid dust flap jamming.`);
+    }
+    if (taper > anchor.length * 0.18) {
+      warnings.push(`${input.id}: dust flap taper is large and may reduce side sealing area.`);
+    }
+
+    const face = anchoredTrapezoidFace({
       id: `${input.id}.face`,
       label: "Standard Dust Flap",
       sourcePartId: input.id,
       anchor,
       depth,
+      startInset: taper,
+      endInset: taper,
       role: "dust",
       printable: false,
     });
@@ -51,3 +62,7 @@ export const standardDustFlap: V2PartImplementation<StandardDustFlapParameters> 
     return { ...result, warnings };
   },
 };
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
+}

@@ -1,9 +1,11 @@
 import type { V2PartImplementation } from "../../contracts/types";
 import { assertBaseEdgeMatchesAnchor } from "../../primitives/validation";
+import { offset } from "../../primitives/points";
+import { createFace } from "../../primitives/polygon";
 import {
-  anchoredRectangleFace,
   anchorsForFace,
   emptyPartResult,
+  numberParameter,
   polygonPrimitive,
   positiveParameter,
   structuralCrease,
@@ -11,6 +13,7 @@ import {
 
 type SideGlueSeamTabParameters = {
   GFW?: number;
+  reliefBevel?: number;
 };
 
 export const sideGlueSeamTab: V2PartImplementation<SideGlueSeamTabParameters> = {
@@ -30,14 +33,25 @@ export const sideGlueSeamTab: V2PartImplementation<SideGlueSeamTabParameters> = 
       warnings.push(`${input.id}: GFW is outside the documented typical 10-20mm glue range.`);
     }
 
-    const face = anchoredRectangleFace({
+    const reliefBevel = clamp(
+      numberParameter(input, "reliefBevel", glueWidth * 0.34),
+      0,
+      Math.min(anchor.length * 0.18, glueWidth * 0.75),
+    );
+    const outerStart = offset(offset(anchor.start, anchor.normal, glueWidth), anchor.tangent, reliefBevel);
+    const outerEnd = offset(offset(anchor.end, anchor.normal, glueWidth), anchor.tangent, -reliefBevel);
+    const face = createFace({
       id: `${input.id}.face`,
       label: "Side Glue Seam Tab",
-      sourcePartId: input.id,
-      anchor,
-      depth: glueWidth,
       role: "glue",
+      sourcePartId: input.id,
       printable: false,
+      points: [
+        anchor.start,
+        outerStart,
+        outerEnd,
+        anchor.end,
+      ],
     });
     assertBaseEdgeMatchesAnchor(face, anchor, input.id);
 
@@ -63,3 +77,7 @@ export const sideGlueSeamTab: V2PartImplementation<SideGlueSeamTabParameters> = 
     return { ...result, warnings };
   },
 };
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
+}

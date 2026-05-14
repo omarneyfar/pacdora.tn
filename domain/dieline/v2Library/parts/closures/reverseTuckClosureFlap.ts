@@ -5,6 +5,8 @@ import { createFace } from "../../primitives/polygon";
 import {
   anchorsForFace,
   emptyPartResult,
+  linePrimitive,
+  numberParameter,
   positiveParameter,
   structuralCrease,
 } from "../buildingBlocks";
@@ -13,6 +15,7 @@ type TuckClosureParameters = {
   TFW?: number;
   TFR?: number;
   DFW?: number;
+  lipScoreOffset?: number;
 };
 
 export const reverseTuckClosureFlap: V2PartImplementation<TuckClosureParameters> = {
@@ -24,6 +27,7 @@ export const reverseTuckClosureFlap: V2PartImplementation<TuckClosureParameters>
       label: "Reverse Tuck Closure Flap",
       contractPartId: "reverseTuckClosureFlap",
       includeLockNotches: true,
+      includeLipScore: true,
     });
   },
 };
@@ -71,16 +75,20 @@ export function buildTuckClosureFlap(
   }
 
   if (options.includeLipScore) {
-    const scoreOffset = Math.min(depth - 1, Math.max(1, depth * 0.72));
-    result.geometryPrimitives.push({
+    const scoreOffsetFromLeadingEdge = clamp(
+      numberParameter(input, "lipScoreOffset", Math.max(radius * 1.8, depth * 0.24)),
+      Math.max(1, radius + 0.5),
+      depth - 1,
+    );
+    const scoreOffsetFromBase = depth - scoreOffsetFromLeadingEdge;
+    result.geometryPrimitives.push(linePrimitive({
       id: `${input.id}.lip-score`,
       label: "Geometry-only lip score",
-      type: "line",
       layer: "score",
-      start: offset(anchor.start, anchor.normal, scoreOffset),
-      end: offset(anchor.end, anchor.normal, scoreOffset),
+      start: offset(anchor.start, anchor.normal, scoreOffsetFromBase),
+      end: offset(anchor.end, anchor.normal, scoreOffsetFromBase),
       ownerFaceId: face.id,
-    });
+    }));
   }
 
   result.anchors.push(...anchorsForFace(input.id, face));
@@ -147,4 +155,8 @@ function triangularNotch(id: string, label: string, ownerFaceId: string, base: V
       offset(base, normal, depth * 2),
     ],
   };
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
 }

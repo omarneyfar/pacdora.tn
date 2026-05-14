@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="184mm" height="154mm" viewBox="0 0 184 154">
+<title>Reversible lid receiver slot 120</title>
+<rect x="0" y="0" width="184" height="154" fill="#fbfaf7"/>
+<g transform="translate(-8 -58)">
+<g id="faces" fill="rgba(255,255,255,0.78)" stroke="#222" stroke-width="0.35">
+<polygon points="40,90 160,90 160,180 40,180"/>
+</g>
+<g id="creases" stroke="#2667aa" stroke-width="0.55" stroke-dasharray="2 1">
+</g>
+<g id="geometry-primitives" fill="none" stroke-width="0.5">
+<rect x="79.6" y="132" width="40.8" height="6" rx="3" ry="3" stroke="#d12f2f"/>
+</g>
+<g id="anchors" stroke="#138a4f" fill="#138a4f" stroke-width="0.35">
+<line x1="40" y1="90" x2="160" y2="90"/>
+<circle cx="40" cy="90" r="1.1"/>
+<circle cx="160" cy="90" r="1.1"/>
+<line x1="160" y1="90" x2="160" y2="180"/>
+<circle cx="160" cy="90" r="1.1"/>
+<circle cx="160" cy="180" r="1.1"/>
+<line x1="40" y1="180" x2="160" y2="180"/>
+<circle cx="40" cy="180" r="1.1"/>
+<circle cx="160" cy="180" r="1.1"/>
+<line x1="40" y1="90" x2="40" y2="180"/>
+<circle cx="40" cy="90" r="1.1"/>
+<circle cx="40" cy="180" r="1.1"/>
+</g>
+<g id="labels" fill="#111" style="font-family:Arial,sans-serif;font-size:4px;paint-order:stroke;stroke:#fff;stroke-width:1.2px;">
+<text x="100" y="135" text-anchor="middle">host</text>
+<text x="100" y="133" text-anchor="middle">reversibleLidReceiverSlot.slot</text>
+</g>
+</g>
+</svg>
