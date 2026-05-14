@@ -48,7 +48,7 @@ export const bottomLockFlap: V2PartImplementation<BottomLockFlapParameters> = {
       label: "Bottom lock hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.geometryPrimitives.push(linePrimitive({

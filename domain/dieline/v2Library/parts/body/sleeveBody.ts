@@ -61,7 +61,7 @@ function sleeveCrease(partId: string, faceA: string, faceB: string, x: number, h
     faceB,
     start: { x, y: 0 },
     end: { x, y: height },
-    foldAngle: 180,
+    foldAngleDegrees: 180,
     foldDirection: "inward",
   };
 }

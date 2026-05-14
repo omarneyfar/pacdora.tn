@@ -43,7 +43,7 @@ export const standardDustFlap: V2PartImplementation<StandardDustFlapParameters> 
       label: "Dust flap hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.anchors.push(...anchorsForFace(input.id, face));

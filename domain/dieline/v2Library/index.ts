@@ -3,3 +3,8 @@ export * from "./contracts/types";
 export * from "./registry/partRegistry";
 export * from "./debug/generatePartDebugGraph";
 export * from "./debug/generatePartDebugSvg";
+export * from "./assembly/types";
+export * from "./assembly/V2AssemblyContext";
+export * from "./assembly/assembleV2Template";
+export * from "./assembly/validateV2Assembly";
+export * from "./adapters/toDielineGraph";

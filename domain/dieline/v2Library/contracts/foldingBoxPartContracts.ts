@@ -1624,7 +1624,7 @@ export const foldingBoxPartContracts = [
     implementationStatus: "spec-only",
     requiredAnchors: ["body.top", "lid.base"],
     allowedAttachTargets: ["anchor:top"],
-    inputs: [{ name: "foldAngle" }],
+    inputs: [{ name: "foldAngleDegrees" }],
     outputs: { structuralCreases: ["lid-to-body hinge"] },
     createsStructuralCreases: true,
     validationRules: ["May only be created when both body and lid faces exist."],

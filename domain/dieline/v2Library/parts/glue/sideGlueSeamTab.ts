@@ -48,7 +48,7 @@ export const sideGlueSeamTab: V2PartImplementation<SideGlueSeamTabParameters> = 
       label: "Glue seam hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.geometryPrimitives.push(polygonPrimitive({

@@ -40,7 +40,7 @@ export const hangPanel: V2PartImplementation<HangPanelParameters> = {
       label: "Hang panel hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 180,
+      foldAngleDegrees: 180,
       foldDirection: "inward",
     }));
     result.anchors.push(...anchorsForFace(input.id, face));

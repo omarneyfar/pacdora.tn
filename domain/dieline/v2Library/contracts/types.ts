@@ -87,7 +87,7 @@ export type V2StructuralCrease = {
   faceB: string;
   start: V2Point;
   end: V2Point;
-  foldAngle?: number;
+  foldAngleDegrees?: number;
   foldDirection?: "valley" | "mountain" | "inward" | "outward";
 };
 

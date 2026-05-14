@@ -75,7 +75,7 @@ function verticalCrease(id: string, faceA: string, faceB: string, x: number, y1:
     faceB,
     start: { x, y: y1 },
     end: { x, y: y2 },
-    foldAngle: 90,
+    foldAngleDegrees: 90,
     foldDirection: "inward",
   };
 }

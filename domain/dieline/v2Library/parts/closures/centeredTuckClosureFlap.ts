@@ -48,7 +48,7 @@ export const centeredTuckClosureFlap: V2PartImplementation<CenteredTuckClosureFl
       label: "Centered tuck hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.geometryPrimitives.push(linePrimitive({

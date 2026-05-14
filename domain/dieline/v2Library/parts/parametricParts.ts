@@ -85,7 +85,7 @@ export function attachedRectanglePart(options: {
         label: `${options.label} hinge`,
         anchor,
         childFaceId: face.id,
-        foldAngle: 90,
+        foldAngleDegrees: 90,
         foldDirection: "inward",
       }));
       result.anchors.push(...anchorsForFace(input.id, face));
@@ -134,7 +134,7 @@ export function attachedTrapezoidPart(options: {
         label: `${options.label} hinge`,
         anchor,
         childFaceId: face.id,
-        foldAngle: 90,
+        foldAngleDegrees: 90,
         foldDirection: "inward",
       }));
       result.anchors.push(...anchorsForFace(input.id, face));
@@ -186,7 +186,7 @@ export function attachedTonguePart(options: {
         label: `${options.label} hinge`,
         anchor,
         childFaceId: face.id,
-        foldAngle: 90,
+        foldAngleDegrees: 90,
         foldDirection: "inward",
       }));
       result.geometryPrimitives.push(linePrimitive({
@@ -239,7 +239,7 @@ export function attachedTrianglePart(options: {
         label: `${options.label} hinge`,
         anchor,
         childFaceId: face.id,
-        foldAngle: 90,
+        foldAngleDegrees: 90,
         foldDirection: "inward",
       }));
       result.anchors.push(...anchorsForFace(input.id, face));

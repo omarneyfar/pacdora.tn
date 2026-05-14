@@ -62,7 +62,7 @@ export function buildTuckClosureFlap(
     label: `${options.label} hinge`,
     anchor,
     childFaceId: face.id,
-    foldAngle: 180,
+    foldAngleDegrees: 180,
     foldDirection: "inward",
   }));
 

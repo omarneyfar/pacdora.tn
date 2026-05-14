@@ -62,7 +62,7 @@ export const relievedGlueSeamTab: V2PartImplementation<RelievedGlueSeamTabParame
       label: "Relieved glue seam hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.geometryPrimitives.push(polygonPrimitive({

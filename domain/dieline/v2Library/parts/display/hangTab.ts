@@ -82,7 +82,7 @@ export const hangTab: V2PartImplementation<HangTabParameters> = {
         label: "Hang tab attachment hinge",
         anchor,
         childFaceId: inner.id,
-        foldAngle: 90,
+        foldAngleDegrees: 90,
         foldDirection: "outward",
       }),
       structuralCrease({
@@ -90,7 +90,7 @@ export const hangTab: V2PartImplementation<HangTabParameters> = {
         label: "Hang tab midpoint fold hinge",
         anchor: innerTop,
         childFaceId: outer.id,
-        foldAngle: 180,
+        foldAngleDegrees: 180,
         foldDirection: "inward",
       }),
     );

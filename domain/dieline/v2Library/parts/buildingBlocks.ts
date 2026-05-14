@@ -42,7 +42,7 @@ export function structuralCrease(input: {
   label: string;
   anchor: V2Anchor;
   childFaceId: string;
-  foldAngle?: number;
+  foldAngleDegrees?: number;
   foldDirection?: "valley" | "mountain" | "inward" | "outward";
 }): V2StructuralCrease {
   return {
@@ -52,7 +52,7 @@ export function structuralCrease(input: {
     faceB: input.childFaceId,
     start: input.anchor.start,
     end: input.anchor.end,
-    foldAngle: input.foldAngle,
+    foldAngleDegrees: input.foldAngleDegrees,
     foldDirection: input.foldDirection,
   };
 }

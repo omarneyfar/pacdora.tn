@@ -48,7 +48,7 @@ export const angledBottomDustFlap: V2PartImplementation<AngledBottomDustFlapPara
       label: "Angled bottom dust hinge",
       anchor,
       childFaceId: face.id,
-      foldAngle: 90,
+      foldAngleDegrees: 90,
       foldDirection: "inward",
     }));
     result.anchors.push(...anchorsForFace(input.id, face));
