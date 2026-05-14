@@ -6,8 +6,8 @@ Status: V2 Reverse Tuck End visual parity stage is locked for the hidden templat
 
 - `standardBodyStrip`
 - `sideGlueSeamTab`
-- `reverseTuckClosureFlap` for the top closure
-- `reverseTuckClosureFlap` for the bottom closure
+- `standardTuckClosureFlap` for the top closure
+- `standardTuckClosureFlap` for the bottom closure
 - `standardDustFlap` for top side A and side B dust flaps
 - `standardDustFlap` for bottom side A and side B dust flaps
 
@@ -21,7 +21,8 @@ Status: V2 Reverse Tuck End visual parity stage is locked for the hidden templat
 
 ## Tuck Closure Fix
 
-- `reverseTuckClosureFlap` uses the ready RTE visual proportions in the hidden template assembly.
+- `standardTuckClosureFlap` uses the ready RTE visual proportions in the hidden template assembly.
+- The same standard tuck closure part is shared by RTE and STE; reverse-vs-straight behavior is controlled by template attachment, not by a different closure shape.
 - The flap base edge exactly matches the body-panel attach anchor.
 - The outer leading corners use rounded sampled arcs.
 - The lip score is emitted as geometry-only score data and remains out of the structural crease graph.

@@ -17,6 +17,7 @@ const expectedPartIds = [
   "sleeveBody",
   "sideGlueSeamTab",
   "relievedGlueSeamTab",
+  "standardTuckClosureFlap",
   "reverseTuckClosureFlap",
   "straightTuckClosureFlap",
   "centeredTuckClosureFlap",

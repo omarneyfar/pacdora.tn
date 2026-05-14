@@ -176,7 +176,7 @@
     },
     {
       "id": "topTuck-face",
-      "label": "Straight Tuck Closure Flap",
+      "label": "Standard Tuck Closure Flap",
       "vertices": [
         {
           "x": 60,
@@ -258,7 +258,7 @@
     },
     {
       "id": "bottomTuck-face",
-      "label": "Straight Tuck Closure Flap",
+      "label": "Standard Tuck Closure Flap",
       "vertices": [
         {
           "x": 60,
@@ -2643,80 +2643,30 @@
       ]
     },
     {
-      "id": "topTuck-lock-notch-start",
-      "layer": "cut",
-      "type": "polyline",
-      "points": [
-        {
-          "x": 60,
-          "y": 44.400000000000006
-        },
-        {
-          "x": 63,
-          "y": 41.400000000000006
-        },
-        {
-          "x": 60,
-          "y": 38.400000000000006
-        }
-      ]
+      "id": "topTuck-lip-score",
+      "layer": "crease",
+      "type": "line",
+      "start": {
+        "x": 60,
+        "y": 19.200000000000003
+      },
+      "end": {
+        "x": 180,
+        "y": 19.200000000000003
+      }
     },
     {
-      "id": "topTuck-lock-notch-end",
-      "layer": "cut",
-      "type": "polyline",
-      "points": [
-        {
-          "x": 180,
-          "y": 44.400000000000006
-        },
-        {
-          "x": 177,
-          "y": 41.400000000000006
-        },
-        {
-          "x": 180,
-          "y": 38.400000000000006
-        }
-      ]
-    },
-    {
-      "id": "bottomTuck-lock-notch-start",
-      "layer": "cut",
-      "type": "polyline",
-      "points": [
-        {
-          "x": 60,
-          "y": 274
-        },
-        {
-          "x": 63,
-          "y": 277
-        },
-        {
-          "x": 60,
-          "y": 280
-        }
-      ]
-    },
-    {
-      "id": "bottomTuck-lock-notch-end",
-      "layer": "cut",
-      "type": "polyline",
-      "points": [
-        {
-          "x": 180,
-          "y": 274
-        },
-        {
-          "x": 177,
-          "y": 277
-        },
-        {
-          "x": 180,
-          "y": 280
-        }
-      ]
+      "id": "bottomTuck-lip-score",
+      "layer": "crease",
+      "type": "line",
+      "start": {
+        "x": 60,
+        "y": 299.2
+      },
+      "end": {
+        "x": 180,
+        "y": 299.2
+      }
     },
     {
       "id": "label-body-sideA",
@@ -2776,7 +2726,7 @@
         "x": 119.99999999999999,
         "y": 39.80483568585399
       },
-      "text": "Straight Tuck Closure Flap"
+      "text": "Standard Tuck Closure Flap"
     },
     {
       "id": "label-bottomTuck-face",
@@ -2786,7 +2736,7 @@
         "x": 119.99999999999994,
         "y": 278.5951643141461
       },
-      "text": "Straight Tuck Closure Flap"
+      "text": "Standard Tuck Closure Flap"
     },
     {
       "id": "label-topDustSideA-face",
@@ -2863,7 +2813,7 @@
       },
       {
         "id": "topTuck",
-        "label": "Straight tuck closure flap",
+        "label": "Standard tuck closure flap",
         "role": "tuck-flap",
         "faceIds": [
           "topTuck-face"
@@ -2874,7 +2824,7 @@
       },
       {
         "id": "bottomTuck",
-        "label": "Straight tuck closure flap",
+        "label": "Standard tuck closure flap",
         "role": "tuck-flap",
         "faceIds": [
           "bottomTuck-face"
@@ -2953,8 +2903,8 @@
         "contractIds": [
           "standardBodyStrip",
           "sideGlueSeamTab",
-          "straightTuckClosureFlap",
-          "straightTuckClosureFlap",
+          "standardTuckClosureFlap",
+          "standardTuckClosureFlap",
           "standardDustFlap",
           "standardDustFlap",
           "standardDustFlap",

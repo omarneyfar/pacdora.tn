@@ -176,7 +176,7 @@
     },
     {
       "id": "topTuck-face",
-      "label": "Reverse Tuck Closure Flap",
+      "label": "Standard Tuck Closure Flap",
       "vertices": [
         {
           "x": 60,
@@ -258,7 +258,7 @@
     },
     {
       "id": "bottomTuck-face",
-      "label": "Reverse Tuck Closure Flap",
+      "label": "Standard Tuck Closure Flap",
       "vertices": [
         {
           "x": 240,
@@ -2726,7 +2726,7 @@
         "x": 119.99999999999999,
         "y": 39.80483568585399
       },
-      "text": "Reverse Tuck Closure Flap"
+      "text": "Standard Tuck Closure Flap"
     },
     {
       "id": "label-bottomTuck-face",
@@ -2736,7 +2736,7 @@
         "x": 300,
         "y": 278.595164314146
       },
-      "text": "Reverse Tuck Closure Flap"
+      "text": "Standard Tuck Closure Flap"
     },
     {
       "id": "label-topDustSideA-face",
@@ -2813,7 +2813,7 @@
       },
       {
         "id": "topTuck",
-        "label": "Reverse tuck closure flap",
+        "label": "Standard tuck closure flap",
         "role": "tuck-flap",
         "faceIds": [
           "topTuck-face"
@@ -2824,7 +2824,7 @@
       },
       {
         "id": "bottomTuck",
-        "label": "Reverse tuck closure flap",
+        "label": "Standard tuck closure flap",
         "role": "tuck-flap",
         "faceIds": [
           "bottomTuck-face"
@@ -2903,8 +2903,8 @@
         "contractIds": [
           "standardBodyStrip",
           "sideGlueSeamTab",
-          "reverseTuckClosureFlap",
-          "reverseTuckClosureFlap",
+          "standardTuckClosureFlap",
+          "standardTuckClosureFlap",
           "standardDustFlap",
           "standardDustFlap",
           "standardDustFlap",

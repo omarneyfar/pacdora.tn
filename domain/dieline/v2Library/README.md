@@ -39,6 +39,7 @@ It is not connected to the current recipe engine, generator registry, catalog, o
 - `sleeveBody`
 - `sideGlueSeamTab`
 - `relievedGlueSeamTab`
+- `standardTuckClosureFlap`
 - `reverseTuckClosureFlap`
 - `straightTuckClosureFlap`
 - `fullWidthTuckClosureFlap`

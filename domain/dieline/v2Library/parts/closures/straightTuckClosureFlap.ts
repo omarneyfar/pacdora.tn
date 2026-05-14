@@ -1,5 +1,5 @@
 import type { V2PartImplementation } from "../../contracts/types";
-import { buildTuckClosureFlap } from "./reverseTuckClosureFlap";
+import { buildTuckClosureFlap } from "./standardTuckClosureFlap";
 
 type StraightTuckClosureParameters = {
   TFW?: number;
@@ -14,7 +14,6 @@ export const straightTuckClosureFlap: V2PartImplementation<StraightTuckClosurePa
   build(input, context) {
     return buildTuckClosureFlap(input, context, {
       label: "Straight Tuck Closure Flap",
-      contractPartId: "straightTuckClosureFlap",
       includeLockNotches: true,
     });
   },

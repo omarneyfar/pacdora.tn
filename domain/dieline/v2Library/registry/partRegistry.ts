@@ -21,6 +21,7 @@ import { fullWidthTuckClosureFlap } from "../parts/closures/fullWidthTuckClosure
 import { lockingLipClosureFlap } from "../parts/closures/lockingLipClosureFlap";
 import { reverseTuckClosureFlap } from "../parts/closures/reverseTuckClosureFlap";
 import { standardDustFlap } from "../parts/closures/standardDustFlap";
+import { standardTuckClosureFlap } from "../parts/closures/standardTuckClosureFlap";
 import { straightTuckClosureFlap } from "../parts/closures/straightTuckClosureFlap";
 import { trapezoidDustFlap } from "../parts/closures/trapezoidDustFlap";
 import { circularCutout } from "../parts/cutouts/circularCutout";
@@ -75,6 +76,7 @@ const implementations = [
   sleeveBody,
   sideGlueSeamTab,
   relievedGlueSeamTab,
+  standardTuckClosureFlap,
   reverseTuckClosureFlap,
   straightTuckClosureFlap,
   centeredTuckClosureFlap,

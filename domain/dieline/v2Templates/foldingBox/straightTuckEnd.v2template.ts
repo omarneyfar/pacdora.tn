@@ -59,15 +59,15 @@ export function generateV2StraightTuckEndAssembly(values: V2StraightTuckEndParam
       },
       {
         id: "topTuck",
-        type: "straightTuckClosureFlap",
+        type: "standardTuckClosureFlap",
         attachTo: "body.front.top",
-        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth },
+        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },
       {
         id: "bottomTuck",
-        type: "straightTuckClosureFlap",
+        type: "standardTuckClosureFlap",
         attachTo: "body.front.bottom",
-        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth },
+        parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },
       {
         id: "topDustSideA",

@@ -1,5 +1,5 @@
 import type { V2PartImplementation } from "../../contracts/types";
-import { buildTuckClosureFlap } from "./reverseTuckClosureFlap";
+import { buildTuckClosureFlap } from "./standardTuckClosureFlap";
 
 type FullWidthTuckClosureParameters = {
   TFW?: number;
@@ -15,7 +15,6 @@ export const fullWidthTuckClosureFlap: V2PartImplementation<FullWidthTuckClosure
   build(input, context) {
     const result = buildTuckClosureFlap(input, context, {
       label: "Full Width Tuck Closure Flap",
-      contractPartId: "fullWidthTuckClosureFlap",
       includeLockNotches: false,
       includeLipScore: true,
     });

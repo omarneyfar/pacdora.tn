@@ -80,8 +80,8 @@
   <text id="label-body-sideB" data-layer="label" x="210" y="159.2" fill="#1f2a24" font-size="4">Side B Panel</text>
   <text id="label-body-back" data-layer="label" x="300" y="159.2" fill="#1f2a24" font-size="4">Back Panel</text>
   <text id="label-sideGlue-face" data-layer="label" x="367.418" y="159.2" fill="#1f2a24" font-size="4">Side Glue Seam Tab</text>
-  <text id="label-topTuck-face" data-layer="label" x="120" y="39.805" fill="#1f2a24" font-size="4">Reverse Tuck Closure Flap</text>
-  <text id="label-bottomTuck-face" data-layer="label" x="300" y="278.595" fill="#1f2a24" font-size="4">Reverse Tuck Closure Flap</text>
+  <text id="label-topTuck-face" data-layer="label" x="120" y="39.805" fill="#1f2a24" font-size="4">Standard Tuck Closure Flap</text>
+  <text id="label-bottomTuck-face" data-layer="label" x="300" y="278.595" fill="#1f2a24" font-size="4">Standard Tuck Closure Flap</text>
   <text id="label-topDustSideA-face" data-layer="label" x="30.23" y="62.228" fill="#1f2a24" font-size="4">Standard Dust Flap</text>
   <text id="label-topDustSideB-face" data-layer="label" x="209.77" y="62.228" fill="#1f2a24" font-size="4">Standard Dust Flap</text>
   <text id="label-bottomDustSideA-face" data-layer="label" x="30.23" y="256.172" fill="#1f2a24" font-size="4">Standard Dust Flap</text>

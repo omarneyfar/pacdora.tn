@@ -29,14 +29,14 @@ const templateCases = [
   {
     name: "Reverse Tuck End",
     outputStem: "reverse-tuck-end-v2-template",
-    expectedClosureContract: "reverseTuckClosureFlap",
+    expectedClosureContract: "standardTuckClosureFlap",
     assemblyFactory: generateV2ReverseTuckEndAssembly,
     graphFactory: generateV2ReverseTuckEndDielineGraph,
   },
   {
     name: "Straight Tuck End",
     outputStem: "straight-tuck-end-v2-template",
-    expectedClosureContract: "straightTuckClosureFlap",
+    expectedClosureContract: "standardTuckClosureFlap",
     assemblyFactory: generateV2StraightTuckEndAssembly,
     graphFactory: generateV2StraightTuckEndDielineGraph,
   },

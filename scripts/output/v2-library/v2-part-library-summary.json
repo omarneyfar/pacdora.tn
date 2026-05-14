@@ -1,10 +1,11 @@
 {
-  "totalContracts": 88,
+  "totalContracts": 89,
   "implementedParts": [
     "standardBodyStrip",
     "sleeveBody",
     "sideGlueSeamTab",
     "relievedGlueSeamTab",
+    "standardTuckClosureFlap",
     "reverseTuckClosureFlap",
     "straightTuckClosureFlap",
     "fullWidthTuckClosureFlap",

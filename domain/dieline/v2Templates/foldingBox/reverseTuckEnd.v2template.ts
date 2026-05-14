@@ -59,13 +59,13 @@ export function generateV2ReverseTuckEndAssembly(values: V2ReverseTuckEndParamet
       },
       {
         id: "topTuck",
-        type: "reverseTuckClosureFlap",
+        type: "standardTuckClosureFlap",
         attachTo: "body.front.top",
         parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },
       {
         id: "bottomTuck",
-        type: "reverseTuckClosureFlap",
+        type: "standardTuckClosureFlap",
         attachTo: "body.back.bottom",
         parameters: { TFW: tuckDepth, TFR: tuckRadius, DFW: dustDepth, lipScoreOffset: tuckLipDepth },
       },

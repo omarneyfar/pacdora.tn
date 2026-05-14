@@ -8,7 +8,8 @@ Reference compared:
 
 ## Tuck Flap Changes
 
-- `reverseTuckClosureFlap` now uses the ready RTE proportions in the hidden template assembly: total tuck depth is `W + TFW`, with `TFW` treated as the lip-score offset for this parity pass.
+- `standardTuckClosureFlap` now uses the ready RTE proportions in the hidden template assembly: total tuck depth is `W + TFW`, with `TFW` treated as the lip-score offset for this parity pass.
+- RTE and STE now share `standardTuckClosureFlap`; the reverse-vs-straight tuck distinction is represented by which body panel receives the top and bottom closures.
 - Leading outer corners are rounded with the documented `TFR` radius and match the ready reference profile for the 120x60x160 default.
 - A lip score is emitted as a geometry primitive only. It is not a structural crease.
 - Visible lock notch cut guides are disabled for the reverse tuck reference shape because they created a kinked side artifact that does not appear in the ready RTE SVG.
